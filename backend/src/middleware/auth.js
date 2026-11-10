@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const db = require('../db');
 
 // Binabasa ang JWT mula sa header na "Authorization: Bearer <token>".
 // Ang user ay laging galing sa token, hindi sa request body.
@@ -16,6 +17,7 @@ function requireAuth(req, res, next) {
   }
 }
 
+// Check user role
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
@@ -25,4 +27,37 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+// Check active and verified owner
+async function requireVerifiedOwner(req, res, next) {
+  try {
+    if (!req.user || req.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Owner access only.' });
+    }
+
+    const [rows] = await db.execute(
+      `SELECT u.status, p.verification_status
+       FROM users u
+       INNER JOIN provider_profiles p
+         ON p.user_id = u.id
+       WHERE u.id = ? AND u.role = 'owner'
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(403).json({ error: 'Owner profile not found.' });
+    }
+
+    const owner = rows[0];
+
+    if (owner.status !== 'active' || owner.verification_status !== 'verified') {
+      return res.status(403).json({ error: 'Your owner account is not yet verified.' });
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { requireAuth, requireRole, requireVerifiedOwner };

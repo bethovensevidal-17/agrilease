@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
@@ -17,7 +16,9 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/equipment', require('./routes/equipment'));
+app.use('/api/rentals', require('./routes/rental'));
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 
 // 404 Handler
 app.use((req, res) => {

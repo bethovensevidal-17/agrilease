@@ -1,36 +1,66 @@
-// Iisang lugar para sa lahat ng tawag sa backend.
-const BASE = '/api';
+
+const BASE = 'http://localhost:3000/api';
 
 export function getToken() {
   return localStorage.getItem('agrilease_token');
 }
 
 export function setToken(token) {
-  if (token) localStorage.setItem('agrilease_token', token);
-  else localStorage.removeItem('agrilease_token');
+  if (token) {
+    localStorage.setItem('agrilease_token', token);
+  } else {
+    localStorage.removeItem('agrilease_token');
+  }
 }
 
-// api('/equipment?page=1')
-// api('/equipment', { method: 'POST', formData })   para sa may image upload
-// api('/equipment/3/archive', { method: 'PATCH' })
+export function getUser() {
+  const user = localStorage.getItem('agrilease_user');
+  return user ? JSON.parse(user) : null;
+}
+
+export function setUser(user) {
+  if (user) {
+    localStorage.setItem('agrilease_user', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('agrilease_user');
+  }
+}
+
+export function clearAuth() {
+  setToken(null);
+  setUser(null);
+}
+
 export async function api(path, { method = 'GET', body, formData } = {}) {
   const headers = {};
   const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   let payload;
+
   if (formData) {
-    payload = formData; // huwag lagyan ng Content-Type, ang browser ang bahala
-  } else if (body) {
+    payload = formData;
+  } else if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
     payload = JSON.stringify(body);
   }
 
-  const res = await fetch(BASE + path, { method, headers, body: payload });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const message = data.error || (data.errors && data.errors.join(' ')) || 'May nangyaring error.';
-    throw new Error(message);
+  const response = await fetch(BASE + path, {
+    method,
+    headers,
+    body: payload,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || data.message || 'May nangyaring error.'
+    );
   }
+
   return data;
 }

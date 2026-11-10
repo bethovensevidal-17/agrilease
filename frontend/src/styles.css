@@ -49,3 +49,541 @@ h1 { margin-top: 0; }
   .sidebar.open { transform: translateX(0); }
   .content { margin-left: 0; padding: 16px; }
 }
+
+/* AUTHENTICATION */
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 16px;
+  background: #f4f7f2;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+}
+
+.auth-card h1 {
+  margin-bottom: 8px;
+  color: #244c2b;
+}
+
+.auth-card > p {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.auth-card label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-card input,
+.auth-card select {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.auth-card input:focus,
+.auth-card select:focus {
+  outline: 2px solid #75a878;
+  border-color: #397443;
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 13px;
+  margin-top: 24px;
+  background: #397443;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 20px !important;
+  font-size: 14px;
+}
+
+.auth-footer a {
+  color: #397443;
+  font-weight: 600;
+}
+
+.auth-error,
+.auth-success {
+  padding: 12px;
+  margin: 15px 0;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.auth-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.auth-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.dashboard-placeholder {
+  padding: 40px;
+}
+
+.dashboard-placeholder button {
+  padding: 10px 20px;
+  background: #397443;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* FARMER DASHBOARD */
+
+.farmer-dashboard {
+  min-height: 100vh;
+  display: flex;
+  background: #f5f7f4;
+}
+
+.farmer-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  padding: 25px 18px;
+  background: #244c2b;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.farmer-brand {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 40px;
+}
+
+.farmer-sidebar-label {
+  color: #c3d8c5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.farmer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.farmer-nav-link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 7px;
+  color: #e5eee5;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.farmer-nav-link:hover,
+.farmer-nav-link.active {
+  background: #397443;
+  color: white;
+}
+
+.farmer-logout {
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid #b5cbb7;
+  border-radius: 7px;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+}
+
+.farmer-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.farmer-topbar {
+  min-height: 75px;
+  padding: 12px 30px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.farmer-topbar-title {
+  display: block;
+  font-weight: 700;
+  color: #244c2b;
+}
+
+.farmer-topbar-subtitle {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.farmer-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.farmer-account strong,
+.farmer-account small {
+  display: block;
+}
+
+.farmer-account small {
+  margin-top: 3px;
+  color: #6b7280;
+}
+
+.farmer-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #dcebdc;
+  color: #244c2b;
+  font-weight: 700;
+}
+
+.farmer-content {
+  padding: 30px;
+}
+
+.farmer-welcome h1 {
+  margin: 0 0 8px;
+  color: #244c2b;
+}
+
+.farmer-welcome p {
+  color: #6b7280;
+}
+
+.farmer-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 25px 0;
+}
+
+.farmer-stat-card,
+.farmer-panel {
+  padding: 22px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.farmer-stat-card span,
+.farmer-stat-card strong,
+.farmer-stat-card small {
+  display: block;
+}
+
+.farmer-stat-card span {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.farmer-stat-card strong {
+  margin: 12px 0;
+  color: #244c2b;
+  font-size: 30px;
+}
+
+.farmer-stat-card small {
+  color: #6b7280;
+}
+
+.farmer-panel {
+  margin-top: 20px;
+}
+
+.farmer-panel h1,
+.farmer-panel h2 {
+  color: #244c2b;
+}
+
+.farmer-panel p {
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .farmer-sidebar {
+    width: 190px;
+    padding: 20px 12px;
+  }
+
+  .farmer-topbar {
+    padding: 12px 16px;
+  }
+
+  .farmer-content {
+    padding: 18px;
+  }
+
+  .farmer-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .farmer-dashboard {
+    flex-direction: column;
+  }
+
+  .farmer-sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .farmer-brand {
+    margin-bottom: 15px;
+  }
+
+  .farmer-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .farmer-logout {
+    margin-top: 15px;
+  }
+
+  .farmer-topbar {
+    align-items: flex-start;
+  }
+}
+
+/* ADMIN DASHBOARD */
+
+.admin-dashboard {
+  min-height: 100vh;
+  display: flex;
+  background: #f5f7f4;
+}
+
+.admin-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  padding: 25px 18px;
+  background: #244c2b;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.admin-sidebar h2 {
+  font-size: 24px;
+  letter-spacing: 1px;
+  margin: 0 0 40px;
+}
+
+.admin-sidebar-label {
+  color: #c3d8c5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.admin-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-sidebar nav a {
+  padding: 12px 14px;
+  color: #e5eee5;
+  text-decoration: none;
+  border-radius: 7px;
+}
+
+.admin-sidebar nav a:hover,
+.admin-sidebar nav a.active {
+  background: #397443;
+  color: white;
+}
+
+.admin-logout {
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid #b5cbb7;
+  border-radius: 7px;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  padding: 30px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 22px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.admin-header h1 {
+  margin: 0 0 8px;
+  color: #244c2b;
+}
+
+.admin-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.admin-header button {
+  padding: 10px 18px;
+  background: #397443;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.admin-header button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-section-title {
+  margin-bottom: 18px;
+  color: #244c2b;
+}
+
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-stat-card {
+  min-height: 120px;
+  padding: 22px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.admin-stat-card span {
+  display: block;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.admin-stat-card strong {
+  display: block;
+  margin-top: 16px;
+  color: #244c2b;
+  font-size: 30px;
+}
+
+.admin-updated {
+  margin-top: 25px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.admin-error {
+  padding: 14px;
+  margin-bottom: 20px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 7px;
+}
+
+@media (max-width: 1000px) {
+  .admin-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .admin-dashboard {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .admin-sidebar h2 {
+    margin-bottom: 15px;
+  }
+
+  .admin-sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-logout {
+    margin-top: 15px;
+  }
+
+  .admin-main {
+    padding: 16px;
+  }
+
+  .admin-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}

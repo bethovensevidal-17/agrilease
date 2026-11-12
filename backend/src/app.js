@@ -19,6 +19,7 @@ app.use('/api/equipment', require('./routes/equipment'));
 app.use('/api/rentals', require('./routes/rental'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin', require('./routes/adminExtra'));
 
 // 404 Handler
 app.use((req, res) => {

@@ -1,0 +1,267 @@
+const db = require('../db');
+
+async function columns(table) {
+  const [rows] = await db.execute(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+    [table]
+  );
+  return new Set(rows.map(row => row.COLUMN_NAME));
+}
+
+function expression(alias, available, candidates, output, fallback = 'NULL') {
+  const column = candidates.find(name => available.has(name));
+  return column ? `${alias}.\`${column}\` AS \`${output}\`` : `${fallback} AS \`${output}\``;
+}
+
+async function getRentals(req, res, next) {
+  try {
+    const c = await columns('rental_requests');
+    if (!c.size) {
+      return res.status(503).json({ success: false, message: 'The rental_requests table is not available in the connected database.', data: [] });
+    }
+    const userColumns = await columns('users');
+    const equipmentColumns = await columns('equipment');
+    const joins = [];
+    if (c.has('farmer_id') && userColumns.has('id')) {
+      joins.push('LEFT JOIN users farmer ON farmer.id = rr.farmer_id');
+    }
+    if (c.has('equipment_id') && equipmentColumns.has('id')) {
+      joins.push('LEFT JOIN equipment e ON e.id = rr.equipment_id');
+      if (equipmentColumns.has('owner_id')) joins.push('LEFT JOIN users owner ON owner.id = e.owner_id');
+    }
+    const startField = ['start_at', 'start_date'].find(name => c.has(name));
+    const endField = ['end_at', 'end_date'].find(name => c.has(name));
+    const where = [];
+    const params = [];
+    if (req.query.status && c.has('status')) {
+      const allowed = ['pending', 'approved', 'rejected', 'ongoing', 'completed', 'cancelled'];
+      if (!allowed.includes(req.query.status)) return res.status(400).json({ success: false, message: 'Invalid rental status.' });
+      where.push('rr.status = ?'); params.push(req.query.status);
+    }
+    const order = c.has('created_at') ? 'rr.created_at DESC' : c.has('id') ? 'rr.id DESC' : '1';
+    const select = [
+      expression('rr', c, ['id'], 'id'),
+      expression('rr', c, ['status'], 'status'),
+      expression('rr', c, ['total_amount'], 'total_amount'),
+      expression('rr', c, ['payment_method', 'method'], 'payment_method'),
+      expression('rr', c, ['created_at'], 'created_at'),
+      startField ? `rr.\`${startField}\` AS start_at` : 'NULL AS start_at',
+      endField ? `rr.\`${endField}\` AS end_at` : 'NULL AS end_at',
+      c.has('farmer_id') && userColumns.has('full_name') ? 'farmer.full_name AS farmer_name' : 'NULL AS farmer_name',
+      equipmentColumns.has('equipment_name') && c.has('equipment_id') ? 'e.equipment_name AS equipment_name' :
+        equipmentColumns.has('name') && c.has('equipment_id') ? 'e.name AS equipment_name' : 'NULL AS equipment_name',
+      equipmentColumns.has('owner_id') && userColumns.has('full_name') && c.has('equipment_id') ? 'owner.full_name AS owner_name' : 'NULL AS owner_name'
+    ];
+    const sql = `SELECT ${select.join(', ')} FROM rental_requests rr ${joins.join(' ')}
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      ORDER BY ${order}`;
+    const [rows] = await db.query(sql, params);
+    return res.json({ success: true, data: rows });
+  } catch (error) { next(error); }
+}
+
+async function getSubscriptions(req, res, next) {
+  try {
+    const subCols = await columns('subscriptions');
+    const planCols = await columns('subscription_plans');
+    const userCols = await columns('users');
+    const plansAvailable = planCols.size > 0;
+    const subscriptionsAvailable = subCols.size > 0;
+    let plans = [];
+    let subscriptions = [];
+    if (plansAvailable) {
+      const [rows] = await db.query(
+        `SELECT id, name, code, price, duration_days, equipment_limit
+         FROM subscription_plans ORDER BY price ASC`
+      );
+      plans = rows;
+    }
+    if (subscriptionsAvailable) {
+      const joins = [];
+      if (subCols.has('owner_id') && userCols.has('id')) joins.push('LEFT JOIN users u ON u.id = s.owner_id');
+      if (subCols.has('plan_id') && planCols.has('id')) joins.push('LEFT JOIN subscription_plans p ON p.id = s.plan_id');
+      const select = [
+        expression('s', subCols, ['id'], 'id'),
+        expression('s', subCols, ['owner_id'], 'owner_id'),
+        expression('s', subCols, ['plan_id'], 'plan_id'),
+        expression('s', subCols, ['price'], 'price'),
+        expression('s', subCols, ['method', 'payment_method'], 'method'),
+        expression('s', subCols, ['starts_at', 'start_at'], 'starts_at'),
+        expression('s', subCols, ['ends_at', 'end_at'], 'ends_at'),
+        expression('s', subCols, ['created_at'], 'created_at'),
+        expression('s', subCols, ['status'], 'status'),
+        userCols.has('full_name') && subCols.has('owner_id') ? 'u.full_name AS owner_name' : 'NULL AS owner_name',
+        planCols.has('name') && subCols.has('plan_id') ? 'p.name AS plan_name' : 'NULL AS plan_name'
+      ];
+      const order = subCols.has('created_at') ? 's.created_at DESC' : subCols.has('id') ? 's.id DESC' : '1';
+      const [rows] = await db.query(`SELECT ${select.join(', ')} FROM subscriptions s ${joins.join(' ')} ORDER BY ${order}`);
+      subscriptions = rows;
+    }
+
+    const paymentCols = await columns('subscription_payments');
+    let payments = [];
+    if (paymentCols.size) {
+      const joins = [];
+      if (paymentCols.has('owner_id') && userCols.has('id')) joins.push('LEFT JOIN users u ON u.id = sp.owner_id');
+      const select = [
+        expression('sp', paymentCols, ['id'], 'id'),
+        expression('sp', paymentCols, ['owner_id'], 'owner_id'),
+        expression('sp', paymentCols, ['amount', 'payment_amount'], 'amount'),
+        expression('sp', paymentCols, ['reference', 'reference_number', 'gcash_ref'], 'reference'),
+        expression('sp', paymentCols, ['payment_status', 'status'], 'status'),
+        expression('sp', paymentCols, ['created_at', 'paid_at'], 'created_at'),
+        userCols.has('full_name') && paymentCols.has('owner_id') ? 'u.full_name AS owner_name' : 'NULL AS owner_name'
+      ];
+      const order = paymentCols.has('created_at') ? 'sp.created_at DESC' : paymentCols.has('id') ? 'sp.id DESC' : '1';
+      const [rows] = await db.query(`SELECT ${select.join(', ')} FROM subscription_payments sp ${joins.join(' ')} ORDER BY ${order}`);
+      payments = rows;
+    }
+    return res.json({
+      success: true,
+      subscriptionsConfigured: subscriptionsAvailable,
+      paymentsConfigured: paymentCols.size > 0,
+      plans, subscriptions, payments
+    });
+  } catch (error) { next(error); }
+}
+
+async function getProfile(req, res, next) {
+  try {
+    const [rows] = await db.execute(
+      `SELECT id, full_name, email, phone, role, status, created_at
+       FROM users WHERE id = ? AND role = 'admin' LIMIT 1`,
+      [req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Admin account not found.' });
+    return res.json({ success: true, data: rows[0] });
+  } catch (error) { next(error); }
+}
+
+async function updateProfile(req, res, next) {
+  try {
+    const fullName = typeof req.body.full_name === 'string' ? req.body.full_name.trim() : '';
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
+    if (fullName.length < 2 || fullName.length > 120) return res.status(400).json({ success: false, message: 'Full name must be 2 to 120 characters.' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 190) return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
+    if (phone.length > 20) return res.status(400).json({ success: false, message: 'Phone number is too long.' });
+    const [existing] = await db.execute('SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1', [email, req.user.id]);
+    if (existing.length) return res.status(409).json({ success: false, message: 'Email is already used by another account.' });
+    await db.execute(
+      `UPDATE users SET full_name = ?, email = ?, phone = ?
+       WHERE id = ? AND role = 'admin'`,
+      [fullName, email, phone || null, req.user.id]
+    );
+    const [rows] = await db.execute(
+      `SELECT id, full_name, email, phone, role, status, created_at
+       FROM users WHERE id = ? AND role = 'admin' LIMIT 1`,
+      [req.user.id]
+    );
+    return res.json({ success: true, message: 'Admin profile updated.', data: rows[0] });
+  } catch (error) { next(error); }
+}
+
+async function getNotifications(req, res, next) {
+  try {
+    const [rows] = await db.execute(
+      `SELECT id, title, message, is_read, created_at
+       FROM notifications WHERE user_id = ?
+       ORDER BY created_at DESC LIMIT 100`,
+      [req.user.id]
+    );
+    return res.json({ success: true, data: rows });
+  } catch (error) { next(error); }
+}
+
+async function markNotificationRead(req, res, next) {
+  try {
+    const [result] = await db.execute(
+      `UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?`,
+      [Number(req.params.id), req.user.id]
+    );
+    if (!result.affectedRows) return res.status(404).json({ success: false, message: 'Notification not found.' });
+    return res.json({ success: true, message: 'Notification marked as read.' });
+  } catch (error) { next(error); }
+}
+
+async function markAllNotificationsRead(req, res, next) {
+  try {
+    await db.execute('UPDATE notifications SET is_read = 1 WHERE user_id = ?', [req.user.id]);
+    return res.json({ success: true, message: 'All notifications marked as read.' });
+  } catch (error) { next(error); }
+}
+
+module.exports = {
+  getRentals, getSubscriptions, getProfile, updateProfile,
+  getNotifications, markNotificationRead, markAllNotificationsRead
+};
+
+// Complete activity history. This reads the existing activity_logs table and
+// resolves the account behind each event so the admin can identify the actor.
+async function getActivity(req, res, next) {
+  try {
+    const logCols = await columns('activity_logs');
+    if (!logCols.size) return res.json({ success: true, data: [], configured: false });
+    const userCols = await columns('users');
+    const joins = logCols.has('user_id') && userCols.has('id')
+      ? 'LEFT JOIN users u ON u.id = al.user_id' : '';
+    const actor = userCols.has('full_name') ? 'u.full_name'
+      : userCols.has('name') ? 'u.name'
+      : userCols.has('email') ? 'u.email' : 'NULL';
+    const role = userCols.has('role') ? 'u.role' : 'NULL';
+    const created = logCols.has('created_at') ? 'al.created_at' : 'NULL';
+    const action = logCols.has('action') ? 'al.action' : "'System event'";
+    const id = logCols.has('id') ? 'al.id' : '0';
+    const userId = logCols.has('user_id') ? 'al.user_id' : 'NULL';
+    const order = logCols.has('created_at') ? 'al.created_at DESC' : logCols.has('id') ? 'al.id DESC' : '1';
+    const [rows] = await db.query(
+      `SELECT ${id} AS id, ${userId} AS user_id, ${actor} AS actor_name,
+       ${role} AS actor_role, ${action} AS action, ${created} AS created_at
+       FROM activity_logs al ${joins} ORDER BY ${order}`
+    );
+    return res.json({ success: true, data: rows, configured: true });
+  } catch (error) { next(error); }
+}
+
+// Rental sales are separate from subscription payments in the current schema.
+async function getReportRentalPayments(req, res, next) {
+  try {
+    const paymentCols = await columns('payments');
+    if (!paymentCols.size) return res.json({ success: true, data: [], configured: false });
+    const rentalCols = await columns('rental_requests');
+    const equipmentCols = await columns('equipment');
+    const userCols = await columns('users');
+    const joins = [];
+    if (paymentCols.has('rental_id') && rentalCols.has('id')) {
+      joins.push('LEFT JOIN rental_requests rr ON rr.id = p.rental_id');
+      if (rentalCols.has('farmer_id') && userCols.has('id')) joins.push('LEFT JOIN users farmer ON farmer.id = rr.farmer_id');
+      if (rentalCols.has('equipment_id') && equipmentCols.has('id')) {
+        joins.push('LEFT JOIN equipment e ON e.id = rr.equipment_id');
+        if (equipmentCols.has('owner_id') && userCols.has('id')) joins.push('LEFT JOIN users owner ON owner.id = e.owner_id');
+      }
+    }
+    const farmerName = userCols.has('full_name') ? 'farmer.full_name' : userCols.has('name') ? 'farmer.name' : 'NULL';
+    const ownerName = userCols.has('full_name') ? 'owner.full_name' : userCols.has('name') ? 'owner.name' : 'NULL';
+    const equipmentName = equipmentCols.has('name') ? 'e.name' : equipmentCols.has('equipment_name') ? 'e.equipment_name' : 'NULL';
+    const recordedByName = userCols.has('full_name') ? 'recorder.full_name' : userCols.has('name') ? 'recorder.name' : 'NULL';
+    const recorderJoin = paymentCols.has('recorded_by') && userCols.has('id') ? 'LEFT JOIN users recorder ON recorder.id = p.recorded_by' : '';
+    const [rows] = await db.query(`SELECT
+      ${expression('p', paymentCols, ['id'], 'id')},
+      ${expression('p', paymentCols, ['rental_id'], 'rental_id')},
+      ${expression('p', paymentCols, ['amount'], 'amount')},
+      ${expression('p', paymentCols, ['method', 'payment_method'], 'method')},
+      ${expression('p', paymentCols, ['paid_at', 'created_at'], 'paid_at')},
+      ${paymentCols.has('rental_id') && rentalCols.has('id') && rentalCols.has('total_amount') ? 'rr.total_amount' : 'NULL'} AS total_amount,
+      ${paymentCols.has('rental_id') && rentalCols.has('farmer_id') ? farmerName : 'NULL'} AS farmer_name,
+      ${paymentCols.has('rental_id') && rentalCols.has('equipment_id') ? ownerName : 'NULL'} AS owner_name,
+      ${paymentCols.has('rental_id') && rentalCols.has('equipment_id') ? equipmentName : 'NULL'} AS equipment_name,
+      ${paymentCols.has('recorded_by') ? recordedByName : 'NULL'} AS recorded_by_name
+      FROM payments p ${joins.join(' ')} ${recorderJoin}
+      ORDER BY ${paymentCols.has('paid_at') ? 'p.paid_at' : paymentCols.has('created_at') ? 'p.created_at' : paymentCols.has('id') ? 'p.id' : '1'} DESC`);
+    return res.json({ success: true, data: rows, configured: true });
+  } catch (error) { next(error); }
+}
+
+module.exports.getActivity = getActivity;
+module.exports.getReportRentalPayments = getReportRentalPayments;

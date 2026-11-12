@@ -1,4 +1,7 @@
 const db = require('../db');
+const fs = require('fs');
+const path = require('path');
+const { uploadDirectory } = require('../middleware/ownerDocuments');
 
 // GET /api/admin/owners?status=pending
 const getOwners = async (req, res, next) => {
@@ -154,6 +157,85 @@ const verifyOwner = async (req, res, next) => {
   }
 };
 
+// GET /api/admin/owners/:id/documents/:type
+const viewOwnerDocument = async (req, res, next) => {
+  try {
+    const ownerId = Number(req.params.id);
+    const documentType = req.params.type;
+
+    if (!Number.isInteger(ownerId) || ownerId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid owner ID.'
+      });
+    }
+
+    if (!['business_permit', 'government_id'].includes(documentType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid document type.'
+      });
+    }
+
+    const [rows] = await db.execute(
+      `SELECT business_permit_path, government_id_path
+       FROM provider_profiles
+       WHERE user_id = ?
+       LIMIT 1`,
+      [ownerId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Owner profile not found.'
+      });
+    }
+
+    const filename = rows[0][`${documentType}_path`];
+
+    if (!filename || typeof filename !== 'string') {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found.'
+      });
+    }
+
+    const safeFileName = path.basename(filename);
+    const resolvedPath = path.resolve(uploadDirectory, safeFileName);
+    const allowedRoot = path.resolve(uploadDirectory);
+
+    if (!resolvedPath.startsWith(allowedRoot)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid document path.'
+      });
+    }
+
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document file not found.'
+      });
+    }
+
+    const extension = path.extname(safeFileName).toLowerCase();
+    const mimeTypes = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png'
+    };
+
+    res.setHeader('Content-Type', mimeTypes[extension] || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${safeFileName}"`);
+
+    return res.sendFile(resolvedPath);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/admin/dashboard
 const getDashboardSummary = async (req, res, next) => {
   try {
@@ -221,8 +303,219 @@ const getDashboardSummary = async (req, res, next) => {
   }
 };
 
+// GET /api/admin/analytics/monthly
+const getMonthlyAnalytics = async (req, res, next) => {
+  try {
+    const [userRows] = await db.query(`
+      SELECT
+        DATE_FORMAT(created_at, '%Y-%m') AS month_key,
+        COUNT(*) AS total
+      FROM users
+      WHERE created_at >= DATE_SUB(
+        DATE_FORMAT(CURDATE(), '%Y-%m-01'),
+        INTERVAL 5 MONTH
+      )
+      AND created_at < DATE_ADD(
+        DATE_FORMAT(CURDATE(), '%Y-%m-01'),
+        INTERVAL 1 MONTH
+      )
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+    `);
+
+    const [equipmentRows] = await db.query(`
+      SELECT
+        DATE_FORMAT(created_at, '%Y-%m') AS month_key,
+        COUNT(*) AS total
+      FROM equipment
+      WHERE created_at >= DATE_SUB(
+        DATE_FORMAT(CURDATE(), '%Y-%m-01'),
+        INTERVAL 5 MONTH
+      )
+      AND created_at < DATE_ADD(
+        DATE_FORMAT(CURDATE(), '%Y-%m-01'),
+        INTERVAL 1 MONTH
+      )
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+    `);
+
+    const usersMap = {};
+    const equipmentMap = {};
+
+    userRows.forEach(row => {
+      usersMap[row.month_key] = Number(row.total);
+    });
+
+    equipmentRows.forEach(row => {
+      equipmentMap[row.month_key] = Number(row.total);
+    });
+
+    const now = new Date();
+    const data = [];
+
+    // Generate the last 6 months, including months with zero records.
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(
+        now.getFullYear(),
+        now.getMonth() - i,
+        1
+      );
+
+      const monthKey =
+        `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, '0')}`;
+
+      data.push({
+        month: date.toLocaleString('en-US', {
+          month: 'short'
+        }),
+        users: usersMap[monthKey] || 0,
+        equipment: equipmentMap[monthKey] || 0
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Monthly analytics retrieved successfully.',
+      data
+    });
+
+  } catch (error) {
+    console.error('Monthly analytics error:', error);
+    next(error);
+  }
+};
+
+// GET /api/admin/users?search=&role=&status=
+const getUsers = async (req, res, next) => {
+  try {
+    const { search, role, status } = req.query;
+
+    const allowedRoles = ['admin', 'farmer', 'owner'];
+    const allowedStatuses = [
+      'pending',
+      'active',
+      'suspended',
+      'rejected'
+    ];
+
+    if (role && !allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user role.'
+      });
+    }
+
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid account status.'
+      });
+    }
+
+    let sql = `
+      SELECT
+        id,
+        full_name,
+        email,
+        phone,
+        role,
+        status,
+        created_at
+      FROM users
+      WHERE 1 = 1
+    `;
+
+    const params = [];
+
+    if (search) {
+      sql += ` AND (full_name LIKE ? OR email LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (role) {
+      sql += ` AND role = ?`;
+      params.push(role);
+    }
+
+    if (status) {
+      sql += ` AND status = ?`;
+      params.push(status);
+    }
+
+    sql += ` ORDER BY created_at DESC`;
+
+    const [users] = await db.execute(sql, params);
+
+    return res.json({
+      success: true,
+      total: users.length,
+      data: users
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PATCH /api/admin/users/:id/status
+const updateUserStatus = async (req, res, next) => {
+  try {
+    const userId = Number(req.params.id);
+    const { status } = req.body;
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID.'
+      });
+    }
+
+    if (!['active', 'suspended'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status must be active or suspended.'
+      });
+    }
+
+    // Prevent an administrator from changing their own account status.
+    if (userId === Number(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot change your own account status.'
+      });
+    }
+
+    const [result] = await db.execute(
+      `UPDATE users
+       SET status = ?
+       WHERE id = ? AND role != 'admin'`,
+      [status, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found or cannot be modified.'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `User ${status} successfully.`
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getOwners,
   verifyOwner,
-  getDashboardSummary
+  viewOwnerDocument,
+  getDashboardSummary,
+  getMonthlyAnalytics,
+  getUsers,
+  updateUserStatus
 };

@@ -11,6 +11,20 @@ function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.user = { id: payload.id, role: payload.role };
+
+    // Log successful authenticated write actions throughout the API.
+    // Successful logins are logged separately because they have no bearer token yet.
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      res.once('finish', () => {
+        if (res.statusCode >= 200 && res.statusCode < 400) {
+          db.execute(
+            'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
+            [payload.id, `${payload.role} ${req.method} ${req.originalUrl}`.slice(0, 255)]
+          ).catch(error => console.error('Activity log insert failed:', error.message));
+        }
+      });
+    }
+
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Expired o hindi valid ang session.' });

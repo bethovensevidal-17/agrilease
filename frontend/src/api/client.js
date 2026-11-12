@@ -1,4 +1,3 @@
-
 const BASE = 'http://localhost:3000/api';
 
 export function getToken() {
@@ -63,4 +62,25 @@ export async function api(path, { method = 'GET', body, formData } = {}) {
   }
 
   return data;
+}
+
+export async function getAuthenticatedFile(path) {
+  const token = getToken();
+
+  const response = await fetch(BASE + path, {
+    method: 'GET',
+    headers: token
+      ? { Authorization: `Bearer ${token}` }
+      : {},
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+
+    throw new Error(
+      data.message || data.error || 'Unable to open document.'
+    );
+  }
+
+  return response.blob();
 }

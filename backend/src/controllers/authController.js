@@ -1,11 +1,39 @@
-
 const db = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const fs = require('fs/promises');
+
+// Remove uploaded files if registration fails or validation rejects them.
+async function removeUploadedFiles(files) {
+  if (!files) return;
+
+  const uploadedFiles = Object.values(files).flat();
+
+  await Promise.all(
+    uploadedFiles.map(async (file) => {
+      try {
+        await fs.unlink(file.path);
+      } catch (error) {
+        if (error.code !== 'ENOENT') {
+          console.error('File cleanup error:', error);
+        }
+      }
+    })
+  );
+}
 
 // REGISTER
 async function register(req, res) {
-  const connection = await db.getConnection();
+  let connection;
+  let transactionStarted = false;
+
+  const {
+    business_permit,
+    government_id
+  } = req.files || {};
+
+  const permitFile = business_permit?.[0];
+  const governmentIdFile = government_id?.[0];
 
   try {
     const {
@@ -17,10 +45,12 @@ async function register(req, res) {
       address,
       barangay,
       business_name
-    } = req.body;
+    } = req.body || {};
 
     // Basic validation
     if (!full_name || !email || !password || !role) {
+      await removeUploadedFiles(req.files);
+
       return res.status(400).json({
         success: false,
         message: 'Full name, email, password, at role ay required.'
@@ -28,6 +58,8 @@ async function register(req, res) {
     }
 
     if (!['farmer', 'owner'].includes(role)) {
+      await removeUploadedFiles(req.files);
+
       return res.status(400).json({
         success: false,
         message: 'Invalid registration role.'
@@ -35,13 +67,27 @@ async function register(req, res) {
     }
 
     if (password.length < 8) {
+      await removeUploadedFiles(req.files);
+
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 8 characters.'
       });
     }
 
+    // Owner must submit both documents.
+    if (role === 'owner' && (!permitFile || !governmentIdFile)) {
+      await removeUploadedFiles(req.files);
+
+      return res.status(400).json({
+        success: false,
+        message: 'Equipment Owners must upload a Business Permit and Government ID.'
+      });
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
+
+    connection = await db.getConnection();
 
     const [existing] = await connection.execute(
       'SELECT id FROM users WHERE email = ?',
@@ -49,6 +95,8 @@ async function register(req, res) {
     );
 
     if (existing.length > 0) {
+      await removeUploadedFiles(req.files);
+
       return res.status(409).json({
         success: false,
         message: 'Email is already registered.'
@@ -58,6 +106,7 @@ async function register(req, res) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     await connection.beginTransaction();
+    transactionStarted = true;
 
     // Farmer is active; owner waits for verification.
     const userStatus = role === 'farmer' ? 'active' : 'pending';
@@ -90,17 +139,36 @@ async function register(req, res) {
     if (role === 'owner') {
       await connection.execute(
         `INSERT INTO provider_profiles
-         (user_id, business_name, address, verification_status)
-         VALUES (?, ?, ?, 'pending')`,
+         (
+           user_id,
+           business_name,
+           address,
+           verification_status,
+           business_permit_path,
+           government_id_path
+         )
+         VALUES (?, ?, ?, 'pending', ?, ?)`,
         [
           userId,
-          business_name || null,
-          address || null
+          null,
+          null,
+          permitFile.filename,
+          governmentIdFile.filename
         ]
       );
     }
 
+    try {
+      await connection.execute(
+        'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
+        [userId, `${role} account registered`]
+      );
+    } catch (logError) {
+      console.error('Activity log insert failed:', logError.message);
+    }
+
     await connection.commit();
+    transactionStarted = false;
 
     return res.status(201).json({
       success: true,
@@ -117,7 +185,16 @@ async function register(req, res) {
     });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection && transactionStarted) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error('Rollback error:', rollbackError);
+      }
+    }
+
+    await removeUploadedFiles(req.files);
+
     console.error('Register error:', error);
 
     return res.status(500).json({
@@ -126,7 +203,9 @@ async function register(req, res) {
     });
 
   } finally {
-    connection.release();
+    if (connection) {
+      connection.release();
+    }
   }
 }
 
@@ -146,6 +225,7 @@ async function login(req, res) {
       !password
     ) {
       console.log('Result: Missing or invalid login fields.');
+
       return res.status(400).json({
         success: false,
         message: 'Email and password are required.'
@@ -154,7 +234,6 @@ async function login(req, res) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Check which database the backend is using.
     const [[database]] = await db.query(
       'SELECT DATABASE() AS db_name'
     );
@@ -232,6 +311,15 @@ async function login(req, res) {
       }
     );
 
+    try {
+      await db.execute(
+        'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
+        [user.id, `${user.role} logged in`]
+      );
+    } catch (logError) {
+      console.error('Activity log insert failed:', logError.message);
+    }
+
     console.log('Result: Login successful.');
     console.log('================================\n');
 
@@ -258,6 +346,7 @@ async function login(req, res) {
     });
   }
 }
+
 module.exports = {
   register,
   login

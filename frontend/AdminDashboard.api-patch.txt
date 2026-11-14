@@ -1,0 +1,16 @@
+OPTIONAL BUT RECOMMENDED: make the existing Admin Dashboard use the schema-tolerant report endpoints.
+
+In frontend/src/pages/AdminDashboard.jsx, find:
+const response = await api('/admin/dashboard');
+
+Replace with:
+const response = await api('/admin/report-summary');
+
+Then find:
+const monthlyResponse = await api('/admin/analytics/monthly');
+
+Replace with:
+const monthlyResponse = await api('/admin/report-monthly');
+
+This avoids the current dashboard summary query failing solely because the optional
+subscription_payments table is missing. Keep the rest of AdminDashboard.jsx unchanged.

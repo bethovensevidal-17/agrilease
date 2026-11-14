@@ -95,3 +95,311 @@
 .am-plan-table td small { display: block; margin-top: 3px; color: #859087; font-size: 10px; }
 .am-plan-table td strong { color: #263d2a; }
 @media (max-width: 720px) { .am-report-toolbar label { flex-direction: column; align-items: flex-start; } .admin-activity-row { align-items: flex-start; flex-wrap: wrap; } .admin-activity-row time { margin-left: 47px; } .am-subscription-intro { flex-direction: column; } }
+
+/* =========================================
+   AGRILEASE REPORTS PAGE LAYOUT
+========================================= */
+
+.am-reports-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.am-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+.am-chart-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.am-chart-panel .um-panel-heading {
+  min-height: 82px;
+}
+
+.am-chart-area {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  padding: 16px 18px 20px;
+  box-sizing: border-box;
+}
+
+.am-doughnut-area {
+  height: 320px;
+}
+
+.am-report-filter-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 7px !important;
+  min-width: 220px;
+}
+
+.am-report-filter-group span {
+  color: #526054;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.am-report-record-count {
+  color: #69756c;
+  font-size: 12px;
+}
+
+.am-report-record-count strong {
+  color: #254a2a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.am-report-record-count span {
+  color: #879188;
+}
+
+.am-reports-page .am-report-toolbar h3 {
+  margin: 0 0 5px;
+  color: #263d2a;
+  font-size: 14px;
+}
+
+.am-reports-page .am-report-toolbar p {
+  margin: 0;
+  color: #7b857d;
+  font-size: 12px;
+}
+
+.am-reports-page .am-report-toolbar {
+  padding: 16px 18px;
+}
+
+.am-reports-page .um-panel-heading.am-report-toolbar {
+  margin-top: 8px;
+}
+
+.am-report-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-top: 1px solid #edf0ed;
+}
+
+@media (max-width: 850px) {
+  .am-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .am-chart-area {
+    height: 280px;
+  }
+
+  .am-doughnut-area {
+    height: 300px;
+  }
+}
+
+@media (max-width: 600px) {
+  .am-report-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .am-report-actions .am-button {
+    width: 100%;
+  }
+
+  .am-report-filter-group {
+    width: 100%;
+  }
+
+  .am-report-filter-group .am-report-search {
+    max-width: none;
+    min-width: 0;
+  }
+
+  .am-report-record-count {
+    width: 100%;
+  }
+}
+
+/* =========================================
+   REPORTS - COMPACT RECORDS SECTION
+========================================= */
+
+.am-records-panel {
+  overflow: hidden;
+}
+
+.am-records-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.am-record-type {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 220px;
+  color: #526054;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.am-record-type select {
+  width: 100%;
+  min-height: 37px;
+  padding: 7px 10px;
+  border: 1px solid #dce3dc;
+  border-radius: 7px;
+  background: #fff;
+  color: #26332a;
+  font: inherit;
+  font-size: 12px;
+}
+
+.am-record-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #fafcfa;
+  border-top: 1px solid #edf0ed;
+  border-bottom: 1px solid #edf0ed;
+}
+
+.am-record-date-controls,
+.am-record-print-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.am-record-filter-title {
+  color: #465248;
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.am-record-date-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #68736a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.am-record-date-controls input {
+  width: 135px;
+  min-height: 35px;
+  padding: 6px 8px;
+  border: 1px solid #dce3dc;
+  border-radius: 6px;
+  background: #fff;
+  color: #26332a;
+  font: inherit;
+  font-size: 11px;
+}
+
+.am-record-controls .am-button {
+  min-height: 35px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.am-record-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 18px;
+}
+
+.am-record-search-row h3 {
+  margin: 0 0 4px;
+  color: #263d2a;
+  font-size: 13px;
+}
+
+.am-record-search-row p {
+  margin: 0;
+  color: #7b857d;
+  font-size: 11px;
+}
+
+.am-record-search-row .am-report-search {
+  min-height: 36px;
+  max-width: 270px;
+  font-size: 12px;
+}
+
+.am-records-panel .um-table-wrapper {
+  margin-top: 0;
+}
+
+@media (max-width: 950px) {
+  .am-record-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .am-record-date-controls,
+  .am-record-print-controls {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .am-records-heading,
+  .am-record-search-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .am-record-type {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .am-record-date-controls {
+    align-items: stretch;
+  }
+
+  .am-record-date-controls label {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .am-record-date-controls input {
+    flex: 1;
+    width: auto;
+  }
+
+  .am-record-print-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .am-record-search-row .am-report-search {
+    max-width: none;
+    width: 100%;
+  }
+}

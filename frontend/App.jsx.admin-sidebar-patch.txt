@@ -1,0 +1,43 @@
+ADD THESE IMPORTS:
+------------------
+import EquipmentManagement from './pages/EquipmentManagement.jsx';
+import RentalMonitoring from './pages/RentalMonitoring.jsx';
+import SubscriptionsPayments from './pages/SubscriptionsPayments.jsx';
+import Reports from './pages/Reports.jsx';
+import AdminProfile from './pages/AdminProfile.jsx';
+import AdminNotifications from './pages/AdminNotifications.jsx';
+import './admin-modules.css';
+
+REPLACE ONLY THE PLACEHOLDER ELEMENTS INSIDE THE EXISTING /admin ROUTE:
+------------------------------------------------------------------------
+Equipment:
+<AdminPlaceholder title="Equipment Management" />
+becomes:
+<EquipmentManagement />
+
+Rental:
+<AdminPlaceholder title="Rental Monitoring" />
+becomes:
+<RentalMonitoring />
+
+Subscriptions:
+<AdminPlaceholder title="Subscriptions & Payments" />
+becomes:
+<SubscriptionsPayments />
+
+Reports:
+<AdminPlaceholder title="Reports" />
+becomes:
+<Reports />
+
+Profile:
+<AdminPlaceholder title="Admin Profile" />
+becomes:
+<AdminProfile />
+
+Notifications:
+<AdminPlaceholder title="Notifications" />
+becomes:
+<AdminNotifications />
+
+Do not remove the other routes, layouts, or guards.

@@ -15,6 +15,11 @@ import SubscriptionsPayments from './pages/SubscriptionsPayments.jsx';
 import Reports from './pages/Reports.jsx';
 import AdminProfile from './pages/AdminProfile.jsx';
 import AdminNotifications from './pages/AdminNotifications.jsx';
+import OwnerLayout from './layouts/OwnerLayout.jsx';
+import OwnerOverview from './pages/OwnerOverview.jsx';
+import OwnerAddEquipment from './pages/OwnerAddEquipment.jsx';
+import OwnerEquipmentManagement from './pages/OwnerEquipmentManagement.jsx';
+import OwnerEditEquipment from './pages/OwnerEditEquipment.jsx';
 
 import './admin-modules.css';
 
@@ -113,11 +118,17 @@ export default function App() {
         path="/owner"
         element={
           <ProtectedRoute role="owner">
-            <SimpleDashboard role="owner" />
+            <OwnerLayout />
           </ProtectedRoute>
         }
-      />
-
+      >
+        <Route index element={<OwnerOverview />} />
+        <Route path="equipment/add" element={<OwnerAddEquipment />} />
+        <Route path="equipment/:id/edit" element={<OwnerEditEquipment />} />
+        <Route path="equipment" element={<OwnerEquipmentManagement />} />
+        </Route>
+        
+      
       {/* Admin Layout and Pages */}
       <Route
         path="/admin"

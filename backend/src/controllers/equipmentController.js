@@ -164,6 +164,11 @@ async function create(req, res) {
 
   const b = req.body;
 
+  // Save uploaded image path, if provided.
+  const imagePath = req.file
+    ? `equipment/${req.file.filename}`
+    : null;
+
   const [result] = await db.query(
     `INSERT INTO equipment
       (
@@ -172,6 +177,7 @@ async function create(req, res) {
         equipment_name,
         brand_model,
         description,
+        image_path,
         rental_rate,
         rate_type,
         condition_status,
@@ -180,13 +186,14 @@ async function create(req, res) {
         approval_status,
         is_archived
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0)`,
     [
       req.user.id,
       Number(b.category_id),
       String(b.name).trim(),
       b.brand_model || null,
       b.description || null,
+      imagePath,
       Number(b.rate),
       b.rate_type,
       b.condition_status,
@@ -223,12 +230,18 @@ async function update(req, res) {
 
   const b = req.body;
 
+  // Keep the existing image if no new image is uploaded.
+  const imagePath = req.file
+    ? `equipment/${req.file.filename}`
+    : rows[0].image_path;
+
   await db.query(
     `UPDATE equipment
         SET category_id = ?,
             equipment_name = ?,
             brand_model = ?,
             description = ?,
+            image_path = ?,
             rental_rate = ?,
             rate_type = ?,
             condition_status = ?,
@@ -240,6 +253,7 @@ async function update(req, res) {
       String(b.name).trim(),
       b.brand_model || null,
       b.description || null,
+      imagePath,
       Number(b.rate),
       b.rate_type,
       b.condition_status,

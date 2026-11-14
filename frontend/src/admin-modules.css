@@ -403,3 +403,110 @@
     width: 100%;
   }
 }
+
+/* =========================================
+   ADMIN SUBSCRIPTIONS PAGE
+========================================= */
+
+.am-subscriptions-page {
+  gap: 20px;
+}
+
+.am-subscription-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.am-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.am-section-heading h2 {
+  margin: 0;
+  color: #26332a;
+  font-size: 17px;
+}
+
+.am-section-heading p {
+  margin: 5px 0 0;
+  color: #788278;
+  font-size: 12px;
+}
+
+.am-subscription-record-heading {
+  padding-bottom: 12px;
+}
+
+.am-subscription-search {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 18px 14px;
+}
+
+.am-subscription-search .am-report-search {
+  max-width: 360px;
+}
+
+.am-payment-monitoring-note {
+  margin: 0 18px 18px;
+  padding: 15px 17px;
+  border: 1px solid #e2ebe2;
+  border-radius: 9px;
+  background: #f8fbf8;
+}
+
+.am-payment-monitoring-note strong {
+  color: #286237;
+  font-size: 13px;
+}
+
+.am-payment-monitoring-note p {
+  margin: 6px 0 0;
+  color: #59665c;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.am-subscription-records .um-table {
+  min-width: 800px;
+}
+
+.am-subscription-records .um-table th,
+.am-subscription-records .um-table td {
+  white-space: nowrap;
+}
+
+.am-pill.trial,
+.am-pill.free-trial {
+  background: #e9efff;
+  color: #405b9b;
+}
+
+.am-pill.expired {
+  background: #fde9e7;
+  color: #a23830;
+}
+
+.am-pill.unknown {
+  background: #eef1ee;
+  color: #58645a;
+}
+
+@media (max-width: 720px) {
+  .am-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .am-subscription-search {
+    justify-content: stretch;
+  }
+
+  .am-subscription-search .am-report-search {
+    max-width: none;
+  }
+}

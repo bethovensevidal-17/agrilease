@@ -1,7 +1,7 @@
 # AGRILEASE backend
 
 ## Patakbuhin (Laragon)
-1. Laragon: Start All, tapos patakbuhin ang `database/schema.sql` kung wala pa ang database na `agrilease`.
+1. Laragon: Start All. Gamitin ang existing na database na `agrilease_v2_db` (tingnan ang "Existing AgriLease V2 database" sa baba). **Huwag i-import ang `database/schema.sql`**: luma itong disenyo at hindi tugma sa code.
 2. Sa folder na `backend`:
    ```
    copy .env.example .env
@@ -56,3 +56,14 @@ The backend calculates booking totals from database rates, dates/times, farm are
 A successful API health response does not by itself prove that every feature workflow
 works against the user's local database. Verify the database health endpoint and then
 exercise Farmer, Owner, and Admin workflows in the local Laragon environment.
+
+
+## Real-time chat (WebSocket)
+
+Gumagamit ng library na `ws`. Ang WebSocket server ay nasa `src/realtime.js` at nakakabit sa parehong port ng API (`ws://localhost:3000/ws`).
+
+1. Ang browser ay kumokonekta sa `/ws` at ipinapadala agad ang `{ "type": "auth", "token": "<JWT>" }`. Kapag mali ang token, suspended ang account, o hindi farmer/owner, isasara ang koneksyon (code 4401).
+2. Ang pagse-send ng message ay nasa REST pa rin (`POST /api/messages`), para gumana ang offline queue at idempotency. Pagkatapos i-save sa database, tinatawag ang `broadcastMessage()` para ipadala agad ang message sa receiver at sa ibang tab/device ng sender: `{ "type": "message", "data": { id, sender_id, receiver_id, message, sent_at } }`.
+3. Heartbeat (ping bawat 30 segundo) ang naglilinis ng patay na koneksyon. Ang frontend ay awtomatikong nagre-reconnect at bumabalik muna sa polling habang walang WebSocket.
+
+Test: `npm test` (kasama ang `test/realtime.test.js`).

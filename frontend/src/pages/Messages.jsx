@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, getUser, getToken } from '../api/client';
 import { isNetworkFailure, newRequestId, queueMessage, requestSync } from '../offline/sync';
+import { chatSocketUrl } from '../api/socket';
 
-// Polling keeps the conversation fresh without requiring a separate socket server.
-// Once the WebSocket service is deployed, this page can switch transports without changing the API contract.
+// Real-time chat gamit ang WebSocket (ws://.../ws). Ang pagse-send ay dumadaan pa rin sa REST API
+// (para gumana ang offline queue); ang bagong message ay ibinabalik agad ng server sa receiver sa WebSocket.
+// Kung naputol ang WebSocket, awtomatikong magre-reconnect at babalik muna sa polling habang walang koneksyon.
 export default function Messages() {
   const user = getUser();
   const [contacts, setContacts] = useState([]);
@@ -16,6 +18,9 @@ export default function Messages() {
   const selectedId = selected?.user_id;
   const bottomRef = useRef(null);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [live, setLive] = useState(false); // true kapag bukas ang WebSocket
+  const selectedIdRef = useRef(null);
+  const loadersRef = useRef({});
 
   const loadContacts = useCallback(async (quiet = false) => {
     try {
@@ -42,17 +47,59 @@ export default function Messages() {
     } catch (e) { setError(e.message || 'Unable to load messages.'); }
   }, [selectedId]);
 
+  useEffect(() => { selectedIdRef.current = selectedId; loadersRef.current = { loadMessages, loadContacts }; });
   useEffect(() => { loadContacts(); }, [loadContacts]);
+  useEffect(() => { loadMessages(); }, [loadMessages]);
+
+  // WebSocket: bagong message agad, walang hinihintay na polling.
   useEffect(() => {
-    if (!selectedId) return undefined;
-    loadMessages();
+    const token = getToken();
+    if (!token) return undefined;
+    let socket; let retry = 0; let retryTimer; let pingTimer; let stopped = false;
+
+    const onIncoming = message => {
+      const mine = Number(message.sender_id) === Number(user?.id);
+      const otherId = mine ? Number(message.receiver_id) : Number(message.sender_id);
+      if (otherId === Number(selectedIdRef.current)) {
+        setMessages(list => (list.some(item => Number(item.id) === Number(message.id)) ? list : [...list, message]));
+        if (!mine) loadersRef.current.loadMessages(true); // minamarkahan bilang nabasa na
+      }
+      loadersRef.current.loadContacts(true); // para sa unread badge at ayos ng contacts
+    };
+
+    const connect = () => {
+      socket = new WebSocket(chatSocketUrl());
+      socket.onopen = () => socket.send(JSON.stringify({ type: 'auth', token }));
+      socket.onmessage = event => {
+        let data;
+        try { data = JSON.parse(event.data); } catch { return; }
+        if (data.type === 'ready') {
+          retry = 0; setLive(true);
+          // Kunin ang mga message na nalampasan habang walang koneksyon.
+          loadersRef.current.loadMessages(true); loadersRef.current.loadContacts(true);
+          pingTimer = window.setInterval(() => { if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'ping' })); }, 25000);
+        } else if (data.type === 'message') onIncoming(data.data);
+      };
+      socket.onclose = () => {
+        setLive(false); window.clearInterval(pingTimer);
+        if (!stopped) retryTimer = window.setTimeout(connect, Math.min(30000, 1000 * 2 ** retry++)); // 1s, 2s, 4s ... max 30s
+      };
+      socket.onerror = () => socket.close();
+    };
+    connect();
+    return () => { stopped = true; window.clearTimeout(retryTimer); window.clearInterval(pingTimer); socket?.close(); };
+  }, [user?.id]);
+
+  // Polling ay fallback lang kapag walang WebSocket.
+  useEffect(() => {
+    if (live || !selectedId) return undefined;
     const timer = window.setInterval(() => loadMessages(true), 2500);
     return () => window.clearInterval(timer);
-  }, [loadMessages, selectedId]);
+  }, [live, loadMessages, selectedId]);
   useEffect(() => {
-    const timer = window.setInterval(() => loadContacts(true), 15000);
+    const timer = window.setInterval(() => loadContacts(true), live ? 60000 : 15000);
     return () => window.clearInterval(timer);
-  }, [loadContacts]);
+  }, [live, loadContacts]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages]);
 
   // Messages written while offline are sent automatically once the connection returns.
@@ -96,7 +143,7 @@ export default function Messages() {
   const heading = useMemo(() => selected?.full_name || 'Select a conversation', [selected]);
   if (loading) return <main className="messages-page"><p>Loading conversations...</p></main>;
   return <main className="messages-page">
-    <header><h1>Messages</h1><p>Chat with farmers and equipment owners connected through rental requests. New messages refresh automatically.{queuedCount ? ` · ${queuedCount} message(s) waiting to send` : ''}</p></header>
+    <header><h1>Messages</h1><p>Chat with farmers and equipment owners connected through rental requests. <span className={`messages-live ${live ? 'on' : ''}`}>{live ? 'Live' : 'Reconnecting…'}</span>{queuedCount ? ` · ${queuedCount} message(s) waiting to send` : ''}</p></header>
     {error && <div role="alert" className="messages-error"><span>{error}</span><button type="button" onClick={() => { setError(''); loadContacts(); loadMessages(); }}>Retry</button></div>}
     <section className="messages-shell">
       <aside className="messages-contacts"><h2>Contacts</h2>{contacts.length === 0 && <p>No rental-related contacts yet. A conversation becomes available when you have a rental request with another account.</p>}{contacts.map(contact => <button type="button" key={contact.user_id} className={Number(selectedId) === Number(contact.user_id) ? 'active' : ''} onClick={() => { setSelected(contact); setError(''); }}><strong>{contact.full_name}</strong><small>{contact.role}</small>{Number(contact.unread_count) > 0 && <span className="messages-contact-unread">{Number(contact.unread_count) > 99 ? '99+' : contact.unread_count}</span>}</button>)}</aside>

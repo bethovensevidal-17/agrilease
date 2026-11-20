@@ -10,10 +10,7 @@ import {
   CreditCard,
   Wallet,
   Menu,
-<<<<<<< HEAD
-=======
   WifiOff,
->>>>>>> master
   X,
   LogOut,
 } from 'lucide-react';
@@ -27,10 +24,7 @@ const navigation = [
   { label: 'Transactions', path: '/owner/transactions', icon: ReceiptText },
   { label: 'Subscription Plans', path: '/owner/subscription', icon: CreditCard },
   { label: 'Payment Settings', path: '/owner/payment-settings', icon: Wallet },
-<<<<<<< HEAD
-=======
   { label: 'Offline Access', path: '/owner/offline', icon: WifiOff },
->>>>>>> master
 ];
 
 export default function OwnerLayout() {

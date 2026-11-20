@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-import { ArrowUpRight } from 'lucide-react';
-
-=======
->>>>>>> master
 export default function StatCard({
   title,
   value,
@@ -20,10 +15,6 @@ export default function StatCard({
       <strong>{Number(value ?? 0).toLocaleString()}</strong>
 
       <div className="admin-stat-subtitle">
-<<<<<<< HEAD
-        <ArrowUpRight size={14} />
-=======
->>>>>>> master
         <span>{subtitle}</span>
       </div>
     </article>

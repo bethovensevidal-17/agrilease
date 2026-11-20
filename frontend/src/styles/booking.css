@@ -38,8 +38,6 @@
 .notification-clickable:hover { background:#f4f8f3; transform:translateY(-1px); }
 .notification-clickable:focus-visible { outline:3px solid #77a97d; outline-offset:2px; }
 @media(max-width:700px){ .booking-columns { grid-template-columns:1fr; } }
-<<<<<<< HEAD
-=======
 
 /* Farmer booking page: small equipment summary on top, 2-column form below. */
 .booking-detail-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
@@ -102,4 +100,3 @@
   .mb-actions { justify-content: flex-end; }
   .mb-filters { grid-template-columns: 1fr; }
 }
->>>>>>> master

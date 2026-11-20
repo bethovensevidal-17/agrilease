@@ -1,8 +1,5 @@
 const db = require('../db');
-<<<<<<< HEAD
-=======
 const { sendPush } = require('../services/push');
->>>>>>> master
 let schemaPromise;
 
 // Support both database snapshots found in this project:
@@ -127,10 +124,7 @@ async function send(req, res, next) {
       `SELECT id, sender_id, receiver_id, ${schema.body} AS message, ${schema.sent} AS sent_at FROM messages WHERE id = ?`,
       [result.insertId]
     );
-<<<<<<< HEAD
-=======
     sendPush(receiverId, { title: 'New AgriLease message', body: message.slice(0, 120), url: req.user.role === 'farmer' ? '/owner/messages' : '/farmer/messages', tag: `agrilease-message-${result.insertId}` }).catch(error => console.error('Message push failed:', error.message));
->>>>>>> master
     res.status(201).json({ data: rows[0] });
   } catch (error) { next(error); }
 }

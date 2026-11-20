@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { Routes, Route, Navigate } from 'react-router-dom';
-=======
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
->>>>>>> master
 
 import Layout from './components/Layout.jsx';
 import AdminLayout from './layouts/AdminLayout.jsx';
@@ -36,10 +32,7 @@ import OwnerPaymentSettings from './pages/OwnerPaymentSettings.jsx';
 import FarmerProfile from './pages/FarmerProfile.jsx';
 import AdminContent from './pages/AdminContent.jsx';
 import Transactions from './pages/Transactions.jsx';
-<<<<<<< HEAD
-=======
 import OfflineSettings from './pages/OfflineSettings.jsx';
->>>>>>> master
 
 import './admin-modules.css';
 
@@ -69,8 +62,6 @@ function ProtectedRoute({ role, children }) {
   return children;
 }
 
-<<<<<<< HEAD
-=======
 // Pag farmer na naka-login ang nagbukas ng public link, ilipat sa farmer layout para hindi mawala ang sidebar.
 function PublicEquipmentRoute() {
   const { id } = useParams();
@@ -79,7 +70,6 @@ function PublicEquipmentRoute() {
   return <EquipmentBooking />;
 }
 
->>>>>>> master
 function SimpleDashboard({ role }) {
   const user = getUser();
 
@@ -127,17 +117,11 @@ export default function App() {
       >
         <Route index element={<FarmerOverview />} />
         <Route path="equipment" element={<BrowseEquipment />} />
-<<<<<<< HEAD
-        <Route path="rentals" element={<MyRentals />} />
-        <Route path="transactions" element={<Transactions role="farmer" />} />
-        <Route path="messages" element={<Messages />} />
-=======
         <Route path="equipment/:id" element={<EquipmentBooking />} />
         <Route path="rentals" element={<MyRentals />} />
         <Route path="transactions" element={<Transactions role="farmer" />} />
         <Route path="messages" element={<Messages />} />
         <Route path="offline" element={<OfflineSettings />} />
->>>>>>> master
         <Route
           path="notifications"
           element={<NotificationCenter title="Farmer Notifications" role="farmer" />}
@@ -162,10 +146,7 @@ export default function App() {
         <Route path="transactions" element={<Transactions role="owner" />} />
         <Route path="subscription" element={<OwnerSubscription />} />
         <Route path="payment-settings" element={<OwnerPaymentSettings />} />
-<<<<<<< HEAD
-=======
         <Route path="offline" element={<OfflineSettings />} />
->>>>>>> master
         <Route path="messages" element={<Messages />} />
         <Route path="notifications" element={<NotificationCenter title="Owner Notifications" role="owner" />} />
         <Route path="equipment/add" element={<OwnerAddEquipment />} />
@@ -231,11 +212,8 @@ export default function App() {
           path="content"
           element={<AdminContent />}
         />
-<<<<<<< HEAD
-=======
 
         <Route path="offline" element={<OfflineSettings />} />
->>>>>>> master
       </Route>
 
       {/* Public landing page, equipment browsing, and equipment details */}
@@ -243,11 +221,7 @@ export default function App() {
       <Route path="/browse" element={<Layout />}>
         <Route index element={<BrowseEquipment />} />
       </Route>
-<<<<<<< HEAD
-      <Route path="/equipment/:id" element={<EquipmentBooking />} />
-=======
       <Route path="/equipment/:id" element={<PublicEquipmentRoute />} />
->>>>>>> master
 
       {/* Unknown Routes */}
       <Route path="*" element={<Navigate to="/" replace />} />

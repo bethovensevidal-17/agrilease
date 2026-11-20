@@ -17,13 +17,9 @@ export default function FarmerProfile() {
   }, []);
   function change(e) { setForm(v => ({ ...v, [e.target.name]: e.target.value })); }
   async function submit(e) {
-<<<<<<< HEAD
-    e.preventDefault(); setSaving(true); setError(''); setMessage('');
-=======
     e.preventDefault();
     if (!await window.agrileaseDialog.confirm('Save your profile changes?', { title: 'Save profile', confirmText: 'Save' })) return;
     setSaving(true); setError(''); setMessage('');
->>>>>>> master
     try {
       const r = await api('/profile/farmer', { method: 'PATCH', body: form });
       setForm({ ...empty, ...(r.data || {}) });

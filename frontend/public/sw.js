@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-const CACHE_NAME = 'agrilease-shell-v2';
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/agrilease-logo.png'];
-=======
 const CACHE_NAME = 'agrilease-shell-v5';
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/agrilease-logo.png'];
 const DB_NAME = 'agrilease-offline-v1';
@@ -146,16 +142,12 @@ async function flushQueue({ release = false, fromSyncEvent = false } = {}) {
   })().finally(() => { flushPromise = null; });
   return flushPromise;
 }
->>>>>>> master
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
-<<<<<<< HEAD
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
-=======
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(key => (key.startsWith('agrilease-shell-') && key !== CACHE_NAME) || key === 'agrilease-selected-features-v1').map(key => caches.delete(key))))
@@ -186,28 +178,11 @@ self.addEventListener('sync', event => {
   event.waitUntil(flushQueue({ fromSyncEvent: true }).then(retryNeeded => {
     if (retryNeeded) throw new Error('Some queued actions are still waiting for the server.');
   }));
->>>>>>> master
 });
 
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
-<<<<<<< HEAD
-  // Never cache API calls, uploads, authenticated data, or non-GET requests.
-  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) return;
-  if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).then(response => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
-      return response;
-    }).catch(() => caches.match('/index.html').then(cached => cached || caches.match('/'))));
-    return;
-  }
-  event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
-    if (response.ok) { const copy = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(request, copy)); }
-    return response;
-  })));
-=======
   if (request.method !== 'GET' || url.pathname.startsWith('/uploads/')) return;
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return; // Authenticated JSON is cached per account by the API client in IndexedDB.
@@ -287,5 +262,4 @@ self.addEventListener('pushsubscriptionchange', event => {
       body: JSON.stringify({ subscription: subscription.toJSON() }),
     });
   })().catch(() => {}));
->>>>>>> master
 });

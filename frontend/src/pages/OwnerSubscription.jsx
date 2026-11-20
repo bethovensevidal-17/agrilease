@@ -38,11 +38,7 @@ export default function OwnerSubscription() {
     setError(''); setMessage('');
     if (busy) return;
     if (Number(plan.price) === 0) {
-<<<<<<< HEAD
-      if (!await window.agrileaseDialog.confirm('Activate your one-time 7-day Free Trial with up to 2 equipment listings?')) return;
-=======
       if (!await window.agrileaseDialog.confirm(`Activate your one-time ${plan.duration_days}-day Free Trial${plan.equipment_limit ? ` with up to ${plan.equipment_limit} equipment listings` : ''}?`)) return;
->>>>>>> master
       setBusy(true);
       try {
         const result = await api('/subscriptions/request', { method: 'POST', body: { plan_id: plan.id } });
@@ -52,10 +48,7 @@ export default function OwnerSubscription() {
       finally { setBusy(false); }
       return;
     }
-<<<<<<< HEAD
-=======
     if (!await window.agrileaseDialog.confirm(`Submit your payment and request for the ${plan.plan_name} plan? The plan activates after the administrator verifies your payment.`, { title: 'Submit subscription request', confirmText: 'Submit' })) return;
->>>>>>> master
     const form = new FormData();
     form.append('plan_id', String(plan.id));
     form.append('payment_method', method);

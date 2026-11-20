@@ -1,17 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-<<<<<<< HEAD
-import { Link } from 'react-router-dom';
-=======
->>>>>>> master
 import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 
 const peso = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
-<<<<<<< HEAD
-const pretty = value => String(value || '—').replace(/[_-]/g, ' ').replace(/\\b\\w/g, c => c.toUpperCase());
-=======
 const pretty = value => String(value || '—').replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
->>>>>>> master
 const dateText = value => {
   if (!value) return '—';
   const date = new Date(value);
@@ -78,21 +70,11 @@ export default function Transactions({ role = 'farmer' }) {
 
       {error && <div className="um-message error" role="alert">{error}</div>}
 
-<<<<<<< HEAD
-      <section className="um-panel" style={{ padding: 16, marginBottom: 18 }}>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <input aria-label="Search transactions" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder={role === 'owner' ? 'Search booking, farmer, equipment, or reference...' : 'Search booking, equipment, owner, or reference...'}
-            style={{ flex: '1 1 300px', minWidth: 0, padding: 11, border: '1px solid #dce5df', borderRadius: 8 }} />
-          <select aria-label="Payment status" value={status} onChange={e => setStatus(e.target.value)}
-            style={{ padding: 11, border: '1px solid #dce5df', borderRadius: 8 }}>
-=======
       <section className="um-panel tx-filter-panel">
         <div className="tx-filters">
           <input aria-label="Search transactions" type="search" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
             placeholder={role === 'owner' ? 'Search booking, farmer, equipment, or reference...' : 'Search booking, equipment, or reference...'} />
           <select aria-label="Payment status" value={status} onChange={e => { setStatus(e.target.value); setCurrentPage(1); }}>
->>>>>>> master
             <option value="all">All Payment Statuses</option>
             <option value="pending">Pending</option>
             <option value="verified">Verified / Paid</option>
@@ -131,12 +113,6 @@ export default function Transactions({ role = 'farmer' }) {
           </div>}
         {!loading && <Pagination totalItems={filtered.length} itemsPerPage={itemsPerPage} currentPage={currentPage} onPageChange={setCurrentPage} />}
       </section>
-<<<<<<< HEAD
-      <p style={{ marginTop: 14, color: '#718078', fontSize: 13 }}>
-        Need to check a rental request? <Link to={role === 'owner' ? '/owner/bookings' : '/farmer/rentals'}>Open {role === 'owner' ? 'Rental Bookings' : 'My Bookings'}</Link>.
-      </p>
-=======
->>>>>>> master
     </section>
   );
 }

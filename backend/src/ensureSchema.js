@@ -24,6 +24,7 @@ const REQUIRED_COLUMNS = [
   { table: 'rental_requests', column: 'farm_area', ddl: 'DECIMAL(10,2) NULL' },
   { table: 'rental_requests', column: 'rental_rate_snapshot', ddl: 'DECIMAL(10,2) NULL' },
   { table: 'rental_requests', column: 'rate_type_snapshot', ddl: "ENUM('hour','day','hectare') NULL" },
+    { table: 'rental_requests', column: 'is_archived_by_farmer', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
 ];
 
 const REQUIRED_TABLES = [

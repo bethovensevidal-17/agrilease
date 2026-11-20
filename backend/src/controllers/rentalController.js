@@ -33,7 +33,8 @@ async function listMine(req, res) {
        FROM rental_requests r
        JOIN equipment e ON e.id = r.equipment_id
        LEFT JOIN booking_payments p ON p.booking_id = r.id
-       WHERE r.farmer_id = ? ORDER BY r.created_at DESC`, [req.user.id]);
+             WHERE r.farmer_id = ? AND r.is_archived_by_farmer = ? ORDER BY r.created_at DESC`,
+      [req.user.id, req.query.archived === '1' ? 1 : 0]);
     res.json({ success: true, data: rows });
   } catch (error) {
     console.error('List farmer bookings:', error);
@@ -380,4 +381,26 @@ async function updateStatus(req, res) {
   }
 }
 
-module.exports = { listMine, create, list, getOne, cancel, updateStatus };
+// PATCH /api/rentals/:id/archive|restore - archive ng farmer lang, hindi apektado ang owner/admin
+function setArchived(value) {
+  return async (req, res) => {
+    try {
+      const statusRule = value ? "AND status IN ('completed','cancelled')" : '';
+      const [result] = await db.query(
+        `UPDATE rental_requests SET is_archived_by_farmer = ?
+         WHERE id = ? AND farmer_id = ? ${statusRule}`,
+        [value, Number(req.params.id), req.user.id]
+      );
+      if (!result.affectedRows) return publicError(res, 404, 'Booking not found, or only completed/cancelled bookings can be archived.');
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Archive booking:', error);
+      publicError(res, 500, 'Unable to update booking.');
+    }
+  };
+}
+
+const archive = setArchived(1);
+const restore = setArchived(0);
+
+module.exports = { listMine, create, list, getOne, cancel, updateStatus, archive, restore };

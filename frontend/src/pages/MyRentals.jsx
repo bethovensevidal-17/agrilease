@@ -31,12 +31,13 @@ export default function MyRentals() {
   const [status, setStatus] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [tab, setTab] = useState('active');
   const itemsPerPage = 8;
 
   async function load() {
     try {
       setError('');
-      const result = await api('/rentals/mine');
+      const result = await api(tab === 'archived' ? '/rentals/mine?archived=1' : '/rentals/mine');
       setRows(result.data || []);
     } catch (e) {
       setError(e.message);
@@ -45,7 +46,7 @@ export default function MyRentals() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [tab]);
 
   async function cancel(id) {
     if (!await window.agrileaseDialog.confirm('Cancel this pending booking? This cannot be undone.', { title: 'Cancel booking', confirmText: 'Cancel booking' })) return;
@@ -53,6 +54,16 @@ export default function MyRentals() {
       setError('');
       await api(`/rentals/${id}/cancel`, { method: 'PATCH' });
       await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function setArchived(id, action) {
+    try {
+      setError('');
+      await api(`/rentals/${id}/${action}`, { method: 'PATCH' });
+      setRows(current => current.filter(row => Number(row.id) !== Number(id)));
     } catch (e) {
       setError(e.message);
     }
@@ -89,7 +100,7 @@ export default function MyRentals() {
     });
   }, [rows, search, status, dateFrom, dateTo]);
 
-  useEffect(() => { setCurrentPage(1); }, [search, status, dateFrom, dateTo]);
+  useEffect(() => { setCurrentPage(1); }, [search, status, dateFrom, dateTo, tab]);
 
   const displayedRows = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const hasFilters = search || status !== 'all' || dateFrom || dateTo;
@@ -110,6 +121,11 @@ export default function MyRentals() {
       </div>
 
       {error && <p className="booking-error">{error}</p>}
+
+      <div className="mb-actions">
+        <button type="button" className={`mb-btn ${tab === 'active' ? '' : 'mb-btn-secondary'}`} onClick={() => setTab('active')}>Active</button>
+        <button type="button" className={`mb-btn ${tab === 'archived' ? '' : 'mb-btn-secondary'}`} onClick={() => setTab('archived')}>Archived</button>
+      </div>
 
       <PendingSyncList kind="booking" onSynced={load} />
 
@@ -140,7 +156,7 @@ export default function MyRentals() {
       <p className="mb-count">{filtered.length} of {rows.length} booking{rows.length === 1 ? '' : 's'}</p>
 
       {!rows.length ? (
-        <div className="mb-empty">You do not have any bookings yet.</div>
+        <div className="mb-empty">{tab === 'archived' ? 'No archived bookings.' : 'You do not have any bookings yet.'}</div>
       ) : !filtered.length ? (
         <div className="mb-empty">No bookings match your filters.</div>
       ) : (
@@ -188,7 +204,13 @@ export default function MyRentals() {
                       {row.status === 'pending' && (
                         <button type="button" className="mb-btn mb-btn-danger" onClick={() => cancel(row.id)}>Cancel</button>
                       )}
-                      {!row.payment_proof && row.status !== 'pending' && <span className="mb-muted">—</span>}
+                      {tab === 'active' && ['completed', 'cancelled'].includes(row.status) && (
+                        <button type="button" className="mb-btn mb-btn-secondary" onClick={() => setArchived(row.id, 'archive')}>Archive</button>
+                      )}
+                      {tab === 'archived' && (
+                        <button type="button" className="mb-btn mb-btn-secondary" onClick={() => setArchived(row.id, 'restore')}>Restore</button>
+                      )}
+                      {tab === 'active' && !row.payment_proof && !['pending', 'completed', 'cancelled'].includes(row.status) && <span className="mb-muted">—</span>}
                     </div>
                   </td>
                 </tr>

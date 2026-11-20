@@ -11,5 +11,7 @@ router.get('/mine', requireAuth, requireRole('farmer'), controller.listMine);
 router.get('/', requireAuth, controller.list);
 router.get('/:id', requireAuth, controller.getOne);
 router.patch('/:id/cancel', requireAuth, requireRole('farmer'), controller.cancel);
+router.patch('/:id/archive', requireAuth, requireRole('farmer'), controller.archive);
+router.patch('/:id/restore', requireAuth, requireRole('farmer'), controller.restore);
 router.patch('/:id/status', requireAuth, requireRole('owner'), controller.updateStatus);
 module.exports = router;

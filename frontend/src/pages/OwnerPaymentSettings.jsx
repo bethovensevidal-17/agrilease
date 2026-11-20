@@ -42,10 +42,7 @@ export default function OwnerPaymentSettings() {
 
   async function saveSettings(event) {
     event.preventDefault();
-<<<<<<< HEAD
-=======
     if (!await window.agrileaseDialog.confirm('Save your payment settings? Farmers will see these details when they book.', { title: 'Save payment settings', confirmText: 'Save' })) return;
->>>>>>> master
     setBusy(true);
     setError('');
     setMessage('');

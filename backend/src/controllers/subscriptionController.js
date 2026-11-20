@@ -114,20 +114,6 @@ async function requestPlan(req, res, next) {
       });
     }
 
-<<<<<<< HEAD
-    const isTrial = Number(plan.price) === 0 && Number(plan.duration_days) === 7 && Number(plan.equipment_limit) === 2;
-    if (isTrial) {
-      if (owner.trial_used) { await conn.rollback(); return res.status(409).json({ error: 'Nagagamit na ang iyong one-time free trial.' }); }
-      const [active] = await conn.execute("SELECT id FROM subscriptions WHERE owner_id = ? AND status = 'active' AND end_date >= NOW() LIMIT 1", [req.user.id]);
-      if (active.length) { await conn.rollback(); return res.status(409).json({ error: 'May active subscription ka na.' }); }
-      await conn.execute(
-        "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))",
-        [req.user.id, planId]
-      );
-      await conn.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [req.user.id]);
-      await conn.commit();
-      return res.status(201).json({ success: true, message: 'Your 7-day free trial is now active.' });
-=======
     const isTrial = Number(plan.price) === 0;
     if (isTrial) {
       if (owner.trial_used) { await conn.rollback(); return res.status(409).json({ error: 'Nagagamit na ang iyong one-time free trial.' }); }
@@ -141,7 +127,6 @@ async function requestPlan(req, res, next) {
       await conn.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [req.user.id]);
       await conn.commit();
       return res.status(201).json({ success: true, message: `Your ${trialDays}-day free trial is now active.` });
->>>>>>> master
     }
 
     const method = String(req.body.payment_method || '').toLowerCase();
@@ -326,8 +311,6 @@ async function myPayments(req, res, next) {
   }
 }
 
-<<<<<<< HEAD
-=======
 // ---------- ADMIN: plans and subscriptions management ----------
 function cleanPlan(body) {
   const name = String(body.plan_name || '').trim();
@@ -444,20 +427,15 @@ async function adminUpdateSubscription(req, res, next) {
   } catch (error) { next(error); }
 }
 
->>>>>>> master
 module.exports = {
   listPlans,
   mySubscription,
   myPayments,
   requestPlan,
   verifyPayment,
-<<<<<<< HEAD
-  getPaymentProof
-=======
   getPaymentProof,
   adminCreatePlan,
   adminUpdatePlan,
   adminCreateSubscription,
   adminUpdateSubscription
->>>>>>> master
 };

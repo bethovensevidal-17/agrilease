@@ -6,11 +6,7 @@ import {
   ArcElement, Tooltip, Legend, Filler,
 } from 'chart.js';
 import { api, getUser } from '../api/client';
-<<<<<<< HEAD
-import { RefreshCw, Plus, CalendarDays, Package, ArrowRight, AlertCircle } from 'lucide-react';
-=======
 import { RefreshCw, Plus, CalendarDays, Package, AlertCircle } from 'lucide-react';
->>>>>>> master
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -105,11 +101,7 @@ export default function OwnerOverview() {
       </section>
 
       <section className="owner-dashboard-panel owner-recent-panel">
-<<<<<<< HEAD
-        <div className="owner-panel-heading"><div><h2>Recent Rental Bookings</h2><p>Latest requests from farmers</p></div><Link className="owner-text-link" to="/owner/bookings">View all <ArrowRight size={15}/></Link></div>
-=======
         <div className="owner-panel-heading"><div><h2>Recent Rental Bookings</h2><p>Latest requests from farmers</p></div><Link className="owner-text-link" to="/owner/bookings">View all</Link></div>
->>>>>>> master
         {recentBookings.length ? (
           <div className="owner-table-wrap"><table className="owner-dashboard-table"><thead><tr><th>Farmer</th><th>Equipment</th><th>Rental Schedule</th><th>Amount</th><th>Status</th></tr></thead><tbody>
             {recentBookings.map(row => <tr key={row.id}><td>{row.farmer_name || 'Farmer'}</td><td>{row.equipment_name || 'Equipment'}</td><td>{dateLabel(row.start_date)} – {dateLabel(row.end_date)}</td><td>{money(row.total_amount)}</td><td><span className={`owner-booking-status status-${row.status}`}>{String(row.status || 'pending').replace('_', ' ')}</span></td></tr>)}

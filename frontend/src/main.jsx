@@ -4,11 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import GlobalDialogHost from './components/GlobalDialogHost.jsx';
 import './styles.css';
-<<<<<<< HEAD
-
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(error => console.error('PWA service worker registration failed:', error)));
-=======
 import './ui-consistency.css';
 import { requestSync } from './offline/sync';
 import { resyncPushSubscription } from './utils/push';
@@ -38,7 +33,6 @@ if ('serviceWorker' in navigator) {
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
   });
->>>>>>> master
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

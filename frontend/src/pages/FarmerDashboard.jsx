@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Tractor, ClipboardList, ReceiptText, MessageCircle, Bell, UserRound, LogOut, MapPin, RefreshCw } from 'lucide-react';
-=======
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Tractor, ClipboardList, ReceiptText, MessageCircle, Bell, UserRound, LogOut, MapPin, RefreshCw, Menu, X, WifiOff } from 'lucide-react';
->>>>>>> master
 import { getUser, clearAuth, api } from '../api/client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -20,20 +15,14 @@ const primaryLinks = [
   { to: '/farmer/equipment', label: 'Browse Equipment', icon: Tractor },
   { to: '/farmer/rentals', label: 'My Bookings', icon: ClipboardList },
   { to: '/farmer/transactions', label: 'Transactions', icon: ReceiptText },
-<<<<<<< HEAD
-=======
   { to: '/farmer/offline', label: 'Offline Access', icon: WifiOff },
->>>>>>> master
 ];
 
 export default function FarmerDashboard() {
   const navigate = useNavigate();
-<<<<<<< HEAD
-=======
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
->>>>>>> master
   const user = getUser();
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -45,13 +34,6 @@ export default function FarmerDashboard() {
     } catch { /* Keep the farmer navigation available if indicator APIs are unavailable. */ }
   }, []);
   useEffect(() => { loadIndicators(); const timer = window.setInterval(loadIndicators, 20000); return () => window.clearInterval(timer); }, [loadIndicators]);
-<<<<<<< HEAD
-  function logout() { clearAuth(); navigate('/login', { replace: true }); }
-
-  return (
-    <div className="farmer-dashboard">
-      <aside className="farmer-sidebar">
-=======
   async function logout() {
     if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) return;
     clearAuth();
@@ -62,7 +44,6 @@ export default function FarmerDashboard() {
     <div className="farmer-dashboard">
       {menuOpen && <button type="button" className="farmer-backdrop" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)} />}
       <aside className={`farmer-sidebar ${menuOpen ? 'open' : ''}`}>
->>>>>>> master
         <div className="farmer-brand-wrap"><div className="farmer-brand-mark">A</div><div><strong>AGRILEASE</strong><small>FARMER PORTAL</small></div></div>
         <p className="farmer-sidebar-label">FARMER MENU</p>
         <nav className="farmer-nav" aria-label="Farmer navigation">
@@ -72,10 +53,7 @@ export default function FarmerDashboard() {
       </aside>
       <main className="farmer-main">
         <header className="farmer-topbar portal-topbar">
-<<<<<<< HEAD
-=======
           <button type="button" className="farmer-menu-button" onClick={() => setMenuOpen(open => !open)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>{menuOpen ? <X size={23}/> : <Menu size={23}/>}</button>
->>>>>>> master
           <div className="role-header-title"><small>AGRILEASE / FARMER PORTAL</small><strong>My Rental Dashboard</strong><span>Browse equipment and manage your rental activity.</span></div>
           <div className="farmer-account"><button className="farmer-header-icon portal-header-icon" title="Messages" aria-label={`Messages${unreadMessages ? `, ${unreadMessages} unread` : ''}`} onClick={() => navigate('/farmer/messages')}><MessageCircle size={19}/>{unreadMessages > 0 && <span className="portal-header-count">{unreadMessages > 99 ? '99+' : unreadMessages}</span>}</button><button className="farmer-header-icon portal-header-icon" title="Notifications" aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`} onClick={() => navigate('/farmer/notifications')}><Bell size={19}/>{unreadNotifications > 0 && <span className="portal-header-count">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}</button><button className="farmer-profile-shortcut" onClick={() => navigate('/farmer/profile')} title="My Profile"><span className="farmer-avatar portal-avatar">{user?.full_name?.charAt(0)?.toUpperCase() || 'F'}</span><span className="farmer-account-copy"><strong>{user?.full_name || 'Farmer'}</strong><small>Farmer Account</small></span></button></div>
         </header>

@@ -28,14 +28,10 @@ const getOwners = async (req, res, next) => {
 
     const params = [];
 
-<<<<<<< HEAD
-    if (status) {
-=======
     if (status === 'pending') {
       // Kasama ang owner na walang provider profile row pa.
       sql += ` AND (p.verification_status = 'pending' OR p.verification_status IS NULL)`;
     } else if (status) {
->>>>>>> master
       sql += ` AND p.verification_status = ?`;
       params.push(status);
     }
@@ -124,20 +120,11 @@ const verifyOwner = async (req, res, next) => {
     );
 
     if (profiles.length === 0) {
-<<<<<<< HEAD
-      await connection.rollback();
-
-      return res.status(404).json({
-        success: false,
-        message: 'Provider profile not found.'
-      });
-=======
       // May account ang owner pero walang provider profile row: gagawa tayo para ma-approve/reject pa rin.
       await connection.execute(
         `INSERT INTO provider_profiles (user_id, verification_status) VALUES (?, 'pending')`,
         [ownerId]
       );
->>>>>>> master
     }
 
     await connection.execute(
@@ -156,20 +143,6 @@ const verifyOwner = async (req, res, next) => {
     if (profileSet.has('reviewed_at')) updates.push('reviewed_at = NOW()');
     if (updates.length) await connection.execute(`UPDATE provider_profiles SET ${updates.join(', ')} WHERE user_id = ?`, [...values, ownerId]);
 
-<<<<<<< HEAD
-    // Start the 7-day free trial immediately after an owner is approved.
-    if (status === 'verified') {
-      const [activeTrial] = await connection.execute(`SELECT id FROM subscriptions WHERE owner_id = ? AND status = 'active' AND end_date > NOW() LIMIT 1`, [ownerId]);
-      if (!activeTrial.length) {
-        const [trialPlan] = await connection.execute(`SELECT id FROM subscription_plans WHERE LOWER(plan_name) LIKE '%free%' OR LOWER(plan_name) LIKE '%trial%' ORDER BY price ASC LIMIT 1`);
-        await connection.execute(`INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))`, [ownerId, trialPlan[0]?.id || null]);
-      }
-    }
-
-
-    await connection.commit();
-    try { await notifyUser(ownerId, status === 'verified' ? 'Owner account approved' : 'Owner application rejected', status === 'verified' ? 'Your account has been approved. Your 7-day free trial has started.' : `Your owner application was rejected. Reason: ${rejectionReason}`, '/owner'); } catch (notificationError) { console.error('Owner decision notification failed:', notificationError.message); }
-=======
     // Pag na-approve ang owner, otomatikong magsisimula ang 7-day free trial.
     if (status === 'verified') {
       const [[profile]] = await connection.execute('SELECT trial_used FROM provider_profiles WHERE user_id = ? LIMIT 1', [ownerId]);
@@ -187,7 +160,6 @@ const verifyOwner = async (req, res, next) => {
 
     await connection.commit();
     try { await notifyUser(ownerId, status === 'verified' ? 'Owner account approved' : 'Owner application rejected', status === 'verified' ? 'Your account has been approved. Your free trial has started. Open Subscription Plans to see your plan.' : `Your owner application was rejected. Reason: ${rejectionReason}`, status === 'verified' ? '/owner/subscription' : '/login'); } catch (notificationError) { console.error('Owner decision notification failed:', notificationError.message); }
->>>>>>> master
 
     return res.json({
       success: true,
@@ -501,10 +473,7 @@ const getUsers = async (req, res, next) => {
       });
     }
 
-<<<<<<< HEAD
-=======
     const [userCols] = await db.execute(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'suspension_reason'`);
->>>>>>> master
     let sql = `
       SELECT
         id,
@@ -513,10 +482,7 @@ const getUsers = async (req, res, next) => {
         phone,
         role,
         status,
-<<<<<<< HEAD
-=======
         ${userCols.length ? 'suspension_reason' : 'NULL AS suspension_reason'},
->>>>>>> master
         created_at
       FROM users
       WHERE 1 = 1
@@ -602,13 +568,6 @@ const updateUserStatus = async (req, res, next) => {
     if (status === 'suspended' && reason.length < 5) {
       return res.status(400).json({ success: false, message: 'Please provide a suspension reason (at least 5 characters).' });
     }
-<<<<<<< HEAD
-    const [userColumns] = await db.execute(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'`);
-    const userColumnSet = new Set(userColumns.map(column => column.COLUMN_NAME));
-    const reasonColumn = ['suspension_reason', 'status_reason'].find(column => userColumnSet.has(column));
-    const assignments = ['status = ?']; const values = [status];
-    if (reasonColumn) { assignments.push(`\`${reasonColumn}\` = ?`); values.push(status === 'suspended' ? reason : null); }
-=======
     if (reason.length > 1000) {
       return res.status(400).json({ success: false, message: 'Reason must not exceed 1000 characters.' });
     }
@@ -632,41 +591,24 @@ const updateUserStatus = async (req, res, next) => {
     assignments.push('suspension_reason = ?');
     values.push(status === 'suspended' ? reason : null);
 
->>>>>>> master
     const [result] = await db.execute(
       `UPDATE users SET ${assignments.join(', ')} WHERE id = ? AND role != 'admin'`,
       [...values, userId]
     );
-<<<<<<< HEAD
-=======
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User not found or cannot be modified.' });
     }
 
->>>>>>> master
     if (status === 'suspended') {
       try { await notifyUser(userId, 'Account suspended', reason, '/login'); } catch (notificationError) { console.error('Suspension notification failed:', notificationError.message); }
     } else {
       try { await notifyUser(userId, 'Account restored', 'Your account has been restored. You may now sign in.', '/login'); } catch (notificationError) { console.error('Account restoration notification failed:', notificationError.message); }
     }
 
-<<<<<<< HEAD
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found or cannot be modified.'
-      });
-    }
-
-    return res.json({
-      success: true,
-      message: `User ${status} successfully.`
-=======
     return res.json({
       success: true,
       message: status === 'suspended' ? 'Account suspended.' : 'Account restored.'
->>>>>>> master
     });
 
   } catch (error) {

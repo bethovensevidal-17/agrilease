@@ -1,12 +1,8 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { api } from '../api/client';
-=======
 import { api, getToken } from '../api/client';
 import { isNetworkFailure, newRequestId, queueOfflineEquipment } from '../offline/sync';
->>>>>>> master
 
 const initialForm = {
   name: '',
@@ -100,11 +96,6 @@ export default function OwnerAddEquipment() {
       return;
     }
 
-<<<<<<< HEAD
-    try {
-      setSubmitting(true);
-
-=======
     if (!await window.agrileaseDialog.confirm('Submit this equipment listing for admin approval?', { title: 'Add equipment', confirmText: 'Submit' })) return;
     const requestId = newRequestId();
 
@@ -133,7 +124,6 @@ export default function OwnerAddEquipment() {
         return;
       }
 
->>>>>>> master
       const formData = new FormData();
 
       Object.entries(form).forEach(([key, value]) => {
@@ -144,12 +134,6 @@ export default function OwnerAddEquipment() {
         formData.append('image', image);
       }
 
-<<<<<<< HEAD
-      await api('/equipment', {
-        method: 'POST',
-        formData,
-      });
-=======
       try {
         await api('/equipment', {
           method: 'POST',
@@ -164,25 +148,12 @@ export default function OwnerAddEquipment() {
         }
         throw requestError;
       }
->>>>>>> master
 
       setSuccess(
         'Equipment submitted successfully! It is now waiting for Admin approval.'
       );
 
-<<<<<<< HEAD
-      setForm(initialForm);
-      setImage(null);
-      setImagePreview('');
-
-      const imageInput = document.getElementById('equipment-image');
-
-      if (imageInput) {
-        imageInput.value = '';
-      }
-=======
       resetForm();
->>>>>>> master
     } catch (err) {
       const errors = err.errors;
 
@@ -352,10 +323,7 @@ export default function OwnerAddEquipment() {
               >
                 <option value="available">Available</option>
                 <option value="unavailable">Unavailable</option>
-<<<<<<< HEAD
-=======
                 <option value="maintenance">Maintenance</option>
->>>>>>> master
               </select>
             </div>
 

@@ -83,11 +83,7 @@ async function getSubscriptions(req, res, next) {
     if (planCols.size) {
       const planName = planCols.has('plan_name') ? 'plan_name' : 'name';
       const [rows] = await db.query(
-<<<<<<< HEAD
-        `SELECT id, \`${planName}\` AS plan_name, price, duration_days, equipment_limit, ${planCols.has('description') ? 'description' : 'NULL AS description'} FROM subscription_plans ORDER BY price ASC`
-=======
         `SELECT id, \`${planName}\` AS plan_name, price, duration_days, equipment_limit, ${planCols.has('description') ? 'description' : 'NULL AS description'}, ${planCols.has('is_active') ? 'is_active' : '1 AS is_active'} FROM subscription_plans ORDER BY price ASC`
->>>>>>> master
       );
       plans = rows;
     }

@@ -1,13 +1,4 @@
 const db = require('../db');
-<<<<<<< HEAD
-
-async function notifyUser(userId, title, message, actionUrl = null) {
-  if (!userId) return;
-  await db.execute(
-    'INSERT INTO notifications (user_id, title, message, action_url, is_read) VALUES (?, ?, ?, ?, 0)',
-    [Number(userId), String(title).slice(0, 150), String(message), actionUrl]
-  );
-=======
 const { sendPush } = require('./push');
 
 async function notifyUser(userId, title, message, actionUrl = null) {
@@ -24,7 +15,6 @@ async function notifyUser(userId, title, message, actionUrl = null) {
     tag: `agrilease-${inserted.insertId}`,
   })
     .catch(error => console.error('Notification push failed:', error.message));
->>>>>>> master
 }
 
 async function notifyAdmins(title, message, actionUrl = '/admin/notifications') {

@@ -2683,8 +2683,6 @@ button:disabled { cursor:not-allowed; opacity:.65; }
 .al-dialog-actions{display:flex;justify-content:flex-end;gap:10px}.al-dialog-actions button{min-height:40px;border-radius:8px;padding:0 17px;font:600 13px inherit;cursor:pointer;border:1px solid transparent}.al-dialog-cancel{background:#f3f5f3;color:#425047;border-color:#e0e6e1!important}.al-dialog-confirm{background:#246238;color:#fff}.al-dialog-confirm:hover{background:#194c2a}
 @keyframes al-dialog-in{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:480px){.al-dialog{padding:22px 18px}.al-dialog-actions{flex-direction:column-reverse}.al-dialog-actions button{width:100%}}
-<<<<<<< HEAD
-=======
 
 
 /* ===== Farmer portal: hamburger drawer on mobile (sidebar stays on desktop) ===== */
@@ -2712,4 +2710,3 @@ button:disabled { cursor:not-allowed; opacity:.65; }
 .tx-filters input { flex: 1 1 auto; }
 .tx-filters select { flex: 0 0 220px; }
 @media (max-width: 600px) { .tx-filters { flex-direction: column; align-items: stretch; } .tx-filters select { flex: 0 0 auto; width: 100%; } }
->>>>>>> master

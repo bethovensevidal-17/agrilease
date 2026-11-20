@@ -82,11 +82,7 @@ export default function LandingPage() {
 
             <div className="landing-hero-actions">
               <Link to="/browse" className="landing-primary-button">
-<<<<<<< HEAD
-                Browse Equipment <span>→</span>
-=======
                 Browse Equipment
->>>>>>> master
               </Link>
               <Link to="/register" className="landing-secondary-button">
                 Create an Account
@@ -164,11 +160,7 @@ export default function LandingPage() {
             </p>
           </div>
           <Link to="/register" className="landing-cta-button">
-<<<<<<< HEAD
-            Join AGRILEASE <span>→</span>
-=======
             Join AGRILEASE
->>>>>>> master
           </Link>
         </section>
       </main>

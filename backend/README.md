@@ -45,6 +45,13 @@ Booking endpoints:
 - `GET /api/owner/bookings`, `PATCH /api/owner/bookings/:id/status`, `GET /api/owner/bookings/:id/proof` (Owner)
 - `GET /api/admin/bookings`, `GET /api/admin/payments`, `PATCH /api/admin/payments/:id/verify` (Admin)
 
+Archive endpoints (soft delete, hindi binubura ang record):
+- `GET /api/rentals/mine?archived=1` (Farmer; archived na bookings lang. Kapag walang `archived`, active lang ang ibinabalik)
+- `PATCH /api/rentals/:id/archive` (Farmer; completed o cancelled lang ang puwede. Per-farmer ito at hindi apektado ang view ng owner)
+- `PATCH /api/rentals/:id/restore` (Farmer; ibinabalik ang archived na booking sa Active)
+
+Ang archive ay gumagamit ng column na `is_archived_by_farmer` sa `rental_requests`, na idinadagdag ng `src/ensureSchema.js` kapag nag-start ang backend.
+
 The backend calculates booking totals from database rates, dates/times, farm area, and quantity. Frontend totals are previews only. Payment proof files are served only through authenticated endpoints.
 
 ## Phase 7 – Integration smoke checks

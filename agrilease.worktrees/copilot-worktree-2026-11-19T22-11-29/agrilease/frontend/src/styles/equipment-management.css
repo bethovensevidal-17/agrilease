@@ -1,0 +1,150 @@
+.um-page {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  margin: 20px;
+}
+
+.admin-page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.um-message {
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.um-message.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.um-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.um-panel {
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  padding: 15px;
+}
+
+.um-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.um-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.um-search {
+  display: flex;
+  align-items: center;
+}
+
+.um-search input {
+  margin-left: 10px;
+  padding: 5px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+}
+
+.um-table-wrapper {
+  overflow-x: auto;
+}
+
+.um-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.um-table th,
+.um-table td {
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  text-align: left;
+}
+
+.owner-status {
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.owner-status.pending {
+  background-color: #ffc107;
+  color: #856404;
+}
+
+.owner-status.verified {
+  background-color: #28a745;
+  color: #ffffff;
+}
+
+.owner-status.rejected {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.owner-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.owner-review-modal {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+}
+
+.owner-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.owner-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.owner-modal-secondary {
+  margin-right: 10px;
+}
+
+.owner-document-card {
+  margin-top: 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.owner-document-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.owner-document-preview {
+  margin-top: 10px;
+}

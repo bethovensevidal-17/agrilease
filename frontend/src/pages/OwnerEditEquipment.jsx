@@ -93,6 +93,11 @@ export default function OwnerEditEquipment() {
       return;
     }
 
+<<<<<<< HEAD
+=======
+    if (!await window.agrileaseDialog.confirm('Save your changes to this equipment?', { title: 'Save changes', confirmText: 'Save' })) return;
+
+>>>>>>> master
     try {
       setSubmitting(true);
 

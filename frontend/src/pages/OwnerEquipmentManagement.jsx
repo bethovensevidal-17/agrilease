@@ -11,6 +11,10 @@ import {
 
 import { api } from '../api/client';
 import { assetUrl } from '../api/config';
+<<<<<<< HEAD
+=======
+import PendingSyncList from '../components/PendingSyncList.jsx';
+>>>>>>> master
 
 export default function OwnerEquipmentManagement() {
   const navigate = useNavigate();
@@ -184,6 +188,11 @@ export default function OwnerEquipmentManagement() {
         )}
       </div>
 
+<<<<<<< HEAD
+=======
+      <PendingSyncList kind="equipment" onSynced={loadEquipment} />
+
+>>>>>>> master
       {error && (
         <div className="owner-notice">
           <strong>Unable to load equipment</strong>

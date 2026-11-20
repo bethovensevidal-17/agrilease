@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+<<<<<<< HEAD
 import { api, getUser } from '../api/client';
+=======
+import { api, getUser, getToken } from '../api/client';
+import { isNetworkFailure, newRequestId, queueMessage, requestSync } from '../offline/sync';
+>>>>>>> master
 
 // Polling keeps the conversation fresh without requiring a separate socket server.
 // Once the WebSocket service is deployed, this page can switch transports without changing the API contract.
@@ -14,6 +19,10 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const selectedId = selected?.user_id;
   const bottomRef = useRef(null);
+<<<<<<< HEAD
+=======
+  const [queuedCount, setQueuedCount] = useState(0);
+>>>>>>> master
 
   const loadContacts = useCallback(async (quiet = false) => {
     try {
@@ -53,6 +62,18 @@ export default function Messages() {
   }, [loadContacts]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages]);
 
+<<<<<<< HEAD
+=======
+  // Messages written while offline are sent automatically once the connection returns.
+  useEffect(() => {
+    const onOnline = () => { requestSync({ release: true }); loadMessages(true); };
+    const onSynced = () => { setQueuedCount(0); setError(''); loadMessages(true); loadContacts(true); };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('agrilease:sync-complete', onSynced);
+    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('agrilease:sync-complete', onSynced); };
+  }, [loadMessages, loadContacts]);
+
+>>>>>>> master
   async function submit(event) {
     event.preventDefault();
     const message = draft.trim();
@@ -60,9 +81,30 @@ export default function Messages() {
     setSending(true);
     setError('');
     try {
+<<<<<<< HEAD
       await api('/messages', { method: 'POST', body: { receiver_id: selectedId, message } });
       setDraft('');
       await Promise.all([loadMessages(true), loadContacts(true)]);
+=======
+      if (!navigator.onLine) {
+        await queueMessage(selectedId, message, getToken());
+        setQueuedCount(count => count + 1);
+        setDraft('');
+        setError('You are offline. Your message is saved and will be sent when your connection returns.');
+      } else {
+        try {
+          await api('/messages', { method: 'POST', body: { receiver_id: selectedId, message }, headers: { 'X-Idempotency-Key': newRequestId() } });
+          setDraft('');
+          await Promise.all([loadMessages(true), loadContacts(true)]);
+        } catch (requestError) {
+          if (!isNetworkFailure(requestError)) throw requestError;
+          await queueMessage(selectedId, message, getToken());
+          setQueuedCount(count => count + 1);
+          setDraft('');
+          setError('The server could not be reached. Your message is saved and will be sent automatically.');
+        }
+      }
+>>>>>>> master
     } catch (e) { setError(e.message || 'Message could not be sent.'); }
     finally { setSending(false); }
   }
@@ -70,7 +112,11 @@ export default function Messages() {
   const heading = useMemo(() => selected?.full_name || 'Select a conversation', [selected]);
   if (loading) return <main className="messages-page"><p>Loading conversations...</p></main>;
   return <main className="messages-page">
+<<<<<<< HEAD
     <header><h1>Messages</h1><p>Chat with farmers and equipment owners connected through rental requests. New messages refresh automatically.</p></header>
+=======
+    <header><h1>Messages</h1><p>Chat with farmers and equipment owners connected through rental requests. New messages refresh automatically.{queuedCount ? ` · ${queuedCount} message(s) waiting to send` : ''}</p></header>
+>>>>>>> master
     {error && <div role="alert" className="messages-error"><span>{error}</span><button type="button" onClick={() => { setError(''); loadContacts(); loadMessages(); }}>Retry</button></div>}
     <section className="messages-shell">
       <aside className="messages-contacts"><h2>Contacts</h2>{contacts.length === 0 && <p>No rental-related contacts yet. A conversation becomes available when you have a rental request with another account.</p>}{contacts.map(contact => <button type="button" key={contact.user_id} className={Number(selectedId) === Number(contact.user_id) ? 'active' : ''} onClick={() => { setSelected(contact); setError(''); }}><strong>{contact.full_name}</strong><small>{contact.role}</small>{Number(contact.unread_count) > 0 && <span className="messages-contact-unread">{Number(contact.unread_count) > 99 ? '99+' : contact.unread_count}</span>}</button>)}</aside>

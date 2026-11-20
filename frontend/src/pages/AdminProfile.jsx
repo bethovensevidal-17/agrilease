@@ -25,6 +25,10 @@ export default function AdminProfile() {
 
   async function submit(e) {
     e.preventDefault();
+<<<<<<< HEAD
+=======
+    if (!await window.agrileaseDialog.confirm('Save your profile changes?', { title: 'Save profile', confirmText: 'Save' })) return;
+>>>>>>> master
     try {
       setSaving(true); setError(''); setMessage('');
       const result = await api('/admin/profile', { method: 'PATCH', body: form });

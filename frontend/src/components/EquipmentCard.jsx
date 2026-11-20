@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
 import { assetUrl } from '../api/config';
+<<<<<<< HEAD
+=======
+import { getUser } from '../api/client';
+>>>>>>> master
 const peso = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP',
@@ -12,6 +16,11 @@ const unit = {
 };
 
 export default function EquipmentCard({ item }) {
+<<<<<<< HEAD
+=======
+  // Farmer: manatili sa farmer layout (may sidebar) pag tiningnan ang equipment.
+  const detailsPath = getUser()?.role === 'farmer' ? `/farmer/equipment/${item.id}` : `/equipment/${item.id}`;
+>>>>>>> master
   const imageUrl = item.image_path
     ? assetUrl(`/uploads/${item.image_path.replace(/^\/+/, '')}`)
     : null;
@@ -34,7 +43,11 @@ export default function EquipmentCard({ item }) {
       </div>
 
       <div className="card-body">
+<<<<<<< HEAD
         <h3><Link to={`/equipment/${item.id}`}>{item.name || item.equipment_name}</Link></h3>
+=======
+        <h3><Link to={detailsPath}>{item.name || item.equipment_name}</Link></h3>
+>>>>>>> master
 
         <p className="muted">
           {item.category_name}
@@ -51,7 +64,11 @@ export default function EquipmentCard({ item }) {
 
         <p className="muted">{item.location}</p>
         <p className="muted">Owner: {item.owner_name}</p>
+<<<<<<< HEAD
         <Link className="equipment-view-link" to={`/equipment/${item.id}`}>View details and book</Link>
+=======
+        <Link className="equipment-view-link" to={detailsPath}>View details and book</Link>
+>>>>>>> master
       </div>
     </article>
   );

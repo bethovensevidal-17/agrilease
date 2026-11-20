@@ -48,7 +48,15 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
   const [error, setError] = useState('');
+=======
+  const [error, setError] = useState(() => {
+    const notice = sessionStorage.getItem('agrilease_login_notice');
+    if (notice) sessionStorage.removeItem('agrilease_login_notice');
+    return notice || '';
+  });
+>>>>>>> master
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -151,7 +159,11 @@ export default function Login() {
           {loading ? 'Signing in...' : 'Login'}
         </button>
 
+<<<<<<< HEAD
         <p className="auth-footer auth-home-link"><Link to="/">← Back to Home</Link></p>
+=======
+        <Link to="/" className="auth-home-button">Back to Home</Link>
+>>>>>>> master
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register here</Link>
         </p>

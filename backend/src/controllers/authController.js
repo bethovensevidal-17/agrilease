@@ -177,7 +177,12 @@ async function register(req, res) {
       try {
         await notifyAdmins(
           'New owner registration',
+<<<<<<< HEAD
           `${full_name.trim()} submitted a new equipment owner registration and is awaiting verification.`
+=======
+          `${full_name.trim()} submitted a new equipment owner registration and is awaiting verification.`,
+          '/admin/owners'
+>>>>>>> master
         );
       } catch (notificationError) {
         console.error('Admin owner-registration notification failed:', notificationError.message);

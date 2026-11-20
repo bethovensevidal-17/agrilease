@@ -123,6 +123,10 @@ export default function Register() {
       }
     }
 
+<<<<<<< HEAD
+=======
+    if (!await window.agrileaseDialog.confirm('Create your AGRILEASE account with these details?', { title: 'Create account', confirmText: 'Create account' })) return;
+>>>>>>> master
     setLoading(true);
 
     try {
@@ -344,6 +348,15 @@ export default function Register() {
                   <EyeIcon visible={showPassword} />
                 </button>
               </div>
+<<<<<<< HEAD
+=======
+              <ul className="pw-checklist" aria-live="polite">
+                <li className={form.password.length >= 8 ? 'ok' : ''}>At least 8 characters</li>
+                <li className={/[A-Za-z]/.test(form.password) ? 'ok' : ''}>Contains letters</li>
+                <li className={/[0-9]/.test(form.password) ? 'ok' : ''}>Contains numbers</li>
+                <li className={/[^A-Za-z0-9]/.test(form.password) ? 'ok' : ''}>Contains a special character (e.g. @ # ! %)</li>
+              </ul>
+>>>>>>> master
             </div>
 
             <div className="auth-field">

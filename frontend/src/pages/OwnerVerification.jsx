@@ -62,7 +62,11 @@ export default function OwnerVerification() {
         `/admin/owners${query ? `?${query}` : ''}`
       );
 
+<<<<<<< HEAD
       setOwners(response.data || []);
+=======
+      setOwners((response.data || []).map(o => ({ ...o, verification_status: o.verification_status || 'pending' })));
+>>>>>>> master
     } catch (err) {
       setError(err.message || 'Unable to load owner records.');
       setOwners([]);

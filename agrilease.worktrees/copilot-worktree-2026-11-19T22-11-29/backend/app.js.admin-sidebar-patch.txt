@@ -1,0 +1,7 @@
+In backend/src/app.js, find:
+app.use('/api/admin', require('./routes/admin'));
+
+Add this line immediately below it:
+app.use('/api/admin', require('./routes/adminExtra'));
+
+Do not replace app.js or add another app.listen().

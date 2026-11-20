@@ -1,5 +1,6 @@
 const db = require('../db');
 const { sendPush } = require('../services/push');
+const { broadcastMessage } = require('../realtime');
 let schemaPromise;
 
 // Support both database snapshots found in this project:
@@ -124,6 +125,8 @@ async function send(req, res, next) {
       `SELECT id, sender_id, receiver_id, ${schema.body} AS message, ${schema.sent} AS sent_at FROM messages WHERE id = ?`,
       [result.insertId]
     );
+    // Real-time: ipadala agad sa receiver (at sa ibang tab ng sender) sa pamamagitan ng WebSocket.
+    broadcastMessage(rows[0]);
     sendPush(receiverId, { title: 'New AgriLease message', body: message.slice(0, 120), url: req.user.role === 'farmer' ? '/owner/messages' : '/farmer/messages', tag: `agrilease-message-${result.insertId}` }).catch(error => console.error('Message push failed:', error.message));
     res.status(201).json({ data: rows[0] });
   } catch (error) { next(error); }

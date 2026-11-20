@@ -1,3 +1,12 @@
+-- ============================================================================
+-- LEGACY / STARTER SCHEMA — HUWAG I-IMPORT SA AGRILEASE V2.
+-- Ibang disenyo ito (hal. equipment.name, rate, archived_at) kaysa sa ginagamit ng code ngayon
+-- (equipment_name, rental_rate, is_archived, availability_status).
+-- Ang tunay na database ng app ay `agrilease_v2_db`; ang structure nito ay nasa
+-- database/agrilease_v2_db.structure.sql, at ang mga dagdag na migration ay nasa
+-- database/migrations/ at backend/database/migrations/.
+-- ============================================================================
+
 -- AGRILEASE_V2 - MySQL 8 / MariaDB (Laragon). Run: mysql -u root < schema.sql
 -- NOTE: written to match AGRILEASE.docx section 10, but not yet executed on a real MySQL server. Run it once and report any error.
 CREATE DATABASE IF NOT EXISTS agrilease CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

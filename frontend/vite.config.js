@@ -9,6 +9,8 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
       '/uploads': 'http://localhost:3000',
+      // WebSocket ng real-time chat
+      '/ws': { target: 'ws://localhost:3000', ws: true },
     },
   },
 });

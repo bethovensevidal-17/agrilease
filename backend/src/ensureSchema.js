@@ -1,6 +1,6 @@
 const db = require('./db');
 
-// Awtomatikong nagdadagdag ng mga kulang na column tuwing magsta-start ang backend.
+// Awtomatikong nagdadagdag ng mga kulang na column/table tuwing magsta-start ang backend.
 // Safe ito i-run ulit-ulit: ang mayroon na ay hindi ginagalaw.
 const REQUIRED_COLUMNS = [
   { table: 'provider_profiles', column: 'rejection_reason', ddl: 'TEXT NULL' },
@@ -9,7 +9,53 @@ const REQUIRED_COLUMNS = [
   { table: 'provider_profiles', column: 'trial_used', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
   { table: 'users', column: 'suspension_reason', ddl: 'TEXT NULL' },
   { table: 'notifications', column: 'action_url', ddl: 'VARCHAR(500) NULL' },
+  // Payment Settings ng owner (ownerPaymentSettingsController)
+  { table: 'provider_profiles', column: 'gcash_number', ddl: 'VARCHAR(30) NULL' },
+  { table: 'provider_profiles', column: 'gcash_account_name', ddl: 'VARCHAR(150) NULL' },
+  { table: 'provider_profiles', column: 'gcash_qr_path', ddl: 'VARCHAR(255) NULL' },
+  { table: 'provider_profiles', column: 'bank_name', ddl: 'VARCHAR(100) NULL' },
+  { table: 'provider_profiles', column: 'bank_account_name', ddl: 'VARCHAR(150) NULL' },
+  { table: 'provider_profiles', column: 'bank_account_number', ddl: 'VARCHAR(50) NULL' },
+  { table: 'provider_profiles', column: 'other_payment_instructions', ddl: 'TEXT NULL' },
+  // Booking fields na ginagamit ng equipmentController at rentalController
+  { table: 'equipment', column: 'quantity', ddl: 'INT NOT NULL DEFAULT 1' },
+  { table: 'rental_requests', column: 'quantity', ddl: 'INT NOT NULL DEFAULT 1' },
+  { table: 'rental_requests', column: 'farm_area', ddl: 'DECIMAL(10,2) NULL' },
+  { table: 'rental_requests', column: 'rental_rate_snapshot', ddl: 'DECIMAL(10,2) NULL' },
+  { table: 'rental_requests', column: 'rate_type_snapshot', ddl: "ENUM('hour','day','hectare') NULL" },
 ];
+
+const REQUIRED_TABLES = [
+  {
+    name: 'booking_payments',
+    ddl: `CREATE TABLE IF NOT EXISTS booking_payments (
+      id INT NOT NULL AUTO_INCREMENT,
+      booking_id INT NOT NULL,
+      payment_method VARCHAR(50) DEFAULT NULL,
+      reference_number VARCHAR(100) DEFAULT NULL,
+      proof_image VARCHAR(255) DEFAULT NULL,
+      payment_status ENUM('pending','verified','rejected') DEFAULT 'pending',
+      verified_by INT DEFAULT NULL,
+      payment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_booking_payment (booking_id),
+      KEY idx_booking_payment_status (payment_status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+  },
+];
+
+// plan_name ay may UNIQUE key kaya safe i-run ulit.
+const PLAN_SEED = `INSERT INTO subscription_plans (plan_name, price, duration_days, equipment_limit, description, is_active)
+VALUES
+ ('Free Trial', 0.00, 7, 2, 'One-time 7-day trial for verified equipment owners', 1),
+ ('Monthly', 199.00, 30, 3, 'Monthly equipment owner subscription', 1),
+ ('Quarterly', 549.00, 90, 5, 'Quarterly equipment owner subscription', 1),
+ ('Semi-Annual', 999.00, 180, 10, 'Semi-annual equipment owner subscription', 1),
+ ('Annual', 1799.00, 365, NULL, 'Annual equipment owner subscription with unlimited listings', 1)
+ON DUPLICATE KEY UPDATE
+ price = VALUES(price), duration_days = VALUES(duration_days),
+ equipment_limit = VALUES(equipment_limit), description = VALUES(description), is_active = 1`;
 
 async function ensureSchema() {
   for (const { table, column, ddl } of REQUIRED_COLUMNS) {
@@ -29,6 +75,26 @@ async function ensureSchema() {
     } catch (error) {
       console.error(`[ensureSchema] Hindi nadagdag ang ${table}.${column}:`, error.message);
     }
+  }
+
+  for (const { name, ddl } of REQUIRED_TABLES) {
+    try {
+      const [found] = await db.execute(
+        'SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+        [name]
+      );
+      if (found.length) continue;
+      await db.query(ddl);
+      console.log(`[ensureSchema] Created table ${name}`);
+    } catch (error) {
+      console.error(`[ensureSchema] Hindi nagawa ang table ${name}:`, error.message);
+    }
+  }
+
+  try {
+    await db.query(PLAN_SEED);
+  } catch (error) {
+    console.error('[ensureSchema] Hindi na-seed ang subscription plans:', error.message);
   }
 }
 

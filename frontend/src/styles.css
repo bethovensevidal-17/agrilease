@@ -2710,3 +2710,9 @@ button:disabled { cursor:not-allowed; opacity:.65; }
 .tx-filters input { flex: 1 1 auto; }
 .tx-filters select { flex: 0 0 220px; }
 @media (max-width: 600px) { .tx-filters { flex-direction: column; align-items: stretch; } .tx-filters select { flex: 0 0 auto; width: 100%; } }
+
+/* Real-time chat status */
+.messages-live { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; font-size: 0.85em; color: #8a6d00; }
+.messages-live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #d9a400; }
+.messages-live.on { color: #2f7d32; }
+.messages-live.on::before { background: #2f7d32; }

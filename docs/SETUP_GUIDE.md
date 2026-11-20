@@ -17,9 +17,9 @@ Install Git, Node.js 20 LTS, and Laragon (it provides MySQL). Start Laragon and 
 ## 4. Project layout to build (matches the instructor's checklist)
 ```
 agrilease/
-  backend/   Node.js API: src/routes, src/controllers, src/middleware (JWT, role guard), src/services, src/sockets, migrations/
+  backend/   Node.js API: src/routes, src/controllers, src/middleware (JWT, role guard), src/services, src/realtime.js (WebSocket chat), migrations/
   frontend/  React (Vite): src/pages, src/components, src/api, public/manifest.webmanifest, public/sw.js
-  database/  schema.sql
+  database/  agrilease_v2_db.structure.sql + migrations/ (schema.sql ay legacy, huwag i-import)
   docs/
   prototype/ the working clickable prototype
   assets/    official-qr-placeholder.png

@@ -15,11 +15,12 @@ export default function NotificationCenter({ title = 'Notifications', role = 'fa
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState('active');
 
   const load = useCallback(async (showLoading = false) => {
     try {
       if (showLoading) setLoading(true);
-      const result = await api('/notifications');
+      const result = await api(tab === 'archived' ? '/notifications?archived=1' : '/notifications');
       setItems(result.data || []);
       setError('');
     } catch (err) {
@@ -27,7 +28,7 @@ export default function NotificationCenter({ title = 'Notifications', role = 'fa
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, []);
+  }, [tab]);
 
   useEffect(() => {
     load(true);
@@ -52,6 +53,15 @@ export default function NotificationCenter({ title = 'Notifications', role = 'fa
     finally { setBusy(false); }
   }
 
+  async function setArchived(id, action) {
+    try {
+      setBusy(true);
+      await api(`/notifications/${id}/${action}`, { method: 'PATCH' });
+      setItems(current => current.filter(item => Number(item.id) !== Number(id)));
+    } catch (err) { setError(err.message || 'Unable to update notification.'); }
+    finally { setBusy(false); }
+  }
+
   async function markAllRead() {
     try {
       setBusy(true);
@@ -72,12 +82,21 @@ export default function NotificationCenter({ title = 'Notifications', role = 'fa
         </div>
       </div>
       {error && <div className="um-message error">{error}</div>}
+      <div className="am-actions">
+        <button className={`am-button ${tab === 'active' ? 'approve' : 'neutral'}`} onClick={() => setTab('active')}>Active</button>
+        <button className={`am-button ${tab === 'archived' ? 'approve' : 'neutral'}`} onClick={() => setTab('archived')}>Archived</button>
+      </div>
       <section className="um-panel">
         <div className="um-panel-heading"><div><h2>All Notifications</h2><p>{unread} unread notifications · Automatically refreshes every 30 seconds</p></div><span className="um-total">{items.length} records</span></div>
-        {loading ? <div className="am-empty">Loading notifications...</div> : items.length === 0 ? <div className="am-empty">No notifications yet.</div> :
+        {loading ? <div className="am-empty">Loading notifications...</div> : items.length === 0 ? <div className="am-empty">{tab === 'archived' ? 'No archived notifications.' : 'No notifications yet.'}</div> :
           <div className="am-notification-list">{items.map(item => <article role="button" tabIndex={0} onClick={() => openNotification(item)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') openNotification(item); }} className={`am-notification notification-clickable ${Number(item.is_read) ? 'read' : 'unread'}`} key={item.id}>
             <div><strong>{item.title}</strong><p>{item.message}</p><small>{formatDate(item.created_at)}</small></div>
-            {!Number(item.is_read) && <button className="am-button approve" disabled={busy} onClick={event => { event.stopPropagation(); markRead(item.id); }}>Mark Read</button>}
+            <div className="am-actions">
+              {tab === 'active' && !Number(item.is_read) && <button className="am-button approve" disabled={busy} onClick={event => { event.stopPropagation(); markRead(item.id); }}>Mark Read</button>}
+              {tab === 'active'
+                ? <button className="am-button neutral" disabled={busy} onClick={event => { event.stopPropagation(); setArchived(item.id, 'archive'); }}>Archive</button>
+                : <button className="am-button approve" disabled={busy} onClick={event => { event.stopPropagation(); setArchived(item.id, 'restore'); }}>Restore</button>}
+            </div>
           </article>)}</div>}
       </section>
     </div>

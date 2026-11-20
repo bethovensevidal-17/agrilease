@@ -6,6 +6,10 @@ const {
   requireVerifiedOwner
 } = require('../middleware/auth');
 const { handleUpload } = require('../middleware/upload');
+<<<<<<< HEAD
+=======
+const { idempotency } = require('../middleware/idempotency');
+>>>>>>> master
 
 // PUBLIC: Browse approved equipment
 router.get('/', c.listPublic);
@@ -33,6 +37,10 @@ router.post(
   requireAuth,
   requireRole('owner'),
   requireVerifiedOwner,
+<<<<<<< HEAD
+=======
+  idempotency,
+>>>>>>> master
   handleUpload,
   c.create
 );

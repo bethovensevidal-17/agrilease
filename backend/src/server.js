@@ -1,5 +1,9 @@
 const app = require('./app');
 const db = require('./db');
+<<<<<<< HEAD
+=======
+const { ensureSchema } = require('./ensureSchema');
+>>>>>>> master
 
 const port = process.env.PORT || 3000;
 
@@ -7,6 +11,10 @@ const port = process.env.PORT || 3000;
   try {
     await db.query('SELECT 1');
     console.log('MySQL connected.');
+<<<<<<< HEAD
+=======
+    await ensureSchema();
+>>>>>>> master
   } catch (err) {
     console.error('Hindi makakonekta sa MySQL. I-check ang .env at kung naka-Start All ang Laragon.', err.message);
   }

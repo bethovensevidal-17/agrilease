@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, getToken, getUser } from '../api/client';
+<<<<<<< HEAD
+=======
+import { isNetworkFailure, newRequestId, queueOfflineBooking } from '../offline/sync';
+>>>>>>> master
 import '../styles/booking.css';
 import { assetUrl } from '../api/config';
 
@@ -60,6 +64,7 @@ export default function EquipmentBooking() {
   async function submit(e) {
     e.preventDefault(); setError(''); setMessage('');
     if (!getToken() || user?.role !== 'farmer') { setError('Mag-login gamit ang Farmer account para makapag-submit ng booking.'); return; }
+<<<<<<< HEAD
     const data = new FormData();
     data.append('equipment_id', id);
     data.append('start_date', form.start_date); data.append('start_time', form.start_time);
@@ -75,17 +80,50 @@ export default function EquipmentBooking() {
     try {
       const result = await api('/rentals', { method: 'POST', formData: data });
       setMessage(`Booking #${result.data?.id || result.booking_id || ''} submitted. Waiting for owner approval.`);
+=======
+    if (!await window.agrileaseDialog.confirm('Submit this booking request? The owner will review it after you submit.', { title: 'Submit booking', confirmText: 'Submit' })) return;
+    const payload = { equipment_id: Number(id), start_date: form.start_date, start_time: form.start_time, end_date: form.end_date, end_time: form.end_time, quantity: Number(form.quantity), payment_method: form.payment_method };
+    if (equipment.rate_type === 'hectare') payload.farm_area = Number(form.farm_area);
+    setSubmitting(true);
+    const requestId = newRequestId();
+    const pendingSyncMessage = 'Booking saved on this device as PENDING SYNC. Hindi pa ito naipapadala sa Owner at hindi pa reserved ang equipment. Ise-send ito kapag bumalik ang internet, pagkatapos ay ive-validate ng server.';
+    try {
+      if (!navigator.onLine) {
+        if (form.payment_method !== 'cash') throw new Error('Offline booking is currently available for Cash payment only. Please reconnect to submit other payment methods.');
+        await queueOfflineBooking(payload, getToken(), requestId);
+        setMessage(pendingSyncMessage);
+      } else {
+        const data = new FormData();
+        Object.entries(payload).forEach(([key,value]) => data.append(key, String(value)));
+        if (form.payment_method !== 'cash') { data.append('payment_reference', form.payment_reference); if (proof) data.append('payment_proof', proof); }
+        try {
+          const result = await api('/rentals', { method: 'POST', formData: data, headers: { 'X-Idempotency-Key': requestId } });
+          setMessage(`Booking #${result.data?.id || result.booking_id || ''} submitted. Waiting for owner approval.`);
+        } catch (requestError) {
+          // Server unreachable: Cash bookings are kept on this device (same request id, so no duplicate if it did arrive).
+          if (form.payment_method === 'cash' && isNetworkFailure(requestError)) {
+            await queueOfflineBooking(payload, getToken(), requestId);
+            setMessage(pendingSyncMessage);
+          } else throw requestError;
+        }
+      }
+>>>>>>> master
       setForm(prev => ({ ...prev, payment_reference: '' })); setProof(null);
     } catch (err) { setError(err.message); }
     finally { setSubmitting(false); }
   }
 
   if (loading) return <p>Loading equipment details...</p>;
+<<<<<<< HEAD
   if (!equipment) return <section className="booking-page"><p className="error">{error || 'Equipment not found.'}</p><Link to="/">Back to equipment</Link></section>;
+=======
+  if (!equipment) return <section className="booking-page"><p className="error">{error || 'Equipment not found.'}</p><Link className="booking-back-button" to={user?.role === 'farmer' ? '/farmer/equipment' : '/browse'}>Back to equipment</Link></section>;
+>>>>>>> master
   const image = equipment.image_path ? assetUrl(`/uploads/${equipment.image_path.replace(/^\/+/, '')}`) : '';
   const rateType = equipment.rate_type === 'hour' ? 'per hour' : equipment.rate_type === 'hectare' ? 'per hectare' : 'per day';
 
   return <section className="booking-page">
+<<<<<<< HEAD
     <Link to={user?.role === 'farmer' ? '/farmer/equipment' : '/'}>← Back to equipment</Link>
     <div className="booking-detail-grid">
       <article className="booking-equipment-card">
@@ -93,6 +131,16 @@ export default function EquipmentBooking() {
         <h1>{equipment.equipment_name}</h1>
         <p className="booking-muted">{equipment.category_name || 'Agricultural equipment'} · {equipment.brand_model || 'No brand/model specified'}</p>
         <p>{equipment.description || 'No description provided.'}</p>
+=======
+    <Link className="booking-back-button" to={user?.role === 'farmer' ? '/farmer/equipment' : '/browse'}>Back to equipment</Link>
+    <div className="booking-detail-grid">
+      <article className="booking-equipment-card">
+        {image ? <img className="booking-equipment-image" src={image} alt={equipment.equipment_name} /> : <div className="booking-image-placeholder">No equipment image</div>}
+        <div className="booking-equipment-info">
+        <h1>{equipment.equipment_name}</h1>
+        <p className="booking-muted">{equipment.category_name || 'Agricultural equipment'} · {equipment.brand_model || 'No brand/model specified'}</p>
+        <p className="booking-description">{equipment.description || 'No description provided.'}</p>
+>>>>>>> master
         <dl className="booking-specs">
           <div><dt>Condition</dt><dd>{equipment.condition_status || 'Not specified'}</dd></div>
           <div><dt>Rate</dt><dd>{money.format(Number(equipment.rental_rate))} {rateType}</dd></div>
@@ -110,6 +158,10 @@ export default function EquipmentBooking() {
           <div><dt>Location</dt><dd>{equipment.location || 'Not specified'}</dd></div>
           <div><dt>Equipment owner</dt><dd>{equipment.owner_name || 'AgriLease owner'}</dd></div>
         </dl>
+<<<<<<< HEAD
+=======
+        </div>
+>>>>>>> master
       </article>
 
       <form className="booking-form-card" onSubmit={submit}>
@@ -159,7 +211,12 @@ export default function EquipmentBooking() {
         </section></div>
         {error && <p className="booking-error">{error}</p>}
         {message && <p className="booking-success">{message} <Link to="/farmer/rentals">View my bookings</Link></p>}
+<<<<<<< HEAD
         <button className="booking-submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button>
+=======
+        {equipment.availability_status && equipment.availability_status !== 'available' && <p className="booking-error">This equipment is currently {String(equipment.availability_status).replaceAll('_', ' ')} and cannot be booked.</p>}
+        <button className="booking-submit" disabled={submitting || (equipment.availability_status && equipment.availability_status !== 'available')}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button>
+>>>>>>> master
         {!getToken() && <p className="booking-muted">You must <Link to="/login">log in</Link> as a farmer to submit a booking.</p>}
       </form>
     </div>

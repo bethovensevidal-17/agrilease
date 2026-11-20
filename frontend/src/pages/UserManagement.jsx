@@ -84,8 +84,16 @@ export default function UserManagement() {
 
     const reason = newStatus === 'suspended' ? (await window.agrileaseDialog.prompt(`Enter the reason for suspending ${user.full_name}'s account:`, { title: 'Suspend account', placeholder: 'Enter the reason (at least 5 characters)' }))?.trim() : '';
     if (newStatus === 'suspended' && (!reason || reason.length < 5)) { setError('A suspension reason of at least 5 characters is required.'); return; }
+<<<<<<< HEAD
     const confirmed = await window.agrileaseDialog.confirm(`Are you sure you want to ${newStatus} ${user.full_name}'s account?`);
     if (!confirmed) return;
+=======
+    // Suspend: ang reason prompt na ang confirmation. Restore: may sariling confirmation.
+    if (newStatus === 'active') {
+      const confirmed = await window.agrileaseDialog.confirm(`Restore ${user.full_name}'s account? They will be able to log in again.`, { title: 'Restore account', confirmText: 'Restore' });
+      if (!confirmed) return;
+    }
+>>>>>>> master
 
     try {
       setUpdatingId(user.id);
@@ -287,6 +295,12 @@ export default function UserManagement() {
 
                     <td>
                       <StatusBadge status={user.status} />
+<<<<<<< HEAD
+=======
+                      {user.status === 'suspended' && user.suspension_reason && (
+                        <small className="um-reason" title={user.suspension_reason}>Reason: {user.suspension_reason}</small>
+                      )}
+>>>>>>> master
                     </td>
 
                     <td>
@@ -311,7 +325,11 @@ export default function UserManagement() {
                             ? 'Updating...'
                             : user.status === 'active'
                               ? 'Suspend'
+<<<<<<< HEAD
                               : 'Activate'}
+=======
+                              : 'Restore'}
+>>>>>>> master
                         </button>
                       ) : (
                         <span className="um-protected">
@@ -347,6 +365,10 @@ export default function UserManagement() {
               <div><dt>Account Status</dt><dd><StatusBadge status={selectedUser.status} /></dd></div>
               <div><dt>Date Registered</dt><dd>{formatDate(selectedUser.created_at)}</dd></div>
               <div><dt>User ID</dt><dd>#{selectedUser.id}</dd></div>
+<<<<<<< HEAD
+=======
+              {selectedUser.status === 'suspended' && <div><dt>Suspension Reason</dt><dd>{selectedUser.suspension_reason || 'No reason recorded.'}</dd></div>}
+>>>>>>> master
             </dl>
             <button className="um-modal-close" onClick={() => setSelectedUser(null)}>Close</button>
           </section>

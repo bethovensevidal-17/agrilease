@@ -114,6 +114,7 @@ async function requestPlan(req, res, next) {
       });
     }
 
+<<<<<<< HEAD
     const isTrial = Number(plan.price) === 0 && Number(plan.duration_days) === 7 && Number(plan.equipment_limit) === 2;
     if (isTrial) {
       if (owner.trial_used) { await conn.rollback(); return res.status(409).json({ error: 'Nagagamit na ang iyong one-time free trial.' }); }
@@ -126,6 +127,21 @@ async function requestPlan(req, res, next) {
       await conn.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [req.user.id]);
       await conn.commit();
       return res.status(201).json({ success: true, message: 'Your 7-day free trial is now active.' });
+=======
+    const isTrial = Number(plan.price) === 0;
+    if (isTrial) {
+      if (owner.trial_used) { await conn.rollback(); return res.status(409).json({ error: 'Nagagamit na ang iyong one-time free trial.' }); }
+      const trialDays = Number(plan.duration_days) || 7;
+      const [active] = await conn.execute("SELECT id FROM subscriptions WHERE owner_id = ? AND status = 'active' AND end_date >= NOW() LIMIT 1", [req.user.id]);
+      if (active.length) { await conn.rollback(); return res.status(409).json({ error: 'May active subscription ka na.' }); }
+      await conn.execute(
+        "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))",
+        [req.user.id, planId, trialDays]
+      );
+      await conn.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [req.user.id]);
+      await conn.commit();
+      return res.status(201).json({ success: true, message: `Your ${trialDays}-day free trial is now active.` });
+>>>>>>> master
     }
 
     const method = String(req.body.payment_method || '').toLowerCase();
@@ -310,11 +326,138 @@ async function myPayments(req, res, next) {
   }
 }
 
+<<<<<<< HEAD
+=======
+// ---------- ADMIN: plans and subscriptions management ----------
+function cleanPlan(body) {
+  const name = String(body.plan_name || '').trim();
+  const price = Number(body.price);
+  const days = Number(body.duration_days);
+  const limitRaw = body.equipment_limit;
+  const limit = limitRaw === null || limitRaw === undefined || limitRaw === '' ? null : Number(limitRaw);
+  const description = String(body.description || '').trim();
+  if (name.length < 2 || name.length > 50) return { error: 'Plan name must be 2 to 50 characters.' };
+  if (!Number.isFinite(price) || price < 0 || price > 99999999) return { error: 'Enter a valid price (0 or higher).' };
+  if (!Number.isInteger(days) || days < 1 || days > 3650) return { error: 'Duration must be a whole number of days (1 to 3650).' };
+  if (limit !== null && (!Number.isInteger(limit) || limit < 1)) return { error: 'Equipment limit must be a whole number, or blank for unlimited.' };
+  if (description.length > 1000) return { error: 'Description is too long.' };
+  const isActive = body.is_active === undefined ? 1 : (body.is_active === true || body.is_active === 1 || body.is_active === '1' ? 1 : 0);
+  return { value: { name, price, days, limit, description: description || null, isActive } };
+}
+
+async function adminCreatePlan(req, res, next) {
+  try {
+    const { value, error } = cleanPlan(req.body || {});
+    if (error) return res.status(400).json({ success: false, message: error });
+    const [dupe] = await db.execute('SELECT id FROM subscription_plans WHERE LOWER(plan_name) = LOWER(?) LIMIT 1', [value.name]);
+    if (dupe.length) return res.status(409).json({ success: false, message: 'May plan na may ganitong pangalan.' });
+    const [result] = await db.execute(
+      'INSERT INTO subscription_plans (plan_name, price, duration_days, equipment_limit, description, is_active) VALUES (?, ?, ?, ?, ?, ?)',
+      [value.name, value.price, value.days, value.limit, value.description, value.isActive]
+    );
+    res.status(201).json({ success: true, message: 'Plan added.', id: result.insertId });
+  } catch (error) { next(error); }
+}
+
+async function adminUpdatePlan(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ success: false, message: 'Invalid plan ID.' });
+    const { value, error } = cleanPlan(req.body || {});
+    if (error) return res.status(400).json({ success: false, message: error });
+    const [dupe] = await db.execute('SELECT id FROM subscription_plans WHERE LOWER(plan_name) = LOWER(?) AND id <> ? LIMIT 1', [value.name, id]);
+    if (dupe.length) return res.status(409).json({ success: false, message: 'May ibang plan na may ganitong pangalan.' });
+    const [result] = await db.execute(
+      'UPDATE subscription_plans SET plan_name = ?, price = ?, duration_days = ?, equipment_limit = ?, description = ?, is_active = ? WHERE id = ?',
+      [value.name, value.price, value.days, value.limit, value.description, value.isActive, id]
+    );
+    if (!result.affectedRows) return res.status(404).json({ success: false, message: 'Plan not found.' });
+    res.json({ success: true, message: 'Plan updated.' });
+  } catch (error) { next(error); }
+}
+
+function validDateTime(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+}
+
+async function adminCreateSubscription(req, res, next) {
+  try {
+    const ownerId = Number(req.body.owner_id);
+    const planId = Number(req.body.plan_id);
+    const status = String(req.body.status || 'active');
+    if (!Number.isInteger(ownerId) || ownerId < 1) return res.status(400).json({ success: false, message: 'Pumili ng owner.' });
+    if (!Number.isInteger(planId) || planId < 1) return res.status(400).json({ success: false, message: 'Pumili ng plan.' });
+    if (!['pending', 'active', 'expired', 'cancelled'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
+    const [[owner]] = await db.execute("SELECT id, status FROM users WHERE id = ? AND role = 'owner' LIMIT 1", [ownerId]);
+    if (!owner) return res.status(404).json({ success: false, message: 'Owner not found.' });
+    const [[plan]] = await db.execute('SELECT id, price, duration_days FROM subscription_plans WHERE id = ? LIMIT 1', [planId]);
+    if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
+    const startDate = req.body.start_date && validDateTime(req.body.start_date) ? req.body.start_date : null;
+    const type = Number(plan.price) === 0 ? 'trial' : 'paid';
+    if (status === 'active') {
+      await db.execute("UPDATE subscriptions SET status = 'expired' WHERE owner_id = ? AND status = 'active'", [ownerId]);
+    }
+    const [result] = await db.execute(
+      status === 'pending'
+        ? "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, ?, 'pending', NULL, NULL)"
+        : `INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date)
+           VALUES (?, ?, ?, ?, COALESCE(?, NOW()), DATE_ADD(COALESCE(?, NOW()), INTERVAL ? DAY))`,
+      status === 'pending'
+        ? [ownerId, planId, type]
+        : [ownerId, planId, type, status, startDate, startDate, Number(plan.duration_days)]
+    );
+    if (type === 'trial') await db.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [ownerId]).catch(() => {});
+    try { await notifyUser(ownerId, 'Subscription updated', 'An administrator added a subscription to your account.', '/owner/subscription'); } catch (e) { console.error('Subscription notification failed:', e.message); }
+    res.status(201).json({ success: true, message: 'Subscription added.', id: result.insertId });
+  } catch (error) { next(error); }
+}
+
+async function adminUpdateSubscription(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ success: false, message: 'Invalid subscription ID.' });
+    const [[current]] = await db.execute('SELECT id, owner_id, plan_id FROM subscriptions WHERE id = ? LIMIT 1', [id]);
+    if (!current) return res.status(404).json({ success: false, message: 'Subscription not found.' });
+    const status = String(req.body.status || '');
+    if (!['pending', 'active', 'expired', 'cancelled'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
+    const planId = req.body.plan_id ? Number(req.body.plan_id) : current.plan_id;
+    if (planId) {
+      const [[plan]] = await db.execute('SELECT id, price FROM subscription_plans WHERE id = ? LIMIT 1', [planId]);
+      if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
+    }
+    const startDate = req.body.start_date ? (validDateTime(req.body.start_date) ? req.body.start_date : false) : null;
+    const endDate = req.body.end_date ? (validDateTime(req.body.end_date) ? req.body.end_date : false) : null;
+    if (startDate === false || endDate === false) return res.status(400).json({ success: false, message: 'Invalid date.' });
+    if (startDate && endDate && startDate > endDate) return res.status(400).json({ success: false, message: 'Start date cannot be later than end date.' });
+    if (status === 'active') {
+      await db.execute("UPDATE subscriptions SET status = 'expired' WHERE owner_id = ? AND status = 'active' AND id <> ?", [current.owner_id, id]);
+    }
+    await db.execute(
+      `UPDATE subscriptions SET plan_id = ?, status = ?,
+         start_date = COALESCE(?, start_date),
+         end_date = COALESCE(?, end_date)
+       WHERE id = ?`,
+      [planId, status, startDate, endDate ? `${endDate} 23:59:59` : null, id]
+    );
+    try { await notifyUser(current.owner_id, 'Subscription updated', `Your subscription is now ${status}.`, '/owner/subscription'); } catch (e) { console.error('Subscription notification failed:', e.message); }
+    res.json({ success: true, message: 'Subscription updated.' });
+  } catch (error) { next(error); }
+}
+
+>>>>>>> master
 module.exports = {
   listPlans,
   mySubscription,
   myPayments,
   requestPlan,
   verifyPayment,
+<<<<<<< HEAD
   getPaymentProof
+=======
+  getPaymentProof,
+  adminCreatePlan,
+  adminUpdatePlan,
+  adminCreateSubscription,
+  adminUpdateSubscription
+>>>>>>> master
 };

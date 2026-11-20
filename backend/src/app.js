@@ -33,6 +33,10 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/content', require('./routes/content'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));
+<<<<<<< HEAD
+=======
+app.use('/api/push', require('./routes/push'));
+>>>>>>> master
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/owner/payment-settings', require('./routes/ownerPaymentSettings'));
 app.use('/api/admin', require('./routes/admin'));

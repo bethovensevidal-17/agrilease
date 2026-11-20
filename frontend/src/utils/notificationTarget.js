@@ -1,6 +1,11 @@
 export function getNotificationTarget(item, role) {
   const url = item?.action_url;
+<<<<<<< HEAD
   if (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) return url;
+=======
+  const selfPages = ['/admin/notifications', '/owner/notifications', '/farmer/notifications'];
+  if (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') && !selfPages.includes(url)) return url;
+>>>>>>> master
   const text = `${item?.title || ''} ${item?.message || ''}`.toLowerCase();
   if (role === 'admin') {
     if (text.includes('owner') || text.includes('verification') || text.includes('application')) return '/admin/owners';

@@ -9,6 +9,10 @@ import {
   BarChart3,
   Bell,
   Menu,
+<<<<<<< HEAD
+=======
+  WifiOff,
+>>>>>>> master
   X,
   LogOut,
 } from 'lucide-react';
@@ -23,6 +27,10 @@ const navigation = [
   { label: 'Equipment Management', path: '/admin/equipment', icon: Tractor },
   { label: 'Subscription Management', path: '/admin/subscriptions', icon: CreditCard },
   { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
+<<<<<<< HEAD
+=======
+  { label: 'Offline Access', path: '/admin/offline', icon: WifiOff },
+>>>>>>> master
 ];
 
 export default function AdminLayout() {

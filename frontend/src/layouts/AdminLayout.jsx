@@ -1,21 +1,19 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
   ClipboardCheck,
   Tractor,
-  CalendarDays,
   CreditCard,
   BarChart3,
-  UserCircle,
   Bell,
   Menu,
   X,
   LogOut,
 } from 'lucide-react';
 
-import { getUser, clearAuth } from '../api/client';
+import { api, getUser, clearAuth } from '../api/client';
 import '../admin.css';
 
 const navigation = [
@@ -23,20 +21,31 @@ const navigation = [
   { label: 'User Management', path: '/admin/users', icon: Users },
   { label: 'Owner Verification', path: '/admin/owners', icon: ClipboardCheck },
   { label: 'Equipment Management', path: '/admin/equipment', icon: Tractor },
-  { label: 'Rental Monitoring', path: '/admin/rentals', icon: CalendarDays },
-  { label: 'Subscriptions & Payments', path: '/admin/subscriptions', icon: CreditCard },
-  { label: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3 },
-  { label: 'Notifications', path: '/admin/notifications', icon: Bell },
-  { label: 'Profile & Settings', path: '/admin/profile', icon: UserCircle },
+  { label: 'Subscription Management', path: '/admin/subscriptions', icon: CreditCard },
+  { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
 ];
 
 export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const user = getUser();
   const navigate = useNavigate();
 
-  function logout() {
-    if (!window.confirm('Are you sure you want to logout?')) return;
+  const loadHeaderIndicators = useCallback(async () => {
+    try {
+      const notifications = await api('/notifications');
+      setUnreadNotifications(Number(notifications?.unread_count || 0));
+    } catch { /* Header remains usable if indicator endpoints are unavailable. */ }
+  }, []);
+
+  useEffect(() => {
+    loadHeaderIndicators();
+    const timer = window.setInterval(loadHeaderIndicators, 20000);
+    return () => window.clearInterval(timer);
+  }, [loadHeaderIndicators]);
+
+  async function logout() {
+    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?')) return;
 
     clearAuth();
     navigate('/login', { replace: true });
@@ -57,11 +66,11 @@ export default function AdminLayout() {
       )}
 
       <aside className={`admin-sidebar ${menuOpen ? 'open' : ''}`}>
-        <div className="admin-brand">
-          <img src="/agrilease-logo.png" alt="AGRILEASE" />
+        <div className="admin-brand admin-reference-brand">
+          <span className="admin-brand-mark">A</span>
+          <span className="admin-brand-copy"><strong>AGRILEASE</strong><small>ADMIN PORTAL</small></span>
         </div>
 
-        <div className="admin-nav-heading">ADMINISTRATION</div>
 
         <nav className="admin-navigation">
           {navigation.map(({ label, path, icon: Icon, end }) => (
@@ -87,7 +96,7 @@ export default function AdminLayout() {
       </aside>
 
       <div className="admin-main">
-        <header className="admin-topbar">
+        <header className="admin-topbar portal-topbar">
           <div className="admin-topbar-left">
             <button
               className="admin-menu-button"
@@ -98,33 +107,32 @@ export default function AdminLayout() {
               {menuOpen ? <X size={23} /> : <Menu size={23} />}
             </button>
 
-            <div>
-              <strong>AGRILEASE ADMIN</strong>
-              <span>Administration Portal</span>
+            <div className="role-header-title">
+              <small>AGRILEASE / ADMIN PORTAL</small>
+              <strong>Administration Portal</strong>
+              <span>Manage users, equipment, subscriptions and reports.</span>
             </div>
           </div>
 
           <div className="admin-topbar-right">
             <button
-              className="admin-icon-button"
-              title="Notifications"
-              aria-label="Notifications"
+              className="admin-icon-button admin-header-indicator portal-header-icon"
+              title={`Notifications${unreadNotifications ? ` (${unreadNotifications} unread)` : ''}`}
+              aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`}
               onClick={() => navigate('/admin/notifications')}
             >
               <Bell size={20} />
+              {unreadNotifications > 0 && <span className="portal-header-count">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}
             </button>
 
             <button
               className="admin-profile-button"
               onClick={() => navigate('/admin/profile')}
             >
-              <span className="admin-avatar">
+              <span className="admin-avatar portal-avatar">
                 {(user?.full_name || 'Admin').charAt(0).toUpperCase()}
               </span>
-              <span className="admin-user-info">
-                <strong>{user?.full_name || 'Administrator'}</strong>
-                <small>Administrator</small>
-              </span>
+              <span className="admin-profile-copy"><strong>{user?.full_name || 'Administrator'}</strong><small>Administrator</small></span>
             </button>
           </div>
         </header>

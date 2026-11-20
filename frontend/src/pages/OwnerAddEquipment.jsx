@@ -9,6 +9,7 @@ const initialForm = {
   brand_model: '',
   description: '',
   rate: '',
+  available_quantity: '1',
   rate_type: 'hour',
   condition_status: 'good',
   location: 'Victoria, Oriental Mindoro',
@@ -221,6 +222,19 @@ export default function OwnerAddEquipment() {
                 placeholder="Enter rental rate"
                 min="0.01"
                 step="0.01"
+                required
+              />
+            </div>
+
+            <div className="owner-field">
+              <label>Available Quantity *</label>
+              <input
+                type="number"
+                name="available_quantity"
+                value={form.available_quantity}
+                onChange={handleChange}
+                min="1"
+                step="1"
                 required
               />
             </div>

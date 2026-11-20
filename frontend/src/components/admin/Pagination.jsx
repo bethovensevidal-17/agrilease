@@ -1,6 +1,6 @@
 export default function Pagination({
   totalItems,
-  itemsPerPage = 10,
+  itemsPerPage = 8,
   currentPage,
   onPageChange,
 }) {
@@ -14,18 +14,13 @@ export default function Pagination({
     totalItems
   );
 
-  const pages = Array.from(
-    { length: totalPages },
-    (_, index) => index + 1
-  );
-
   return (
     <div className="admin-pagination">
       <span className="admin-pagination-info">
         Showing {startItem}–{endItem} of {totalItems} records
       </span>
 
-      <div className="admin-pagination-controls">
+      <div className="admin-pagination-controls" aria-label="Pagination">
         <button
           type="button"
           disabled={currentPage === 1}
@@ -33,17 +28,6 @@ export default function Pagination({
         >
           Previous
         </button>
-
-        {pages.map(page => (
-          <button
-            type="button"
-            key={page}
-            className={currentPage === page ? 'active' : ''}
-            onClick={() => onPageChange(page)}
-          >
-            {page}
-          </button>
-        ))}
 
         <button
           type="button"

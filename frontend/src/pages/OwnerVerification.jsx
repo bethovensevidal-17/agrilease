@@ -34,6 +34,7 @@ export default function OwnerVerification() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [processingId, setProcessingId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [documents, setDocuments] = useState({});
@@ -42,7 +43,7 @@ export default function OwnerVerification() {
 
   const documentUrls = useRef({});
 
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
 
   async function loadOwners(selectedStatus = status) {
     try {
@@ -157,6 +158,7 @@ export default function OwnerVerification() {
     setDocuments({});
     setDocumentErrors({});
     setDocumentLoading({});
+    setRejectionReason('');
   }
 
   async function updateOwner(ownerId, newStatus) {
@@ -164,7 +166,12 @@ export default function OwnerVerification() {
       ? 'approve'
       : 'reject';
 
-    if (!window.confirm(`Are you sure you want to ${action} this owner?`)) {
+    if (newStatus === 'rejected' && rejectionReason.trim().length < 5) {
+      setError('Please enter a rejection reason with at least 5 characters.');
+      return;
+    }
+
+    if (!await window.agrileaseDialog.confirm(`Are you sure you want to ${action} this owner?`)) {
       return;
     }
 
@@ -175,8 +182,15 @@ export default function OwnerVerification() {
 
       await api(`/admin/owners/${ownerId}/verify`, {
         method: 'PATCH',
-        body: { status: newStatus }
+        body: {
+          status: newStatus,
+          rejection_reason: newStatus === 'rejected'
+            ? rejectionReason.trim()
+            : null
+        }
       });
+
+      setRejectionReason('');
 
       setMessage(
         newStatus === 'verified'
@@ -336,7 +350,11 @@ export default function OwnerVerification() {
                       <button
                         type="button"
                         className="owner-review-btn"
-                        onClick={() => setSelectedOwner(owner)}
+                        onClick={() => {
+                          setError('');
+                          setRejectionReason('');
+                          setSelectedOwner(owner);
+                        }}
                       >
                         Review Application
                       </button>
@@ -443,6 +461,14 @@ export default function OwnerVerification() {
                 </div>
               </section>
 
+              {selectedOwner.verification_status === 'rejected' &&
+                selectedOwner.rejection_reason && (
+                  <section className="owner-review-section">
+                    <h3>Previous Rejection Reason</h3>
+                    <p>{selectedOwner.rejection_reason}</p>
+                  </section>
+                )}
+
               <section className="owner-review-section">
                 <h3>Submitted Documents</h3>
 
@@ -521,6 +547,24 @@ export default function OwnerVerification() {
             <div className="owner-modal-actions">
               {selectedOwner.verification_status === 'pending' && (
                 <>
+                  <div
+                    className="owner-rejection-reason"
+                    style={{ flexBasis: '100%' }}
+                  >
+                    <label htmlFor="owner-rejection-reason">
+                      Reason for rejection (required when rejecting)
+                    </label>
+
+                    <textarea
+                      id="owner-rejection-reason"
+                      rows={3}
+                      maxLength={1000}
+                      value={rejectionReason}
+                      onChange={event => setRejectionReason(event.target.value)}
+                      placeholder="Explain what document or information needs correction..."
+                    />
+                  </div>
+
                   <button
                     type="button"
                     className="owner-reject"

@@ -1,4 +1,5 @@
 const db = require('../db');
+const { notifyUser } = require('../services/notifications');
 const fs = require('fs');
 const path = require('path');
 const { uploadDirectory } = require('../middleware/ownerDocuments');
@@ -17,23 +18,13 @@ const getOwners = async (req, res, next) => {
       });
     }
 
-    let sql = `
-      SELECT
-        u.id,
-        u.full_name,
-        u.email,
-        u.phone,
-        u.status AS account_status,
-        u.created_at,
-        p.id AS profile_id,
-        p.business_name,
-        p.address,
-        p.verification_status,
-        p.trial_used
-      FROM users u
-      INNER JOIN provider_profiles p ON p.user_id = u.id
-      WHERE u.role = 'owner'
-    `;
+    const [profileColumns] = await db.execute(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'provider_profiles'`);
+    const profileSet = new Set(profileColumns.map(column => column.COLUMN_NAME));
+    const pick = (column, alias = column) => profileSet.has(column) ? `p.\`${column}\` AS \`${alias}\`` : `NULL AS \`${alias}\``;
+    let sql = `SELECT u.id, u.full_name, u.email, u.phone, u.status AS account_status, u.created_at,
+      ${pick('id', 'profile_id')}, ${pick('business_name')}, ${pick('address')},
+      ${pick('verification_status')}, ${pick('rejection_reason')}, ${pick('reviewed_at')}, ${pick('trial_used')}
+      FROM users u LEFT JOIN provider_profiles p ON p.user_id = u.id WHERE u.role = 'owner'`;
 
     const params = [];
 
@@ -64,6 +55,9 @@ const verifyOwner = async (req, res, next) => {
   try {
     const ownerId = Number(req.params.id);
     const { status } = req.body;
+    const rejectionReason = typeof req.body.rejection_reason === 'string'
+      ? req.body.rejection_reason.trim()
+      : '';
 
     if (!Number.isInteger(ownerId) || ownerId <= 0) {
       return res.status(400).json({
@@ -76,6 +70,20 @@ const verifyOwner = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Status must be verified or rejected.'
+      });
+    }
+
+    if (status === 'rejected' && rejectionReason.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a rejection reason (at least 5 characters).'
+      });
+    }
+
+    if (rejectionReason.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rejection reason must not exceed 1000 characters.'
       });
     }
 
@@ -124,14 +132,27 @@ const verifyOwner = async (req, res, next) => {
       [accountStatus, ownerId]
     );
 
-    await connection.execute(
-      `UPDATE provider_profiles
-       SET verification_status = ?
-       WHERE user_id = ?`,
-      [status, ownerId]
-    );
+    const [profileColumns] = await connection.execute(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'provider_profiles'`);
+    const profileSet = new Set(profileColumns.map(column => column.COLUMN_NAME));
+    const updates = []; const values = [];
+    if (profileSet.has('verification_status')) { updates.push('verification_status = ?'); values.push(status); }
+    if (profileSet.has('rejection_reason')) { updates.push('rejection_reason = ?'); values.push(status === 'rejected' ? rejectionReason : null); }
+    if (profileSet.has('reviewed_by')) { updates.push('reviewed_by = ?'); values.push(req.user.id); }
+    if (profileSet.has('reviewed_at')) updates.push('reviewed_at = NOW()');
+    if (updates.length) await connection.execute(`UPDATE provider_profiles SET ${updates.join(', ')} WHERE user_id = ?`, [...values, ownerId]);
+
+    // Start the 7-day free trial immediately after an owner is approved.
+    if (status === 'verified') {
+      const [activeTrial] = await connection.execute(`SELECT id FROM subscriptions WHERE owner_id = ? AND status = 'active' AND end_date > NOW() LIMIT 1`, [ownerId]);
+      if (!activeTrial.length) {
+        const [trialPlan] = await connection.execute(`SELECT id FROM subscription_plans WHERE LOWER(plan_name) LIKE '%free%' OR LOWER(plan_name) LIKE '%trial%' ORDER BY price ASC LIMIT 1`);
+        await connection.execute(`INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))`, [ownerId, trialPlan[0]?.id || null]);
+      }
+    }
+
 
     await connection.commit();
+    try { await notifyUser(ownerId, status === 'verified' ? 'Owner account approved' : 'Owner application rejected', status === 'verified' ? 'Your account has been approved. Your 7-day free trial has started.' : `Your owner application was rejected. Reason: ${rejectionReason}`, '/owner'); } catch (notificationError) { console.error('Owner decision notification failed:', notificationError.message); }
 
     return res.json({
       success: true,
@@ -139,7 +160,8 @@ const verifyOwner = async (req, res, next) => {
       data: {
         owner_id: ownerId,
         account_status: accountStatus,
-        verification_status: status
+        verification_status: status,
+        rejection_reason: status === 'rejected' ? rejectionReason : null
       }
     });
 
@@ -276,6 +298,15 @@ const getDashboardSummary = async (req, res, next) => {
          WHERE status = 'pending') AS pending_rentals,
 
         (SELECT COUNT(*) FROM rental_requests
+         WHERE status = 'approved') AS approved_rentals,
+
+        (SELECT COUNT(*) FROM rental_requests
+         WHERE status = 'rejected') AS rejected_rentals,
+
+        (SELECT COUNT(*) FROM rental_requests
+         WHERE status = 'cancelled') AS cancelled_rentals,
+
+        (SELECT COUNT(*) FROM rental_requests
          WHERE status = 'ongoing') AS ongoing_rentals,
 
         (SELECT COUNT(*) FROM rental_requests
@@ -322,6 +353,22 @@ const getMonthlyAnalytics = async (req, res, next) => {
       GROUP BY DATE_FORMAT(created_at, '%Y-%m')
     `);
 
+    const [rentalRows] = await db.query(`
+      SELECT
+        DATE_FORMAT(created_at, '%Y-%m') AS month_key,
+        COUNT(*) AS total
+      FROM rental_requests
+      WHERE created_at >= DATE_SUB(
+        DATE_FORMAT(CURDATE(), '%Y-%m-01'),
+        INTERVAL 5 MONTH
+      )
+      AND created_at < DATE_ADD(
+        DATE_FORMAT(CURDATE(), '%Y-%m-01'),
+        INTERVAL 1 MONTH
+      )
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+    `);
+
     const [equipmentRows] = await db.query(`
       SELECT
         DATE_FORMAT(created_at, '%Y-%m') AS month_key,
@@ -340,6 +387,7 @@ const getMonthlyAnalytics = async (req, res, next) => {
 
     const usersMap = {};
     const equipmentMap = {};
+    const rentalsMap = {};
 
     userRows.forEach(row => {
       usersMap[row.month_key] = Number(row.total);
@@ -347,6 +395,10 @@ const getMonthlyAnalytics = async (req, res, next) => {
 
     equipmentRows.forEach(row => {
       equipmentMap[row.month_key] = Number(row.total);
+    });
+
+    rentalRows.forEach(row => {
+      rentalsMap[row.month_key] = Number(row.total);
     });
 
     const now = new Date();
@@ -370,7 +422,8 @@ const getMonthlyAnalytics = async (req, res, next) => {
           month: 'short'
         }),
         users: usersMap[monthKey] || 0,
-        equipment: equipmentMap[monthKey] || 0
+        equipment: equipmentMap[monthKey] || 0,
+        rentals: rentalsMap[monthKey] || 0
       });
     }
 
@@ -429,8 +482,8 @@ const getUsers = async (req, res, next) => {
     const params = [];
 
     if (search) {
-      sql += ` AND (full_name LIKE ? OR email LIKE ?)`;
-      params.push(`%${search}%`, `%${search}%`);
+      sql += ` AND (full_name LIKE ? OR email LIKE ? OR phone LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     if (role) {
@@ -446,10 +499,26 @@ const getUsers = async (req, res, next) => {
     sql += ` ORDER BY created_at DESC`;
 
     const [users] = await db.execute(sql, params);
+    const [summaryRows] = await db.query(`
+      SELECT
+        COUNT(*) AS total,
+        SUM(status = 'active') AS active,
+        SUM(status = 'pending') AS pending,
+        SUM(status = 'suspended') AS suspended,
+        SUM(role = 'farmer') AS farmers,
+        SUM(role = 'owner') AS owners
+      FROM users
+      WHERE role <> 'admin'
+    `);
+
+    const summary = Object.fromEntries(
+      Object.entries(summaryRows[0] || {}).map(([key, value]) => [key, Number(value || 0)])
+    );
 
     return res.json({
       success: true,
       total: users.length,
+      summary,
       data: users
     });
 
@@ -486,12 +555,24 @@ const updateUserStatus = async (req, res, next) => {
       });
     }
 
+    const reason = typeof req.body.reason === 'string' ? req.body.reason.trim() : '';
+    if (status === 'suspended' && reason.length < 5) {
+      return res.status(400).json({ success: false, message: 'Please provide a suspension reason (at least 5 characters).' });
+    }
+    const [userColumns] = await db.execute(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'`);
+    const userColumnSet = new Set(userColumns.map(column => column.COLUMN_NAME));
+    const reasonColumn = ['suspension_reason', 'status_reason'].find(column => userColumnSet.has(column));
+    const assignments = ['status = ?']; const values = [status];
+    if (reasonColumn) { assignments.push(`\`${reasonColumn}\` = ?`); values.push(status === 'suspended' ? reason : null); }
     const [result] = await db.execute(
-      `UPDATE users
-       SET status = ?
-       WHERE id = ? AND role != 'admin'`,
-      [status, userId]
+      `UPDATE users SET ${assignments.join(', ')} WHERE id = ? AND role != 'admin'`,
+      [...values, userId]
     );
+    if (status === 'suspended') {
+      try { await notifyUser(userId, 'Account suspended', reason, '/login'); } catch (notificationError) { console.error('Suspension notification failed:', notificationError.message); }
+    } else {
+      try { await notifyUser(userId, 'Account restored', 'Your account has been restored. You may now sign in.', '/login'); } catch (notificationError) { console.error('Account restoration notification failed:', notificationError.message); }
+    }
 
     if (result.affectedRows === 0) {
       return res.status(404).json({

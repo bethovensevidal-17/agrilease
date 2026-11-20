@@ -24,10 +24,10 @@ const SECTIONS = [
   { key: 'users', label: 'All Users', date: ['created_at'] },
   { key: 'owners', label: 'Owner Verification', date: ['created_at', 'reviewed_at'] },
   { key: 'equipment', label: 'Equipment Listings', date: ['created_at', 'updated_at'] },
-  { key: 'rentals', label: 'Rental Records', date: ['created_at', 'start_at', 'end_at'] },
+  { key: 'rentals', label: 'Rental Records', date: ['created_at', 'start_date', 'end_date', 'start_at', 'end_at'] },
   { key: 'rentalPayments', label: 'Rental Sales / Payments', date: ['paid_at', 'created_at'] },
-  { key: 'subscriptions', label: 'Subscriptions', date: ['created_at', 'starts_at', 'ends_at'] },
-  { key: 'payments', label: 'Subscription Payments', date: ['created_at', 'paid_at'] },
+  { key: 'subscriptions', label: 'Subscriptions', date: ['created_at', 'start_date', 'end_date', 'starts_at', 'ends_at'] },
+  { key: 'payments', label: 'Subscription Payments', date: ['created_at', 'payment_date', 'paid_at'] },
   { key: 'activity', label: 'System Activity Logs', date: ['created_at'] }
 ];
 
@@ -64,6 +64,9 @@ const LABELS = {
   reference: 'Reference',
   plan_name: 'Plan',
   price: 'Price',
+  start_date: 'Starts',
+  end_date: 'Expires',
+  payment_date: 'Payment Date',
   starts_at: 'Starts',
   ends_at: 'Expires',
   action: 'Activity',
@@ -78,6 +81,9 @@ const DATE_KEYS = new Set([
   'updated_at',
   'paid_at',
   'reviewed_at',
+  'start_date',
+  'end_date',
+  'payment_date',
   'starts_at',
   'ends_at',
   'start_at',
@@ -199,6 +205,11 @@ export default function Reports() {
   const [draftToDate, setDraftToDate] = useState('');
 
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 8;
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState([]);
 
@@ -280,40 +291,28 @@ export default function Reports() {
   }, [records, fromDate, toDate]);
 
   const salesByMonth = useMemo(() => {
-    const totals = new Map();
-
-    [
-      ...dateFilteredRecords.rentalPayments,
-      ...dateFilteredRecords.payments
-    ].forEach(row => {
-      const date = parseDate(row.paid_at || row.created_at);
-
+    const monthly = new Map();
+    const add = (rows, bucket) => rows.forEach(row => {
+      if (bucket === 'subscription' && row.payment_status !== 'verified') return;
+      const date = parseDate(row.paid_at || row.payment_date || row.created_at);
       if (!date) return;
-
-      const key = date.toLocaleDateString('en-PH', {
-        month: 'short',
-        year: 'numeric'
-      });
-
-      totals.set(
-        key,
-        (totals.get(key) || 0) +
-        Number(row.amount || row.total_amount || 0)
-      );
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleDateString('en-PH', { month: 'short', year: 'numeric' });
+      const entry = monthly.get(key) || { label, rental: 0, subscription: 0 };
+      const amount = Number(row.amount || row.total_amount || 0);
+      entry[bucket] += Number.isFinite(amount) ? amount : 0;
+      monthly.set(key, entry);
     });
-
-    return [...totals.entries()];
+    add(dateFilteredRecords.rentalPayments, 'rental');
+    add(dateFilteredRecords.payments, 'subscription');
+    return [...monthly.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, value]) => value);
   }, [dateFilteredRecords]);
 
   const salesChart = {
-    labels: salesByMonth.map(item => item[0]),
+    labels: salesByMonth.map(item => item.label),
     datasets: [
-      {
-        label: 'Recorded Sales (PHP)',
-        data: salesByMonth.map(item => item[1]),
-        backgroundColor: '#43834d',
-        borderRadius: 6
-      }
+      { label: 'Rental Revenue (PHP)', data: salesByMonth.map(item => item.rental), backgroundColor: '#43834d', borderRadius: 6 },
+      { label: 'Subscription Revenue (PHP)', data: salesByMonth.map(item => item.subscription), backgroundColor: '#d7a343', borderRadius: 6 }
     ]
   };
 
@@ -358,6 +357,9 @@ export default function Reports() {
 
   const filtered = useMemo(() => {
     return allRows.filter(row => {
+      if (statusFilter && !String(row.status ?? row.payment_status ?? row.approval_status ?? row.verification_status ?? '').toLowerCase().includes(statusFilter.toLowerCase())) return false;
+      if (categoryFilter && !String(row.category_name ?? row.category ?? '').toLowerCase().includes(categoryFilter.toLowerCase())) return false;
+      if (ownerFilter && !String(row.owner_name ?? row.business_name ?? row.owner_id ?? '').toLowerCase().includes(ownerFilter.toLowerCase())) return false;
       if (
         search.trim() &&
         !Object.values(row).some(value =>
@@ -371,15 +373,20 @@ export default function Reports() {
 
       return true;
     });
-  }, [allRows, search]);
+  }, [allRows, search, statusFilter, categoryFilter, ownerFilter]);
 
-  function applyDateFilter() {
+  useEffect(() => { setPage(1); }, [active, search, statusFilter, categoryFilter, ownerFilter, fromDate, toDate]);
+  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const uniqueCategories = [...new Set(allRows.map(row => row.category_name ?? row.category).filter(Boolean))];
+
+  async function applyDateFilter() {
     if (
       draftFromDate &&
       draftToDate &&
       draftFromDate > draftToDate
     ) {
-      alert('Date From cannot be later than Date To.');
+      await window.agrileaseDialog.alert('Date From cannot be later than Date To.');
       return;
     }
 
@@ -393,9 +400,12 @@ export default function Reports() {
     setFromDate('');
     setToDate('');
     setSearch('');
+    setStatusFilter('');
+    setCategoryFilter('');
+    setOwnerFilter('');
   }
 
-  function printRecords(all = false) {
+  async function printRecords(all = false) {
     const sections = all
       ? SECTIONS
       : [SECTIONS.find(section => section.key === active)];
@@ -464,7 +474,7 @@ export default function Reports() {
     const windowRef = window.open('', '_blank');
 
     if (!windowRef) {
-      alert('Please allow pop-ups to print or save PDF.');
+      await window.agrileaseDialog.alert('Please allow pop-ups to print or save PDF.');
       return;
     }
 
@@ -720,12 +730,16 @@ export default function Reports() {
             </p>
           </div>
 
-          <input
-            className="am-report-search"
-            value={search}
-            onChange={event => setSearch(event.target.value)}
-            placeholder="Search records..."
-          />
+          <div className="am-report-filter-controls">
+            <input className="am-report-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search records..." />
+            <input className="am-report-search" value={ownerFilter} onChange={event => setOwnerFilter(event.target.value)} placeholder="Filter owner..." />
+            <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} aria-label="Filter status">
+              <option value="">All Statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="verified">Verified</option><option value="rejected">Rejected</option><option value="active">Active</option><option value="expired">Expired</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option>
+            </select>
+            <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filter category">
+              <option value="">All Categories</option>{uniqueCategories.map(value => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* RECORDS TABLE */}
@@ -734,7 +748,13 @@ export default function Reports() {
             Loading records...
           </div>
         ) : (
-          <RecordsTable rows={filtered} />
+          <RecordsTable rows={pageRows} />
+        )}
+        {!loading && filtered.length > 0 && (
+          <div className="am-report-pagination">
+            <span>Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length}</span>
+            <div><button className="am-button neutral" disabled={page <= 1} onClick={() => setPage(value => Math.max(1, value - 1))}>Previous</button><strong>Page {page} of {pageCount}</strong><button className="am-button neutral" disabled={page >= pageCount} onClick={() => setPage(value => Math.min(pageCount, value + 1))}>Next</button></div>
+          </div>
         )}
 
       </section>

@@ -2,6 +2,7 @@ const db = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs/promises');
+const { notifyAdmins } = require('../services/notifications');
 
 // Remove uploaded files if registration fails or validation rejects them.
 async function removeUploadedFiles(files) {
@@ -66,12 +67,12 @@ async function register(req, res) {
       });
     }
 
-    if (password.length < 8) {
+    if (typeof password !== 'string' || password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
       await removeUploadedFiles(req.files);
 
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 8 characters.'
+        message: 'Password must be at least 8 characters and include letters, numbers, and at least one special character.'
       });
     }
 
@@ -170,6 +171,19 @@ async function register(req, res) {
     await connection.commit();
     transactionStarted = false;
 
+    // Alert administrators when a new equipment owner submits an application.
+    // Notification delivery must not roll back a successful registration.
+    if (role === 'owner') {
+      try {
+        await notifyAdmins(
+          'New owner registration',
+          `${full_name.trim()} submitted a new equipment owner registration and is awaiting verification.`
+        );
+      } catch (notificationError) {
+        console.error('Admin owner-registration notification failed:', notificationError.message);
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: role === 'owner'
@@ -241,8 +255,13 @@ async function login(req, res) {
     console.log('Database:', database.db_name);
     console.log('Searching email:', normalizedEmail);
 
+    const [userColumns] = await db.execute(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'`
+    );
+    const userColumnSet = new Set(userColumns.map(column => column.COLUMN_NAME));
+    const suspensionField = ['suspension_reason', 'status_reason'].find(column => userColumnSet.has(column));
     const [users] = await db.execute(
-      `SELECT id, full_name, email, password, phone, role, status
+      `SELECT id, full_name, email, password, phone, role, status, ${suspensionField ? `\`${suspensionField}\`` : 'NULL'} AS suspension_reason
        FROM users
        WHERE email = ?
        LIMIT 1`,
@@ -290,13 +309,15 @@ async function login(req, res) {
 
       const messages = {
         pending: 'Your account is still pending approval.',
-        suspended: 'Your account has been suspended.',
+        suspended: 'Your account has been suspended. Please contact the administrator for the reason.',
         rejected: 'Your account registration was rejected.'
       };
 
       return res.status(403).json({
         success: false,
-        message: messages[user.status] || 'Your account is not active.'
+        message: user.status === 'suspended' && user.suspension_reason
+          ? user.suspension_reason
+          : (messages[user.status] || 'Your account is not active.')
       });
     }
 

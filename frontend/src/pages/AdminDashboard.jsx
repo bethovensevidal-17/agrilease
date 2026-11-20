@@ -1,371 +1,135 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
-
-import {
-  Users,
-  Tractor,
-  ClipboardList,
-  CreditCard,
-} from 'lucide-react';
-
+import { Tractor, ClipboardList, Hourglass, Check } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  ArcElement,
   PointElement,
   LineElement,
   Tooltip,
   Legend,
   Filler,
 } from 'chart.js';
-
-import { Bar, Line } from 'react-chartjs-2';
-
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import StatCard from '../components/admin/StatCard';
 import ChartCard from '../components/admin/ChartCard';
+import Pagination from '../components/admin/Pagination';
+import { Activity, UserRound, Clock3 } from 'lucide-react';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-  Filler
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Tooltip, Legend, Filler);
 
-const getNumber = (value) => Number(value ?? 0);
-
-const commonOptions = {
+const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  animation: {
-    duration: 400,
-  },
-  plugins: {
-    legend: {
-      display: false,
-    },
-  },
+  plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 18 } } },
 };
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [activityLogs, setActivityLogs] = useState([]);
+  const [monthly, setMonthly] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [activityPage, setActivityPage] = useState(1);
+  const activityPageSize = 8;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [lastUpdated, setLastUpdated] = useState(null);
 
-  const loadDashboard = useCallback(async (showLoading = false) => {
+  const load = useCallback(async () => {
     try {
-      if (showLoading) setLoading(true);
-
       setError('');
-
-      const response = await api('/admin/dashboard');
-      setStats(response.data);
-      setLastUpdated(new Date());
-
-      try {
-        const monthlyResponse = await api('/admin/analytics/monthly');
-        setMonthlyData(monthlyResponse.data || []);
-      } catch {
-        setMonthlyData([]);
-      }
-
-      try {
-        const activityResponse = await api('/admin/activity');
-        setActivityLogs(activityResponse.data || []);
-      } catch {
-        setActivityLogs([]);
-      }
+      const [summary, analytics, activityResult] = await Promise.all([
+        api('/admin/dashboard'),
+        api('/admin/analytics/monthly'),
+        api('/admin/activity'),
+      ]);
+      setStats(summary.data || summary);
+      setMonthly(analytics.data || []);
+      setActivity(activityResult.data || []);
     } catch (err) {
-      setError(err.message || 'Failed to load dashboard.');
+      setError(err.message || 'Unable to load dashboard information.');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDashboard(true);
-
-    const interval = setInterval(() => {
-      loadDashboard(false);
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [loadDashboard]);
+    load();
+    const timer = setInterval(load, 60000);
+    return () => clearInterval(timer);
+  }, [load]);
 
   const s = stats || {};
-
-  const growthData = {
-    labels: monthlyData.map(item => item.month),
-    datasets: [
-      {
-        label: 'User Registrations',
-        data: monthlyData.map(item => Number(item.users || 0)),
-        borderColor: '#397443',
-        backgroundColor: 'rgba(57, 116, 67, 0.10)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 4,
-      },
-      {
-        label: 'Equipment Listings',
-        data: monthlyData.map(item => Number(item.equipment || 0)),
-        borderColor: '#d4a34a',
-        backgroundColor: 'rgba(212, 163, 74, 0.08)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 4,
-      },
-    ],
+  const activityStart = (activityPage - 1) * activityPageSize;
+  const visibleActivity = activity.slice(activityStart, activityStart + activityPageSize);
+  const bookingChart = {
+    labels: monthly.map(row => row.month),
+    datasets: [{ label: 'Reservations', data: monthly.map(row => Number(row.rentals || 0)), backgroundColor: '#176b3a', borderRadius: 6 }],
   };
-
-  const growthOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 400 },
-    plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
-        labels: { usePointStyle: true, padding: 18 },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: { precision: 0 },
-      },
-    },
-  };
-
-  // Equipment approval overview
-  const equipmentData = {
-    labels: ['Approved', 'Pending Approval'],
-    datasets: [
-      {
-        label: 'Equipment',
-        data: [
-          getNumber(s.approved_equipment),
-          getNumber(s.pending_equipment),
-        ],
-        backgroundColor: ['#397443', '#d4a34a'],
-        borderRadius: 7,
-        barThickness: 24,
-      },
-    ],
-  };
-
-  // Pending tasks overview
-  const attentionData = {
-    labels: [
-      'Owner Verification',
-      'Equipment Approval',
-      'Subscriptions',
-      'Payments',
-    ],
-    datasets: [
-      {
-        label: 'Pending Items',
-        data: [
-          getNumber(s.pending_owners),
-          getNumber(s.pending_equipment),
-          getNumber(s.pending_subscriptions),
-          getNumber(s.pending_payments),
-        ],
-        backgroundColor: [
-          '#d4a34a',
-          '#3978a8',
-          '#8064a8',
-          '#c75b50',
-        ],
-        borderRadius: 6,
-        barThickness: 22,
-      },
-    ],
-  };
-
-  const horizontalOptions = {
-    ...commonOptions,
-    indexAxis: 'y',
-    scales: {
-      x: {
-        beginAtZero: true,
-        ticks: { precision: 0 },
-        grid: { color: '#edf0ed' },
-      },
-      y: {
-        grid: { display: false },
-      },
-    },
+  const statusChart = {
+    labels: ['Pending', 'Approved', 'Completed', 'Rejected', 'Cancelled'],
+    datasets: [{
+      data: [s.pending_rentals || 0, s.approved_rentals || 0, s.completed_rentals || 0, s.rejected_rentals || 0, s.cancelled_rentals || 0].map(Number),
+      backgroundColor: ['#e8a317', '#176b3a', '#2787c7', '#dc4c4c', '#64748b'],
+      borderWidth: 0,
+    }],
   };
 
   return (
-    <div className="admin-dashboard-page">
-
-      {/* PAGE HEADER */}
-      <div className="admin-page-heading">
+    <div className="admin-dashboard-page admin-reference-dashboard">
+      <div className="admin-reference-heading">
         <div>
-          <h1>Admin Dashboard</h1>
-          <p>Overview of the AGRILEASE platform.</p>
+          <div className="admin-breadcrumb">AGRILEASE / ADMINISTRATION</div>
+          <h1>Dashboard Overview</h1>
+          <p>Monitor your agricultural rental operations.</p>
         </div>
-
-        <div className="admin-date">
-          {new Date().toLocaleDateString('en-PH', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
+        <span className="admin-today">{new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
       </div>
 
-      {error && (
-        <div className="admin-error">
-          {error}
-          <button
-            className="admin-retry"
-            onClick={() => loadDashboard(true)}
-          >
-            Retry
-          </button>
-        </div>
-      )}
+      <section className="admin-welcome-banner">
+        <small>ADMINISTRATION PORTAL</small>
+        <h2>Welcome back, AgriLease Admin!</h2>
+        <p>Here's an overview of your AgriLease rental operations and current system activities.</p>
+      </section>
 
-      {loading && !stats ? (
-        <div className="admin-loading">
-          Loading dashboard statistics...
-        </div>
-      ) : stats ? (
+      {error && <div className="admin-error">{error}<button onClick={load}>Retry</button></div>}
+      {loading && !stats ? <div className="admin-loading">Loading dashboard statistics...</div> : (
         <>
-          {/* SUMMARY */}
-          <h2 className="admin-section-heading">
-            System Overview
-          </h2>
-
-          <div className="admin-summary-grid">
-            <StatCard
-              title="Total Users"
-              value={s.total_users}
-              subtitle={`${getNumber(s.active_users)} active accounts`}
-              icon={Users}
-            />
-
-            <StatCard
-              title="Total Equipment"
-              value={s.total_equipment}
-              subtitle={`${getNumber(s.approved_equipment)} approved`}
-              icon={Tractor}
-              color="blue"
-            />
-
-            <StatCard
-              title="Rental Requests"
-              value={s.total_rentals}
-              subtitle={`${getNumber(s.pending_rentals)} pending`}
-              icon={ClipboardList}
-              color="orange"
-            />
-
-            <StatCard
-              title="Active Subscriptions"
-              value={s.active_subscriptions}
-              subtitle={`${getNumber(s.pending_subscriptions)} pending`}
-              icon={CreditCard}
-              color="purple"
-            />
+          <h2 className="admin-section-heading">System Overview</h2>
+          <p className="admin-section-description">Current equipment and reservation statistics.</p>
+          <div className="admin-summary-grid admin-four-stats">
+            <StatCard title="Total Equipment" value={s.total_equipment} subtitle="Equipment records" icon={Tractor} />
+            <StatCard title="Total Reservations" value={s.total_rentals} subtitle="All booking requests" icon={ClipboardList} color="blue" />
+            <StatCard title="Pending Reservations" value={s.pending_rentals} subtitle="Awaiting a decision" icon={Hourglass} color="orange" />
+            <StatCard title="Approved Reservations" value={s.approved_rentals} subtitle="Approved requests" icon={Check} color="purple" />
           </div>
 
-          <h2 className="admin-section-heading">
-            Platform Analytics
-          </h2>
-
-          <div className="admin-analytics-grid">
-            <ChartCard
-              title="Platform Growth"
-              subtitle="Monthly user registrations and equipment listings"
-            >
-              {monthlyData.length > 0 ? (
-                <div className="admin-growth-chart">
-                  <Line data={growthData} options={growthOptions} />
-                </div>
-              ) : (
-                <div className="admin-chart-empty">
-                  Monthly growth data is not yet available.
-                  <small>
-                    Required endpoint: GET /api/admin/analytics/monthly
-                  </small>
-                </div>
-              )}
+          <div className="admin-reference-chart-grid">
+            <ChartCard title="Booking Activity" subtitle="Bookings created over the last six months">
+              <div className="admin-reference-chart">{monthly.length ? <Bar data={bookingChart} options={{ ...chartOptions, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }} /> : <div className="admin-chart-empty">No booking activity data available yet.</div>}</div>
             </ChartCard>
-
-            <ChartCard
-              title="Equipment Overview"
-              subtitle="Approval distribution"
-            >
-              <div className="admin-side-chart">
-                <Bar data={equipmentData} options={horizontalOptions} />
-              </div>
-            </ChartCard>
-
-            <ChartCard
-              title="Needs Your Attention"
-              subtitle="Pending administrative tasks"
-            >
-              <div className="admin-side-chart">
-                <Bar data={attentionData} options={horizontalOptions} />
-              </div>
+            <ChartCard title="Booking Status" subtitle="Distribution of booking records">
+              <div className="admin-reference-chart admin-doughnut">{<Doughnut data={statusChart} options={{ ...chartOptions, cutout: '65%' }} />}</div>
             </ChartCard>
           </div>
 
-          {/* RECENT ACTIVITY */}
-          <h2 className="admin-section-heading">
-            Recent System Activity
-          </h2>
-
-          <div className="admin-activity-panel">
-            {activityLogs.length ? (
-              <div className="admin-activity-list">
-                {activityLogs.slice(0, 30).map((log, index) => (
-                  <div className="admin-activity-row" key={log.id || index}>
-                    <div className="admin-activity-icon"><ClipboardList size={18} /></div>
-                    <div className="admin-activity-copy">
-                      <strong>{log.actor_name || (log.user_id ? `User #${log.user_id}` : 'System')}</strong>
-                      <span>{log.action}</span>
-                    </div>
-                    <time>{log.created_at ? new Date(log.created_at).toLocaleString('en-PH') : '—'}</time>
-                    {log.actor_role && <small>{log.actor_role}</small>}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="admin-activity-empty">
-                <ClipboardList size={30} />
-                <strong>No system activity recorded yet.</strong>
-                <span>New successful logins and supported account actions will appear here.</span>
-              </div>
-            )}
-          </div>
-
-          <p className="admin-updated">
-            Last updated:{' '}
-            {lastUpdated
-              ? lastUpdated.toLocaleTimeString('en-PH')
-              : 'Waiting for data'}
-            {' · '}Automatically refreshes every 60 seconds.
-          </p>
+          <section className="admin-activity-panel" aria-labelledby="admin-recent-activity-title">
+            <div className="admin-activity-panel-heading">
+              <div><h2 id="admin-recent-activity-title">Recent System Activity</h2><p>Latest account registrations and system events.</p></div>
+              <Activity size={20} aria-hidden="true" />
+            </div>
+            {visibleActivity.length ? <div className="admin-activity-list">
+              {visibleActivity.map((item, index) => <article className="admin-activity-row" key={item.id ?? `${item.created_at}-${index}`}>
+                <span className="admin-activity-icon"><UserRound size={16}/></span>
+                <div className="admin-activity-copy"><strong>{item.actor_name || 'System'}</strong><span>{item.action || 'System event'}{item.actor_role ? ` · ${item.actor_role}` : ''}</span></div>
+                <time><Clock3 size={12}/> {item.created_at ? new Date(item.created_at).toLocaleString('en-PH') : '—'}</time>
+              </article>)}
+            </div> : <div className="admin-activity-empty">No activity records are available yet.</div>}
+            <Pagination totalItems={activity.length} itemsPerPage={activityPageSize} currentPage={activityPage} onPageChange={setActivityPage}/>
+          </section>
         </>
-      ) : (
-        <div className="admin-loading">
-          No dashboard data available.
-        </div>
       )}
-
     </div>
   );
 }

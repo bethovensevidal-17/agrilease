@@ -4,6 +4,9 @@ import Layout from './components/Layout.jsx';
 import AdminLayout from './layouts/AdminLayout.jsx';
 
 import BrowseEquipment from './pages/BrowseEquipment.jsx';
+import LandingPage from './pages/LandingPage.jsx';
+import EquipmentBooking from './pages/EquipmentBooking.jsx';
+import MyRentals from './pages/MyRentals.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
@@ -20,6 +23,15 @@ import OwnerOverview from './pages/OwnerOverview.jsx';
 import OwnerAddEquipment from './pages/OwnerAddEquipment.jsx';
 import OwnerEquipmentManagement from './pages/OwnerEquipmentManagement.jsx';
 import OwnerEditEquipment from './pages/OwnerEditEquipment.jsx';
+import OwnerBookings from './pages/OwnerBookings.jsx';
+import AdminBookingPayments from './pages/AdminBookingPayments.jsx';
+import NotificationCenter from './pages/NotificationCenter.jsx';
+import Messages from './pages/Messages.jsx';
+import OwnerSubscription from './pages/OwnerSubscription.jsx';
+import OwnerPaymentSettings from './pages/OwnerPaymentSettings.jsx';
+import FarmerProfile from './pages/FarmerProfile.jsx';
+import AdminContent from './pages/AdminContent.jsx';
+import Transactions from './pages/Transactions.jsx';
 
 import './admin-modules.css';
 
@@ -52,7 +64,8 @@ function ProtectedRoute({ role, children }) {
 function SimpleDashboard({ role }) {
   const user = getUser();
 
-  function logout() {
+  async function logout() {
+    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?')) return;
     clearAuth();
     window.location.href = '/login';
   }
@@ -95,21 +108,16 @@ export default function App() {
       >
         <Route index element={<FarmerOverview />} />
         <Route path="equipment" element={<BrowseEquipment />} />
-        <Route
-          path="rentals"
-          element={<FarmerPlaceholder title="My Rentals" />}
-        />
-        <Route
-          path="messages"
-          element={<FarmerPlaceholder title="Messages" />}
-        />
+        <Route path="rentals" element={<MyRentals />} />
+        <Route path="transactions" element={<Transactions role="farmer" />} />
+        <Route path="messages" element={<Messages />} />
         <Route
           path="notifications"
-          element={<FarmerPlaceholder title="Notifications" />}
+          element={<NotificationCenter title="Farmer Notifications" role="farmer" />}
         />
         <Route
           path="profile"
-          element={<FarmerPlaceholder title="My Profile" />}
+          element={<FarmerProfile />}
         />
       </Route>
 
@@ -123,6 +131,12 @@ export default function App() {
         }
       >
         <Route index element={<OwnerOverview />} />
+        <Route path="bookings" element={<OwnerBookings />} />
+        <Route path="transactions" element={<Transactions role="owner" />} />
+        <Route path="subscription" element={<OwnerSubscription />} />
+        <Route path="payment-settings" element={<OwnerPaymentSettings />} />
+        <Route path="messages" element={<Messages />} />
+        <Route path="notifications" element={<NotificationCenter title="Owner Notifications" role="owner" />} />
         <Route path="equipment/add" element={<OwnerAddEquipment />} />
         <Route path="equipment/:id/edit" element={<OwnerEditEquipment />} />
         <Route path="equipment" element={<OwnerEquipmentManagement />} />
@@ -160,6 +174,8 @@ export default function App() {
           element={<RentalMonitoring />}
         />
 
+        <Route path="booking-payments" element={<AdminBookingPayments />} />
+
         <Route
           path="subscriptions"
           element={<SubscriptionsPayments />}
@@ -179,12 +195,19 @@ export default function App() {
           path="notifications"
           element={<AdminNotifications />}
         />
+
+        <Route
+          path="content"
+          element={<AdminContent />}
+        />
       </Route>
 
-      {/* Public Equipment Browse */}
-      <Route element={<Layout />}>
+      {/* Public landing page, equipment browsing, and equipment details */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/browse" element={<Layout />}>
         <Route index element={<BrowseEquipment />} />
       </Route>
+      <Route path="/equipment/:id" element={<EquipmentBooking />} />
 
       {/* Unknown Routes */}
       <Route path="*" element={<Navigate to="/" replace />} />

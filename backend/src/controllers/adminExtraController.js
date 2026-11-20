@@ -39,6 +39,19 @@ async function getRentals(req, res, next) {
       if (!allowed.includes(req.query.status)) return res.status(400).json({ success: false, message: 'Invalid rental status.' });
       where.push('rr.status = ?'); params.push(req.query.status);
     }
+    const dateFrom = typeof req.query.date_from === 'string' ? req.query.date_from : '';
+    const dateTo = typeof req.query.date_to === 'string' ? req.query.date_to : '';
+    const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+    if (dateFrom && !validDate(dateFrom)) return res.status(400).json({ success: false, message: 'Invalid start date filter.' });
+    if (dateTo && !validDate(dateTo)) return res.status(400).json({ success: false, message: 'Invalid end date filter.' });
+    if (dateFrom && dateTo && dateFrom > dateTo) return res.status(400).json({ success: false, message: 'Start date cannot be later than end date.' });
+    if (startField && dateFrom) { where.push(`DATE(rr.\`${startField}\`) >= ?`); params.push(dateFrom); }
+    if (startField && dateTo) { where.push(`DATE(rr.\`${startField}\`) <= ?`); params.push(dateTo); }
+    const ownerSearch = typeof req.query.owner === 'string' ? req.query.owner.trim() : '';
+    if (ownerSearch && equipmentColumns.has('owner_id') && userColumns.has('full_name') && c.has('equipment_id')) {
+      where.push('(owner.full_name LIKE ? OR CAST(owner.id AS CHAR) = ?)');
+      params.push(`%${ownerSearch}%`, ownerSearch);
+    }
     const order = c.has('created_at') ? 'rr.created_at DESC' : c.has('id') ? 'rr.id DESC' : '1';
     const select = [
       expression('rr', c, ['id'], 'id'),
@@ -66,63 +79,52 @@ async function getSubscriptions(req, res, next) {
     const subCols = await columns('subscriptions');
     const planCols = await columns('subscription_plans');
     const userCols = await columns('users');
-    const plansAvailable = planCols.size > 0;
-    const subscriptionsAvailable = subCols.size > 0;
-    let plans = [];
-    let subscriptions = [];
-    if (plansAvailable) {
+    let plans = [], subscriptions = [], payments = [];
+    if (planCols.size) {
+      const planName = planCols.has('plan_name') ? 'plan_name' : 'name';
       const [rows] = await db.query(
-        `SELECT id, name, code, price, duration_days, equipment_limit
-         FROM subscription_plans ORDER BY price ASC`
+        `SELECT id, \`${planName}\` AS plan_name, price, duration_days, equipment_limit, ${planCols.has('description') ? 'description' : 'NULL AS description'} FROM subscription_plans ORDER BY price ASC`
       );
       plans = rows;
     }
-    if (subscriptionsAvailable) {
+    if (subCols.size) {
       const joins = [];
       if (subCols.has('owner_id') && userCols.has('id')) joins.push('LEFT JOIN users u ON u.id = s.owner_id');
       if (subCols.has('plan_id') && planCols.has('id')) joins.push('LEFT JOIN subscription_plans p ON p.id = s.plan_id');
-      const select = [
-        expression('s', subCols, ['id'], 'id'),
-        expression('s', subCols, ['owner_id'], 'owner_id'),
-        expression('s', subCols, ['plan_id'], 'plan_id'),
-        expression('s', subCols, ['price'], 'price'),
-        expression('s', subCols, ['method', 'payment_method'], 'method'),
-        expression('s', subCols, ['starts_at', 'start_at'], 'starts_at'),
-        expression('s', subCols, ['ends_at', 'end_at'], 'ends_at'),
-        expression('s', subCols, ['created_at'], 'created_at'),
-        expression('s', subCols, ['status'], 'status'),
-        userCols.has('full_name') && subCols.has('owner_id') ? 'u.full_name AS owner_name' : 'NULL AS owner_name',
-        planCols.has('name') && subCols.has('plan_id') ? 'p.name AS plan_name' : 'NULL AS plan_name'
-      ];
-      const order = subCols.has('created_at') ? 's.created_at DESC' : subCols.has('id') ? 's.id DESC' : '1';
-      const [rows] = await db.query(`SELECT ${select.join(', ')} FROM subscriptions s ${joins.join(' ')} ORDER BY ${order}`);
+      const planName = planCols.has('plan_name') ? 'p.plan_name' : planCols.has('name') ? 'p.name' : 'NULL';
+      const start = subCols.has('start_date') ? 's.start_date' : subCols.has('starts_at') ? 's.starts_at' : 'NULL';
+      const end = subCols.has('end_date') ? 's.end_date' : subCols.has('ends_at') ? 's.ends_at' : 'NULL';
+      const [rows] = await db.query(`SELECT s.id, s.owner_id, s.plan_id,
+        ${subCols.has('subscription_type') ? 's.subscription_type' : 'NULL'} AS subscription_type,
+        ${subCols.has('status') ? 's.status' : 'NULL'} AS status,
+        ${start} AS starts_at, ${end} AS ends_at,
+        ${subCols.has('created_at') ? 's.created_at' : 'NULL'} AS created_at,
+        ${userCols.has('full_name') && subCols.has('owner_id') ? 'u.full_name' : 'NULL'} AS owner_name,
+        ${subCols.has('plan_id') ? planName : 'NULL'} AS plan_name,
+        ${planCols.has('price') ? 'p.price' : 'NULL'} AS price
+        FROM subscriptions s ${joins.join(' ')} ORDER BY ${subCols.has('created_at') ? 's.created_at DESC' : 's.id DESC'}`);
       subscriptions = rows;
     }
-
-    const paymentCols = await columns('subscription_payments');
-    let payments = [];
-    if (paymentCols.size) {
+    const payCols = await columns('subscription_payments');
+    if (payCols.size) {
       const joins = [];
-      if (paymentCols.has('owner_id') && userCols.has('id')) joins.push('LEFT JOIN users u ON u.id = sp.owner_id');
-      const select = [
-        expression('sp', paymentCols, ['id'], 'id'),
-        expression('sp', paymentCols, ['owner_id'], 'owner_id'),
-        expression('sp', paymentCols, ['amount', 'payment_amount'], 'amount'),
-        expression('sp', paymentCols, ['reference', 'reference_number', 'gcash_ref'], 'reference'),
-        expression('sp', paymentCols, ['payment_status', 'status'], 'status'),
-        expression('sp', paymentCols, ['created_at', 'paid_at'], 'created_at'),
-        userCols.has('full_name') && paymentCols.has('owner_id') ? 'u.full_name AS owner_name' : 'NULL AS owner_name'
-      ];
-      const order = paymentCols.has('created_at') ? 'sp.created_at DESC' : paymentCols.has('id') ? 'sp.id DESC' : '1';
-      const [rows] = await db.query(`SELECT ${select.join(', ')} FROM subscription_payments sp ${joins.join(' ')} ORDER BY ${order}`);
+      if (payCols.has('subscription_id') && subCols.has('id')) joins.push('LEFT JOIN subscriptions s ON s.id = sp.subscription_id');
+      if (subCols.has('owner_id') && payCols.has('subscription_id') && subCols.has('id')) joins.push('LEFT JOIN users u ON u.id = s.owner_id');
+      const [rows] = await db.query(`SELECT sp.id,
+        ${payCols.has('subscription_id') ? 'sp.subscription_id' : 'NULL'} AS subscription_id,
+        ${payCols.has('amount') ? 'sp.amount' : 'NULL'} AS amount,
+        ${payCols.has('payment_method') ? 'sp.payment_method' : 'NULL'} AS payment_method,
+        ${payCols.has('reference_number') ? 'sp.reference_number' : 'NULL'} AS reference,
+        ${payCols.has('proof_image') ? 'sp.proof_image' : 'NULL'} AS proof_image,
+        ${payCols.has('payment_status') ? 'sp.payment_status' : 'NULL'} AS status,
+        ${payCols.has('payment_date') ? 'sp.payment_date' : 'NULL'} AS created_at,
+        ${subCols.has('owner_id') && payCols.has('subscription_id') ? 's.owner_id' : 'NULL'} AS owner_id,
+        ${userCols.has('full_name') && subCols.has('owner_id') && payCols.has('subscription_id') ? 'u.full_name' : 'NULL'} AS owner_name
+        FROM subscription_payments sp ${joins.join(' ')} ORDER BY sp.id DESC`);
       payments = rows;
     }
-    return res.json({
-      success: true,
-      subscriptionsConfigured: subscriptionsAvailable,
-      paymentsConfigured: paymentCols.size > 0,
-      plans, subscriptions, payments
-    });
+    return res.json({ success: true, subscriptionsConfigured: subCols.size > 0,
+      paymentsConfigured: payCols.size > 0, plans, subscriptions, payments });
   } catch (error) { next(error); }
 }
 
@@ -165,7 +167,7 @@ async function updateProfile(req, res, next) {
 async function getNotifications(req, res, next) {
   try {
     const [rows] = await db.execute(
-      `SELECT id, title, message, is_read, created_at
+      `SELECT id, title, message, action_url, is_read, created_at
        FROM notifications WHERE user_id = ?
        ORDER BY created_at DESC LIMIT 100`,
       [req.user.id]
@@ -194,7 +196,8 @@ async function markAllNotificationsRead(req, res, next) {
 
 module.exports = {
   getRentals, getSubscriptions, getProfile, updateProfile,
-  getNotifications, markNotificationRead, markAllNotificationsRead
+  getNotifications, markNotificationRead, markAllNotificationsRead,
+  verifySubscriptionPayment: require('./subscriptionController').verifyPayment
 };
 
 // Complete activity history. This reads the existing activity_logs table and
@@ -224,43 +227,78 @@ async function getActivity(req, res, next) {
   } catch (error) { next(error); }
 }
 
-// Rental sales are separate from subscription payments in the current schema.
+// Rental sales from verified booking payments only.
 async function getReportRentalPayments(req, res, next) {
   try {
-    const paymentCols = await columns('payments');
-    if (!paymentCols.size) return res.json({ success: true, data: [], configured: false });
+    const paymentCols = await columns('booking_payments');
     const rentalCols = await columns('rental_requests');
     const equipmentCols = await columns('equipment');
     const userCols = await columns('users');
-    const joins = [];
-    if (paymentCols.has('rental_id') && rentalCols.has('id')) {
-      joins.push('LEFT JOIN rental_requests rr ON rr.id = p.rental_id');
-      if (rentalCols.has('farmer_id') && userCols.has('id')) joins.push('LEFT JOIN users farmer ON farmer.id = rr.farmer_id');
-      if (rentalCols.has('equipment_id') && equipmentCols.has('id')) {
-        joins.push('LEFT JOIN equipment e ON e.id = rr.equipment_id');
-        if (equipmentCols.has('owner_id') && userCols.has('id')) joins.push('LEFT JOIN users owner ON owner.id = e.owner_id');
+
+    if (!paymentCols.size || !rentalCols.size) {
+      return res.json({
+        success: true,
+        data: [],
+        configured: false
+      });
+    }
+
+    const joins = [
+      'LEFT JOIN rental_requests rr ON rr.id = bp.booking_id'
+    ];
+
+    if (rentalCols.has('farmer_id') && userCols.has('id')) {
+      joins.push('LEFT JOIN users farmer ON farmer.id = rr.farmer_id');
+    }
+
+    if (rentalCols.has('equipment_id') && equipmentCols.has('id')) {
+      joins.push('LEFT JOIN equipment e ON e.id = rr.equipment_id');
+
+      if (equipmentCols.has('owner_id') && userCols.has('id')) {
+        joins.push('LEFT JOIN users owner ON owner.id = e.owner_id');
       }
     }
-    const farmerName = userCols.has('full_name') ? 'farmer.full_name' : userCols.has('name') ? 'farmer.name' : 'NULL';
-    const ownerName = userCols.has('full_name') ? 'owner.full_name' : userCols.has('name') ? 'owner.name' : 'NULL';
-    const equipmentName = equipmentCols.has('name') ? 'e.name' : equipmentCols.has('equipment_name') ? 'e.equipment_name' : 'NULL';
-    const recordedByName = userCols.has('full_name') ? 'recorder.full_name' : userCols.has('name') ? 'recorder.name' : 'NULL';
-    const recorderJoin = paymentCols.has('recorded_by') && userCols.has('id') ? 'LEFT JOIN users recorder ON recorder.id = p.recorded_by' : '';
-    const [rows] = await db.query(`SELECT
-      ${expression('p', paymentCols, ['id'], 'id')},
-      ${expression('p', paymentCols, ['rental_id'], 'rental_id')},
-      ${expression('p', paymentCols, ['amount'], 'amount')},
-      ${expression('p', paymentCols, ['method', 'payment_method'], 'method')},
-      ${expression('p', paymentCols, ['paid_at', 'created_at'], 'paid_at')},
-      ${paymentCols.has('rental_id') && rentalCols.has('id') && rentalCols.has('total_amount') ? 'rr.total_amount' : 'NULL'} AS total_amount,
-      ${paymentCols.has('rental_id') && rentalCols.has('farmer_id') ? farmerName : 'NULL'} AS farmer_name,
-      ${paymentCols.has('rental_id') && rentalCols.has('equipment_id') ? ownerName : 'NULL'} AS owner_name,
-      ${paymentCols.has('rental_id') && rentalCols.has('equipment_id') ? equipmentName : 'NULL'} AS equipment_name,
-      ${paymentCols.has('recorded_by') ? recordedByName : 'NULL'} AS recorded_by_name
-      FROM payments p ${joins.join(' ')} ${recorderJoin}
-      ORDER BY ${paymentCols.has('paid_at') ? 'p.paid_at' : paymentCols.has('created_at') ? 'p.created_at' : paymentCols.has('id') ? 'p.id' : '1'} DESC`);
-    return res.json({ success: true, data: rows, configured: true });
-  } catch (error) { next(error); }
+
+    const farmerName = userCols.has('full_name')
+      ? 'farmer.full_name'
+      : userCols.has('name') ? 'farmer.name' : 'NULL';
+
+    const ownerName = userCols.has('full_name')
+      ? 'owner.full_name'
+      : userCols.has('name') ? 'owner.name' : 'NULL';
+
+    const equipmentName = equipmentCols.has('equipment_name')
+      ? 'e.equipment_name'
+      : equipmentCols.has('name') ? 'e.name' : 'NULL';
+
+    const [rows] = await db.query(`
+      SELECT
+        bp.id,
+        bp.booking_id AS rental_id,
+        rr.total_amount AS amount,
+        bp.payment_method AS method,
+        bp.payment_date AS paid_at,
+        rr.total_amount,
+        ${farmerName} AS farmer_name,
+        ${ownerName} AS owner_name,
+        ${equipmentName} AS equipment_name,
+        bp.payment_status AS payment_status
+      FROM booking_payments bp
+      ${joins.join(' ')}
+      WHERE bp.payment_status = 'verified'
+      ORDER BY
+        COALESCE(bp.payment_date, bp.created_at) DESC,
+        bp.id DESC
+    `);
+
+    return res.json({
+      success: true,
+      data: rows,
+      configured: true
+    });
+  } catch (error) {
+    next(error);
+  }
 }
 
 module.exports.getActivity = getActivity;

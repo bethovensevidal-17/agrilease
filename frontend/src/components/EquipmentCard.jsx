@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { assetUrl } from '../api/config';
 const peso = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP',
@@ -9,11 +11,9 @@ const unit = {
   hectare: 'per hectare',
 };
 
-const API_URL = 'http://localhost:3000';
-
 export default function EquipmentCard({ item }) {
   const imageUrl = item.image_path
-    ? `${API_URL}/uploads/${item.image_path.replace(/^\/+/, '')}`
+    ? assetUrl(`/uploads/${item.image_path.replace(/^\/+/, '')}`)
     : null;
 
   return (
@@ -34,7 +34,7 @@ export default function EquipmentCard({ item }) {
       </div>
 
       <div className="card-body">
-        <h3>{item.name || item.equipment_name}</h3>
+        <h3><Link to={`/equipment/${item.id}`}>{item.name || item.equipment_name}</Link></h3>
 
         <p className="muted">
           {item.category_name}
@@ -51,6 +51,7 @@ export default function EquipmentCard({ item }) {
 
         <p className="muted">{item.location}</p>
         <p className="muted">Owner: {item.owner_name}</p>
+        <Link className="equipment-view-link" to={`/equipment/${item.id}`}>View details and book</Link>
       </div>
     </article>
   );

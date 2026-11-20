@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:3000/api';
+import { API_BASE } from './config';
 
 export function getToken() {
   return localStorage.getItem('agrilease_token');
@@ -47,7 +47,7 @@ export async function api(path, { method = 'GET', body, formData } = {}) {
     payload = JSON.stringify(body);
   }
 
-  const response = await fetch(BASE + path, {
+  const response = await fetch(API_BASE + path, {
     method,
     headers,
     body: payload,
@@ -57,7 +57,7 @@ export async function api(path, { method = 'GET', body, formData } = {}) {
 
   if (!response.ok) {
     throw new Error(
-      data.error || data.message || 'May nangyaring error.'
+      data.detail || data.error || data.message || 'May nangyaring error.'
     );
   }
 
@@ -67,7 +67,7 @@ export async function api(path, { method = 'GET', body, formData } = {}) {
 export async function getAuthenticatedFile(path) {
   const token = getToken();
 
-  const response = await fetch(BASE + path, {
+  const response = await fetch(API_BASE + path, {
     method: 'GET',
     headers: token
       ? { Authorization: `Bearer ${token}` }

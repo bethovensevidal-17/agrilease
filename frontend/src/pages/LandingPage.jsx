@@ -47,7 +47,7 @@ export default function LandingPage() {
         </Link>
 
         <nav className="landing-nav-links">
-          <a href="#home">Home</a>
+          <Link to="/">Home</Link>
           <a href="#about">About</a>
           <a href="#how-it-works">How It Works</a>
           <Link to="/browse">Browse Equipment</Link>

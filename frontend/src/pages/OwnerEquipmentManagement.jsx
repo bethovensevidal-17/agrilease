@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import { api } from '../api/client';
+import { assetUrl } from '../api/config';
 
 export default function OwnerEquipmentManagement() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function OwnerEquipmentManagement() {
   }
 
   async function handleArchive(id) {
-    const confirmed = window.confirm(
+    const confirmed = await window.agrileaseDialog.confirm(
       'Are you sure you want to archive this equipment?'
     );
 
@@ -60,7 +61,7 @@ export default function OwnerEquipmentManagement() {
   }
 
   async function handleRestore(id) {
-    const confirmed = window.confirm(
+    const confirmed = await window.agrileaseDialog.confirm(
       'Are you sure you want to restore this equipment?'
     );
 
@@ -226,7 +227,7 @@ export default function OwnerEquipmentManagement() {
                   <div className="owner-equipment-image">
   {item.image_path ? (
     <img
-      src={`http://localhost:3000/uploads/${item.image_path.replace(/^\/+/, '')}`}
+      src={assetUrl(`/uploads/${item.image_path.replace(/^\/+/, '')}`)}
       alt={item.name}
       loading="lazy"
     />

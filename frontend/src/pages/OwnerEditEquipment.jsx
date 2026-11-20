@@ -8,6 +8,7 @@ const initialForm = {
   brand_model: '',
   description: '',
   rate: '',
+  available_quantity: '1',
   rate_type: 'hour',
   condition_status: 'good',
   location: 'Victoria, Oriental Mindoro',
@@ -53,6 +54,7 @@ export default function OwnerEditEquipment() {
           brand_model: equipment.brand_model || '',
           description: equipment.description || '',
           rate: String(equipment.rate ?? equipment.rental_rate ?? ''),
+          available_quantity: String(equipment.available_quantity ?? 1),
           rate_type: equipment.rate_type || 'hour',
           condition_status: equipment.condition_status || 'good',
           location: equipment.location || 'Victoria, Oriental Mindoro',
@@ -202,6 +204,19 @@ export default function OwnerEditEquipment() {
                 onChange={handleChange}
                 min="0.01"
                 step="0.01"
+                required
+              />
+            </div>
+
+            <div className="owner-field">
+              <label>Available Quantity *</label>
+              <input
+                type="number"
+                name="available_quantity"
+                value={form.available_quantity}
+                onChange={handleChange}
+                min="1"
+                step="1"
                 required
               />
             </div>

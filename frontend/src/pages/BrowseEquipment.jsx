@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import EquipmentCard from '../components/EquipmentCard.jsx';
+import { assetUrl } from '../api/config';
 
 export default function BrowseEquipment() {
   const [q, setQ] = useState('');
@@ -8,6 +9,11 @@ export default function BrowseEquipment() {
   const [result, setResult] = useState({ data: [], totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [siteContent, setSiteContent] = useState({ homepage: [], announcements: [] });
+
+  useEffect(() => {
+    api('/content/public').then(setSiteContent).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -24,6 +30,8 @@ export default function BrowseEquipment() {
 
   return (
     <section>
+      {siteContent.homepage?.length > 0 && <div className="site-content-sections">{siteContent.homepage.map(item => <article key={item.id} className="site-content-card">{item.image_path && <img src={item.image_path.startsWith('http') ? item.image_path : assetUrl(item.image_path)} alt=""/>}<div><h2>{item.title}</h2><p>{item.body}</p></div></article>)}</div>}
+      {siteContent.announcements?.length > 0 && <div className="site-announcements"><h2>Announcements</h2>{siteContent.announcements.map(item => <article key={item.id}><strong>{item.title}</strong><p>{item.body}</p></article>)}</div>}
       <h1>Browse equipment</h1>
 
       <input

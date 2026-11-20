@@ -4,7 +4,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 // Sidebar na may hamburger button para sa maliit na screen.
 // Idagdag dito ang link ng bagong page sa listahang ito.
 const links = [
-  { to: '/', label: 'Browse equipment' },
+  { to: '/browse', label: 'Browse equipment' },
 ];
 
 export default function Layout() {

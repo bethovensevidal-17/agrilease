@@ -73,6 +73,9 @@ router.patch(
   c.setApproval
 );
 
+// FARMER: View payment instructions for this equipment's owner
+router.get('/:id/payment-details', requireAuth, requireRole('farmer'), c.getPaymentDetails);
+
 // PUBLIC: View one equipment
 router.get('/:id', c.getOne);
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
 const STATUSES = ['pending', 'approved', 'rejected', 'ongoing', 'completed', 'cancelled'];
 
 function dateTime(value) {
@@ -18,6 +18,9 @@ export default function RentalMonitoring() {
   const [rentals, setRentals] = useState([]);
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
+  const [owner, setOwner] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -25,8 +28,13 @@ export default function RentalMonitoring() {
   async function load() {
     try {
       setLoading(true); setError('');
-      const query = status ? `?status=${encodeURIComponent(status)}` : '';
-      const result = await api(`/admin/rentals${query}`);
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      if (owner.trim()) params.set('owner', owner.trim());
+      if (dateFrom) params.set('date_from', dateFrom);
+      if (dateTo) params.set('date_to', dateTo);
+      const query = params.toString();
+      const result = await api(`/admin/rentals${query ? `?${query}` : ''}`);
       setRentals(result.data || []);
     } catch (err) {
       setError(err.message || 'Unable to load rental records.');
@@ -34,7 +42,11 @@ export default function RentalMonitoring() {
     } finally { setLoading(false); }
   }
 
-  useEffect(() => { setPage(1); load(); }, [status]);
+  useEffect(() => {
+    setPage(1);
+    const timer = window.setTimeout(load, 250);
+    return () => window.clearTimeout(timer);
+  }, [status, owner, dateFrom, dateTo]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -71,6 +83,10 @@ export default function RentalMonitoring() {
           <div className="um-search"><span aria-hidden="true">⌕</span>
             <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search farmer, owner, equipment, or ID..." /></div>
+          <input value={owner} onChange={e => { setOwner(e.target.value); setPage(1); }} placeholder="Filter by owner name or ID" aria-label="Filter by equipment owner" />
+          <label className="am-filter-date">From <input type="date" value={dateFrom} max={dateTo || undefined} onChange={e => { setDateFrom(e.target.value); setPage(1); }} /></label>
+          <label className="am-filter-date">To <input type="date" value={dateTo} min={dateFrom || undefined} onChange={e => { setDateTo(e.target.value); setPage(1); }} /></label>
+          <button type="button" className="um-refresh" onClick={() => { setOwner(''); setDateFrom(''); setDateTo(''); setStatus(''); setSearch(''); setPage(1); }}>Clear Filters</button>
           <select value={status} onChange={e => setStatus(e.target.value)} aria-label="Filter rental status">
             <option value="">All Statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}

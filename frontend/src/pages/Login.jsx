@@ -151,6 +151,7 @@ export default function Login() {
           {loading ? 'Signing in...' : 'Login'}
         </button>
 
+        <p className="auth-footer auth-home-link"><Link to="/">← Back to Home</Link></p>
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Register here</Link>
         </p>

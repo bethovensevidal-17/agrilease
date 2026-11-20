@@ -29,3 +29,30 @@
 - Magdagdag ng sariling file sa `src/routes` at `src/controllers`, tapos isang `app.use(...)` na linya sa `src/app.js`.
 - Ang `requireAuth` at `requireRole` sa `src/middleware/auth.js` ay gagana kapag ang login ay naglalabas ng JWT na may `{ id, role }` at ginamit ang parehong `JWT_SECRET`.
 - Huwag i-commit ang `.env`.
+
+
+## Existing AgriLease V2 database
+
+The configured database is `agrilease_v2_db`. Its existing tables were inspected and the additive booking changes have already been applied manually: `equipment.quantity`, the booking snapshot fields on `rental_requests`, the `booking_payments` table, and the Free Trial plan. **Do not re-import the Phase 2 or Phase 6 SQL migration files** into this database.
+
+Copy `.env.example` to `.env` and set the local MySQL credentials and a private `JWT_SECRET`. Then run `npm install` and `npm run dev` from this folder.
+
+Booking endpoints:
+- `POST /api/rentals` (Farmer; multipart form; online payments require reference and proof)
+- `GET /api/rentals/mine` and `GET /api/rentals` (role-scoped bookings)
+- `GET /api/rentals/:id`
+- `PATCH /api/rentals/:id/cancel` (Farmer; pending only)
+- `GET /api/owner/bookings`, `PATCH /api/owner/bookings/:id/status`, `GET /api/owner/bookings/:id/proof` (Owner)
+- `GET /api/admin/bookings`, `GET /api/admin/payments`, `PATCH /api/admin/payments/:id/verify` (Admin)
+
+The backend calculates booking totals from database rates, dates/times, farm area, and quantity. Frontend totals are previews only. Payment proof files are served only through authenticated endpoints.
+
+## Phase 7 – Integration smoke checks
+
+- `GET /api/health` checks that the Express API process is responding.
+- `GET /api/health/db` checks whether the configured MySQL database is reachable.
+- Run `npm test` to execute the backend pricing and schema-contract tests.
+
+A successful API health response does not by itself prove that every feature workflow
+works against the user's local database. Verify the database health endpoint and then
+exercise Farmer, Owner, and Admin workflows in the local Laragon environment.

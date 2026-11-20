@@ -32,7 +32,7 @@ function StatusBadge({ status }) {
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
@@ -40,6 +40,8 @@ export default function UserManagement() {
   const [updatingId, setUpdatingId] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [summary, setSummary] = useState({ total: 0, active: 0, pending: 0, suspended: 0, farmers: 0, owners: 0 });
+  const [selectedUser, setSelectedUser] = useState(null);
 
   async function loadUsers() {
     try {
@@ -58,6 +60,7 @@ export default function UserManagement() {
       );
 
       setUsers(result.data || []);
+      setSummary(result.summary || { total: result.total || 0, active: 0, pending: 0, suspended: 0, farmers: 0, owners: 0 });
     } catch (err) {
       setError(err.message || 'Unable to load users.');
     } finally {
@@ -79,10 +82,9 @@ export default function UserManagement() {
     const newStatus =
       user.status === 'active' ? 'suspended' : 'active';
 
-    const confirmed = window.confirm(
-      `Are you sure you want to ${newStatus} ${user.full_name}'s account?`
-    );
-
+    const reason = newStatus === 'suspended' ? (await window.agrileaseDialog.prompt(`Enter the reason for suspending ${user.full_name}'s account:`, { title: 'Suspend account', placeholder: 'Enter the reason (at least 5 characters)' }))?.trim() : '';
+    if (newStatus === 'suspended' && (!reason || reason.length < 5)) { setError('A suspension reason of at least 5 characters is required.'); return; }
+    const confirmed = await window.agrileaseDialog.confirm(`Are you sure you want to ${newStatus} ${user.full_name}'s account?`);
     if (!confirmed) return;
 
     try {
@@ -92,7 +94,7 @@ export default function UserManagement() {
 
       const result = await api(`/admin/users/${user.id}/status`, {
         method: 'PATCH',
-        body: { status: newStatus }
+        body: { status: newStatus, reason }
       });
 
       setMessage(result.message || 'Account updated successfully.');
@@ -104,17 +106,9 @@ export default function UserManagement() {
     }
   }
 
-  const activeCount = users.filter(
-    user => user.status === 'active'
-  ).length;
-
-  const pendingCount = users.filter(
-    user => user.status === 'pending'
-  ).length;
-
-  const suspendedCount = users.filter(
-    user => user.status === 'suspended'
-  ).length;
+  const activeCount = summary.active;
+  const pendingCount = summary.pending;
+  const suspendedCount = summary.suspended;
 
   const totalPages = Math.ceil(users.length / itemsPerPage);
 
@@ -201,7 +195,7 @@ export default function UserManagement() {
             <Search size={18} />
             <input
               type="text"
-              placeholder="Search name or email..."
+              placeholder="Search name, email, or phone..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -229,6 +223,7 @@ export default function UserManagement() {
             <option value="suspended">Suspended</option>
             <option value="rejected">Rejected</option>
           </select>
+          <button type="button" className="um-clear" onClick={() => { setSearch(''); setRole(''); setStatus(''); }}>Clear Filters</button>
         </div>
 
         {message && (
@@ -295,6 +290,8 @@ export default function UserManagement() {
                     </td>
 
                     <td>
+                      <div className="um-actions">
+                      <button className="um-action view" onClick={() => setSelectedUser(user)}>View Details</button>
                       {user.role === 'admin' ? (
                         <span className="um-protected">
                           Protected
@@ -321,6 +318,7 @@ export default function UserManagement() {
                           Manage in verification
                         </span>
                       )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -336,6 +334,24 @@ export default function UserManagement() {
           onPageChange={setCurrentPage}
         />
       </section>
+
+      {selectedUser && (
+        <div className="um-modal-backdrop" role="presentation" onClick={() => setSelectedUser(null)}>
+          <section className="um-user-modal" role="dialog" aria-modal="true" aria-labelledby="um-user-title" onClick={event => event.stopPropagation()}>
+            <div className="um-modal-heading"><div><h2 id="um-user-title">User Details</h2><p>Account information and current status</p></div><button onClick={() => setSelectedUser(null)} aria-label="Close details">×</button></div>
+            <dl className="um-detail-grid">
+              <div><dt>Full Name</dt><dd>{selectedUser.full_name || '—'}</dd></div>
+              <div><dt>Email Address</dt><dd>{selectedUser.email || '—'}</dd></div>
+              <div><dt>Phone Number</dt><dd>{selectedUser.phone || '—'}</dd></div>
+              <div><dt>Role</dt><dd>{selectedUser.role}</dd></div>
+              <div><dt>Account Status</dt><dd><StatusBadge status={selectedUser.status} /></dd></div>
+              <div><dt>Date Registered</dt><dd>{formatDate(selectedUser.created_at)}</dd></div>
+              <div><dt>User ID</dt><dd>#{selectedUser.id}</dd></div>
+            </dl>
+            <button className="um-modal-close" onClick={() => setSelectedUser(null)}>Close</button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

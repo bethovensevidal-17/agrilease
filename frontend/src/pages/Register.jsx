@@ -84,8 +84,8 @@ export default function Register() {
     setError('');
     setSuccess('');
 
-    if (form.password.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (form.password.length < 8 || !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password) || !/[^A-Za-z0-9]/.test(form.password)) {
+      setError('Password must be at least 8 characters and include letters, numbers, and a special character.');
       return;
     }
 
@@ -321,6 +321,7 @@ export default function Register() {
           <div className="auth-grid">
             <div className="auth-field">
               <label htmlFor="register-password">Password</label>
+              <small className="auth-hint">Minimum 8 characters with letters, numbers, and special characters.</small>
               <div className="password-wrapper">
                 <input
                   id="register-password"

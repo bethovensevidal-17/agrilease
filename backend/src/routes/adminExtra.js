@@ -8,6 +8,8 @@ router.get('/rentals', controller.getRentals);
 router.get('/activity', controller.getActivity);
 router.get('/report-rental-payments', controller.getReportRentalPayments);
 router.get('/subscriptions', controller.getSubscriptions);
+router.patch('/subscription-payments/:id/verify', controller.verifySubscriptionPayment);
+router.get('/subscription-payments/:id/proof', requireAuth, requireRole('admin'), require('../controllers/subscriptionController').getPaymentProof);
 router.get('/profile', controller.getProfile);
 router.patch('/profile', controller.updateProfile);
 router.get('/notifications', controller.getNotifications);

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../api/client';
+import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
+import { API_BASE } from '../api/config';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
 
 const AGREED_PLANS = [
   {
@@ -10,8 +11,8 @@ const AGREED_PLANS = [
     name: 'Free Trial',
     price: 0,
     duration_days: 7,
-    equipment_limit: 3,
-    note: 'One-time trial for newly approved equipment owners',
+    equipment_limit: 2,
+    note: 'One-time 7-day trial with up to 2 equipment listings',
   },
   {
     code: 'MONTHLY',
@@ -159,6 +160,7 @@ export default function SubscriptionsPayments() {
   const [tab, setTab] = useState('subscriptions');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -223,6 +225,12 @@ export default function SubscriptionsPayments() {
     return [...source]
       .sort(sortById)
       .filter(record => {
+        if (statusFilter !== 'all' && tab !== 'plans') {
+          const status = tab === 'subscriptions'
+            ? getSubscriptionCategory(record)
+            : String(record.status || 'unknown').toLowerCase();
+          if (status !== statusFilter) return false;
+        }
         if (!normalizedSearch) return true;
 
         return Object.values(record).some(value =>
@@ -231,7 +239,7 @@ export default function SubscriptionsPayments() {
             .includes(normalizedSearch)
         );
       });
-  }, [tab, data, search]);
+  }, [tab, data, search, statusFilter]);
 
   const shown = rows.slice(
     (page - 1) * PAGE_SIZE,
@@ -242,11 +250,35 @@ export default function SubscriptionsPayments() {
     setTab(nextTab);
     setPage(1);
     setSearch('');
+    setStatusFilter('all');
   }
 
   function changeSearch(value) {
     setSearch(value);
     setPage(1);
+  }
+
+  async function openPaymentProof(payment) {
+    try {
+      const blob = await getAuthenticatedFile(`/admin/subscription-payments/${payment.id}/proof`);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) { setError(err.message || 'Unable to open payment proof.'); }
+  }
+
+  async function reviewPayment(payment, status) {
+    const action = status === 'verified' ? 'verify' : 'reject';
+    if (!await window.agrileaseDialog.confirm(`Are you sure you want to ${action} payment #${payment.id}?`)) return;
+    try {
+      await api(`/admin/subscription-payments/${payment.id}/verify`, {
+        method: 'PATCH',
+        body: { status }
+      });
+      await load();
+    } catch (err) {
+      setError(err.message || 'Unable to update payment status.');
+    }
   }
 
   return (
@@ -494,6 +526,21 @@ export default function SubscriptionsPayments() {
                   : 'Search payment ID, owner, reference, or status...'
             }
           />
+          {tab !== 'plans' && (
+            <select
+              className="am-report-search am-subscription-status-filter"
+              value={statusFilter}
+              onChange={event => { setStatusFilter(event.target.value); setPage(1); }}
+              aria-label="Filter subscription status"
+            >
+              <option value="all">All statuses</option>
+              {(tab === 'subscriptions'
+                ? ['active', 'trial', 'pending', 'expired']
+                : ['pending', 'verified', 'rejected']
+              ).map(status => <option key={status} value={status}>{status.replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase())}</option>)}
+            </select>
+          )}
+          <button type="button" className="um-refresh" onClick={() => { setSearch(''); setStatusFilter('all'); setPage(1); }}>Clear Filters</button>
         </div>
 
         <div className="um-table-wrapper">
@@ -581,7 +628,7 @@ export default function SubscriptionsPayments() {
                     shown.map(plan => (
                       <tr key={plan.id}>
                         <td>#{plan.id}</td>
-                        <td>{plan.name || '—'}</td>
+                        <td>{plan.plan_name || plan.name || '—'}</td>
                         <td>{plan.code || '—'}</td>
                         <td>{money(plan.price)}</td>
                         <td>
@@ -613,13 +660,14 @@ export default function SubscriptionsPayments() {
                     <th>Reference</th>
                     <th>Status</th>
                     <th>Date</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="6" className="um-empty">
+                      <td colSpan="7" className="um-empty">
                         Loading payment records...
                       </td>
                     </tr>
@@ -642,11 +690,20 @@ export default function SubscriptionsPayments() {
                         </td>
 
                         <td>{date(payment.created_at)}</td>
+                        <td>
+                          {String(payment.status).toLowerCase() === 'pending' ? (
+                            <div className="am-action-group">
+                              <button type="button" onClick={() => openPaymentProof(payment)}>View Proof</button>
+                              <button type="button" onClick={() => reviewPayment(payment, 'verified')}>Verify</button>
+                              <button type="button" onClick={() => reviewPayment(payment, 'rejected')}>Reject</button>
+                            </div>
+                          ) : 'Reviewed'}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="um-empty">
+                      <td colSpan="7" className="um-empty">
                         No subscription payment records found.
                       </td>
                     </tr>

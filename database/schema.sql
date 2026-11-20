@@ -95,6 +95,7 @@ CREATE TABLE rental_requests (
   client_key VARCHAR(64) NULL UNIQUE,
   started_at DATETIME NULL,
   returned_at DATETIME NULL,
+    is_archived_by_farmer TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (farmer_id) REFERENCES users(id),
   FOREIGN KEY (equipment_id) REFERENCES equipment(id),

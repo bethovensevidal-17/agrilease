@@ -145,6 +145,7 @@ CREATE TABLE notifications (
   title VARCHAR(120) NOT NULL,
   message VARCHAR(500) NOT NULL,
   is_read TINYINT(1) NOT NULL DEFAULT 0,
+  is_archived TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id),
   INDEX idx_notif_user (user_id, is_read, created_at)

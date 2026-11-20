@@ -5,4 +5,6 @@ router.use(requireAuth);
 router.get('/', controller.list);
 router.patch('/read-all', controller.markAllRead);
 router.patch('/:id/read', controller.markRead);
+router.patch('/:id/archive', controller.archive);
+router.patch('/:id/restore', controller.restore);
 module.exports = router;

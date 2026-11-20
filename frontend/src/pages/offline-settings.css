@@ -1,0 +1,48 @@
+/* Offline Access page (works inside the Farmer, Owner and Admin layouts). */
+.offline-settings-page { max-width: 1100px; margin: 0 auto; display: grid; gap: 18px; padding: 4px 0 28px; }
+.offline-settings-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.offline-eyebrow { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #4d7c3a; }
+.offline-settings-header h1 { margin: 0 0 6px; font-size: 26px; color: #1f3a1d; }
+.offline-intro { margin: 0 0 10px; color: #4a5a4a; max-width: 720px; line-height: 1.5; }
+.offline-back-link { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #cfd8cf; border-radius: 9px; background: #fff; color: #1f3a1d; font-weight: 600; text-decoration: none; }
+.offline-connection { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+.offline-connection.is-online { background: #e5f4df; color: #2f6b22; }
+.offline-connection.is-offline { background: #fdecec; color: #9b2c2c; }
+.offline-connection-dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.offline-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.offline-summary-card { display: grid; gap: 4px; padding: 16px 18px; background: #fff; border: 1px solid #dfe7dc; border-radius: 12px; }
+.offline-summary-card span { font-size: 13px; color: #5d6d5d; }
+.offline-summary-card strong { font-size: 28px; color: #1f3a1d; }
+.offline-summary-card small { color: #7a897a; }
+.offline-feature-section, .offline-howto, .offline-limit-note { padding: 18px 20px; background: #fff; border: 1px solid #dfe7dc; border-radius: 12px; }
+.offline-section-heading h2 { margin: 0 0 4px; font-size: 18px; }
+.offline-section-heading p, .offline-howto p { margin: 0; color: #5d6d5d; line-height: 1.5; }
+.offline-feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
+.offline-feature-card { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; padding: 14px; border: 1px solid #dfe7dc; border-radius: 10px; background: #f8fbf6; }
+.offline-feature-icon { font-size: 20px; grid-row: span 2; }
+.offline-feature-title { font-weight: 700; display: block; }
+.offline-feature-description { display: block; font-size: 13px; color: #6a796a; }
+.offline-card-state { grid-column: 2; font-size: 12px; font-weight: 700; color: #2f6b22; }
+.offline-limit-note { background: #fff8e1; border-color: #e8d48a; color: #5c4500; }
+.offline-limit-note ul { margin: 8px 0 0; padding-left: 20px; line-height: 1.6; }
+.offline-queue-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.offline-queue-tools { display: flex; gap: 10px; flex-wrap: wrap; }
+.offline-save-button, .offline-queue-actions button { min-height: 40px; padding: 0 16px; border: 1px solid #2f6b22; border-radius: 9px; background: #2f6b22; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.offline-queue-actions .offline-discard-button { background: #fff; color: #9b2c2c; border-color: #e0b4b4; }
+.offline-save-button:disabled, .offline-queue-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.offline-status { margin: 0 0 10px; padding: 10px 14px; border-radius: 9px; background: #eef6ea; color: #2f4a2a; }
+.offline-empty-queue { color: #6a796a; }
+.offline-queue-list { display: grid; gap: 10px; }
+.offline-queue-item { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid #dfe7dc; border-radius: 10px; }
+.offline-queue-copy { display: grid; gap: 2px; min-width: 0; }
+.offline-queue-copy small { color: #7a897a; }
+.offline-queue-error { color: #9b2c2c; font-size: 13px; }
+.offline-queue-state { padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.offline-queue-state.pending { background: #fff3cd; color: #7a5a00; }
+.offline-queue-state.failed { background: #fdecec; color: #9b2c2c; }
+.offline-queue-actions { display: flex; gap: 8px; }
+@media (max-width: 760px) {
+  .offline-summary-grid { grid-template-columns: 1fr; }
+  .offline-queue-item { grid-template-columns: 1fr; }
+  .offline-queue-actions button, .offline-queue-tools button, .offline-save-button { flex: 1 1 100%; }
+}

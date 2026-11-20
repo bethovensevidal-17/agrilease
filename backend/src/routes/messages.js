@@ -1,0 +1,11 @@
+const router = require('express').Router();
+const { requireAuth } = require('../middleware/auth');
+const controller = require('../controllers/messageController');
+const { idempotency } = require('../middleware/idempotency');
+router.use(requireAuth);
+router.get('/contacts', controller.contacts);
+router.get('/conversations', controller.conversations);
+router.get('/unread-count', controller.unreadCount);
+router.get('/:userId', controller.history);
+router.post('/', idempotency, controller.send);
+module.exports = router;

@@ -1,0 +1,102 @@
+.booking-page { max-width: 1200px; margin: 0 auto; }
+.booking-page a { color: #246b36; }
+.booking-detail-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 22px; margin-top: 18px; align-items: start; }
+.booking-equipment-card, .booking-form-card, .rental-row { background: #fff; border: 1px solid #d9e0d8; border-radius: 14px; padding: 22px; min-width: 0; }
+.booking-equipment-image, .booking-image-placeholder { width: 100%; height: 260px; object-fit: cover; border-radius: 10px; background: #edf1eb; }
+.booking-image-placeholder { display: grid; place-items: center; color: #667; }
+.booking-muted { color: #667085; font-size: 14px; }
+.booking-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.booking-specs div { min-width: 0; } .booking-specs dt { color: #667085; font-size: 13px; } .booking-specs dd { margin: 3px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.booking-form-card h2 { margin-top: 0; } .booking-form-card h3 { margin: 22px 0 12px; }
+.booking-form-card label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; min-width: 0; }
+.booking-form-card input, .booking-form-card select { width: 100%; min-width: 0; padding: 10px; border: 1px solid #cfd8cf; border-radius: 8px; font: inherit; background: white; }
+.booking-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.booking-estimate { margin-top: 16px; padding: 15px; border-radius: 10px; background: #f1f7ef; display: flex; flex-direction: column; gap: 5px; }
+.booking-estimate strong { font-size: 24px; color: #245b2c; } .booking-estimate small { color: #667085; }
+.booking-payment-fields { margin-top: 12px; padding: 12px; border: 1px solid #e2e8e0; border-radius: 10px; display: grid; gap: 12px; }
+.booking-payment-fields p { margin: 0; color: #805b19; font-size: 13px; }
+.booking-submit, .rental-row button { margin-top: 16px; padding: 12px 16px; border: 0; border-radius: 8px; color: white; background: #286b35; font-weight: 700; cursor: pointer; }
+.booking-submit:disabled { opacity: .6; cursor: wait; } .booking-error { color: #b42318; } .booking-success { color: #20743a; }
+.my-rentals { display: grid; gap: 14px; } .rental-row { display: flex; justify-content: space-between; gap: 20px; align-items: center; } .rental-row h3 { margin: 0 0 8px; } .rental-row p { margin: 4px 0; color: #667085; font-size: 14px; }
+.rental-status { display: inline-block; padding: 5px 10px; border-radius: 20px; background: #eef2f6; text-transform: capitalize; font-size: 13px; }
+.rental-status.approved, .rental-status.completed { background: #e5f5e8; color: #206b31; } .rental-status.rejected, .rental-status.cancelled { background: #fdebea; color: #a52b24; }
+@media (max-width: 850px) { .booking-detail-grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .booking-form-grid, .booking-specs { grid-template-columns: 1fr; } .booking-equipment-card, .booking-form-card { padding: 15px; } .booking-equipment-image, .booking-image-placeholder { height: 200px; } .rental-row { align-items: flex-start; flex-direction: column; } }
+
+.booking-owner-payment-info { padding: 12px; border-radius: 8px; background: #f4f8f2; overflow-wrap: anywhere; }
+.booking-owner-payment-info p { margin: 5px 0; }
+.booking-owner-qr { display: block; max-width: 220px; max-height: 220px; object-fit: contain; margin-top: 10px; border: 1px solid #d9e0d8; border-radius: 8px; background: #fff; }
+
+/* Compact equipment summary and two-column rental/payment form. */
+.booking-equipment-card { padding: 16px; }
+.booking-equipment-image, .booking-image-placeholder { height: 170px; }
+.booking-equipment-card h1 { font-size: 1.2rem; margin: 12px 0 6px; }
+.booking-columns { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; align-items:start; }
+.booking-column { min-width:0; }
+.booking-column h3 { margin-top:0; }
+.notification-clickable { cursor:pointer; transition:background .16s ease, transform .16s ease; }
+.notification-clickable:hover { background:#f4f8f3; transform:translateY(-1px); }
+.notification-clickable:focus-visible { outline:3px solid #77a97d; outline-offset:2px; }
+@media(max-width:700px){ .booking-columns { grid-template-columns:1fr; } }
+
+/* Farmer booking page: small equipment summary on top, 2-column form below. */
+.booking-detail-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.booking-equipment-card { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 18px; align-items: start; padding: 14px; }
+.booking-equipment-card .booking-equipment-image, .booking-equipment-card .booking-image-placeholder { width: 180px; height: 130px; }
+.booking-equipment-info { min-width: 0; }
+.booking-equipment-card h1 { font-size: 1.1rem; margin: 0 0 4px; }
+.booking-equipment-info p { margin: 4px 0; }
+.booking-description { font-size: 13px; color: #46564b; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.booking-specs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; margin: 8px 0 0; }
+.booking-specs dt { font-size: 11px; }
+.booking-specs dd { font-size: 13px; }
+.booking-back-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 18px; border: 1px solid #12643b; border-radius: 9px; color: #12643b !important; background: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
+.booking-back-button:hover { background: #f1f7ef; }
+.booking-form-card .booking-submit { width: auto; min-width: 200px; }
+@media (max-width: 850px) { .booking-specs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .booking-equipment-card { grid-template-columns: 1fr; }
+  .booking-equipment-card .booking-equipment-image, .booking-equipment-card .booking-image-placeholder { width: 100%; height: 160px; }
+  .booking-specs { grid-template-columns: 1fr 1fr; }
+  .booking-form-card .booking-submit { width: 100%; }
+}
+
+/* ===== My Bookings: organized table + filters ===== */
+.mb-page { max-width: 1180px; margin: 0 auto; display: grid; gap: 14px; }
+.mb-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.mb-heading h1 { margin: 0 0 4px; }
+.mb-heading p { margin: 0; color: #667085; font-size: 14px; }
+.mb-filters { display: grid; grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) auto; gap: 12px; align-items: end; background: #fff; border: 1px solid #d9e0d8; border-radius: 12px; padding: 14px; }
+.mb-filter { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; font-weight: 700; color: #46564b; }
+.mb-filter input, .mb-filter select { width: 100%; min-width: 0; height: 42px; padding: 0 12px; border: 1px solid #cfd8cf; border-radius: 9px; font: inherit; font-size: 13px; background: #fff; box-sizing: border-box; }
+.mb-btn { display: inline-flex; align-items: center; justify-content: center; height: 42px; min-width: 96px; padding: 0 16px; border-radius: 9px; border: 1px solid #12643b; background: #12643b; color: #fff; font: 700 13px inherit; cursor: pointer; white-space: nowrap; box-sizing: border-box; }
+.mb-btn-secondary { background: #fff; color: #12643b; }
+.mb-btn-secondary:hover:not(:disabled) { background: #f1f7ef; }
+.mb-btn-danger { background: #fff; color: #b42318; border-color: #e6b3ae; }
+.mb-btn-danger:hover { background: #fdebea; }
+.mb-btn:disabled { opacity: .55; cursor: not-allowed; }
+.mb-count { margin: 0; color: #667085; font-size: 13px; }
+.mb-empty { padding: 36px 16px; text-align: center; background: #fff; border: 1px dashed #cfd8cf; border-radius: 12px; color: #667085; }
+.mb-table-wrap { background: #fff; border: 1px solid #d9e0d8; border-radius: 12px; overflow-x: auto; }
+.mb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mb-table th { text-align: left; padding: 12px 14px; background: #f4f8f3; color: #46564b; font-size: 11px; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+.mb-table td { padding: 12px 14px; border-top: 1px solid #edf1eb; vertical-align: top; }
+.mb-table td small { display: block; margin-top: 2px; color: #667085; font-size: 12px; }
+.mb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mb-actions .mb-btn { height: 36px; min-width: 88px; }
+.mb-muted { color: #98a2b3; }
+.rental-status.ongoing { background: #eaf0fb; color: #42649a; }
+.rental-status.pending { background: #fff5dc; color: #956916; }
+@media (max-width: 1000px) { .mb-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mb-filter-search { grid-column: 1 / -1; } .mb-filter-reset { grid-column: 1 / -1; } }
+@media (max-width: 720px) {
+  .mb-table-wrap { border: 0; background: transparent; overflow: visible; }
+  .mb-table thead { display: none; }
+  .mb-table, .mb-table tbody, .mb-table tr, .mb-table td { display: block; width: 100%; box-sizing: border-box; }
+  .mb-table tr { margin-bottom: 12px; background: #fff; border: 1px solid #d9e0d8; border-radius: 12px; padding: 6px 12px; }
+  .mb-table td { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-top: 1px solid #f0f3ef; text-align: right; }
+  .mb-table td:first-child { border-top: 0; }
+  .mb-table td::before { content: attr(data-label); flex: 0 0 auto; color: #667085; font-size: 12px; font-weight: 700; text-align: left; }
+  .mb-table td > * { min-width: 0; }
+  .mb-actions { justify-content: flex-end; }
+  .mb-filters { grid-template-columns: 1fr; }
+}

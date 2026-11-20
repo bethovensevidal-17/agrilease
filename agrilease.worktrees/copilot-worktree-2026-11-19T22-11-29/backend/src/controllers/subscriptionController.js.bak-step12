@@ -1,0 +1,168 @@
+const db = require('../db');
+const path = require('path');
+const fs = require('fs');
+const { notifyUser, notifyAdmins } = require('../services/notifications');
+
+const PLAN_CODES = {
+  'FREE TRIAL': 'trial',
+  MONTHLY: 'paid',
+  QUARTERLY: 'paid',
+  'SEMI-ANNUAL': 'paid',
+  ANNUAL: 'paid'
+};
+
+async function listPlans(_req, res, next) {
+  try {
+    const [plans] = await db.execute(
+      'SELECT id, plan_name, price, duration_days, equipment_limit, description FROM subscription_plans WHERE is_active = 1 ORDER BY price ASC'
+    );
+    res.json({ success: true, data: plans });
+  } catch (error) { next(error); }
+}
+
+async function mySubscription(req, res, next) {
+  try {
+    const [rows] = await db.execute(
+      `SELECT s.id, s.owner_id, s.plan_id, s.subscription_type, s.status,
+              s.start_date, s.end_date, p.plan_name, p.price, p.duration_days,
+              p.equipment_limit
+         FROM subscriptions s
+         LEFT JOIN subscription_plans p ON p.id = s.plan_id
+        WHERE s.owner_id = ?
+        ORDER BY s.created_at DESC, s.id DESC LIMIT 1`, [req.user.id]
+    );
+    const [[count]] = await db.execute(
+      'SELECT COUNT(*) AS equipment_count FROM equipment WHERE owner_id = ? AND is_archived = 0', [req.user.id]
+    );
+    res.json({ success: true, subscription: rows[0] || null, equipment_count: count.equipment_count });
+  } catch (error) { next(error); }
+}
+
+async function requestPlan(req, res, next) {
+  const conn = await db.getConnection();
+  try {
+    const planId = Number(req.body.plan_id);
+    if (!Number.isInteger(planId) || planId < 1) return res.status(400).json({ error: 'Pumili ng valid subscription plan.' });
+    await conn.beginTransaction();
+    const [[plan]] = await conn.execute('SELECT * FROM subscription_plans WHERE id = ? AND is_active = 1 LIMIT 1', [planId]);
+    if (!plan) { await conn.rollback(); return res.status(404).json({ error: 'Hindi available ang subscription plan.' }); }
+    const [[owner]] = await conn.execute('SELECT trial_used FROM provider_profiles WHERE user_id = ? FOR UPDATE', [req.user.id]);
+    if (!owner) { await conn.rollback(); return res.status(404).json({ error: 'Owner profile not found.' }); }
+
+    const isTrial = Number(plan.price) === 0 && Number(plan.duration_days) === 7 && Number(plan.equipment_limit) === 2;
+    if (isTrial) {
+      if (owner.trial_used) { await conn.rollback(); return res.status(409).json({ error: 'Nagagamit na ang iyong one-time free trial.' }); }
+      const [active] = await conn.execute("SELECT id FROM subscriptions WHERE owner_id = ? AND status = 'active' AND end_date >= NOW() LIMIT 1", [req.user.id]);
+      if (active.length) { await conn.rollback(); return res.status(409).json({ error: 'May active subscription ka na.' }); }
+      await conn.execute(
+        "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))",
+        [req.user.id, planId]
+      );
+      await conn.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [req.user.id]);
+      await conn.commit();
+      return res.status(201).json({ success: true, message: 'Your 7-day free trial is now active.' });
+    }
+
+    const method = String(req.body.payment_method || '').toLowerCase();
+    if (!['gcash', 'bank_transfer', 'other'].includes(method)) { await conn.rollback(); return res.status(400).json({ error: 'Pumili ng GCash, Bank Transfer, o Other para sa subscription payment.' }); }
+    const reference = String(req.body.reference_number || '').trim();
+    if (reference.length > 100) { await conn.rollback(); return res.status(400).json({ error: 'Payment reference is too long.' }); }
+    const proof = req.file ? `payment-proofs/${req.file.filename}` : null;
+    if (!proof) { await conn.rollback(); return res.status(400).json({ error: 'Kailangan ang proof of payment.' }); }
+
+    const [sub] = await conn.execute(
+      "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'paid', 'pending', NULL, NULL)",
+      [req.user.id, planId]
+    );
+    await conn.execute(
+      "INSERT INTO subscription_payments (subscription_id, amount, payment_method, reference_number, proof_image, payment_status) VALUES (?, ?, ?, ?, ?, 'pending')",
+      [sub.insertId, plan.price, method, reference || null, proof]
+    );
+    await conn.commit();
+
+    try {
+      await notifyAdmins(
+        'New subscription payment',
+        `Owner #${req.user.id} submitted a ${plan.plan_name} subscription payment request of PHP ${Number(plan.price).toFixed(2)}. Awaiting verification.`
+      );
+    } catch (notificationError) {
+      console.error('Subscription notification to admins failed:', notificationError);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Subscription request submitted. Awaiting admin payment verification.'
+    });
+  } catch (error) {
+    try { await conn.rollback(); } catch (_) {}
+    next(error);
+  } finally { conn.release(); }
+}
+
+async function verifyPayment(req, res, next) {
+  const conn = await db.getConnection();
+  try {
+    const paymentId = Number(req.params.id);
+    const decision = String(req.body.status || '').toLowerCase();
+    if (!Number.isInteger(paymentId) || paymentId < 1 || !['verified', 'rejected'].includes(decision)) {
+      return res.status(400).json({ error: 'Invalid payment ID or verification status.' });
+    }
+    await conn.beginTransaction();
+    const [rows] = await conn.execute(
+      `SELECT sp.id, sp.subscription_id, sp.payment_status, s.owner_id, s.plan_id, p.duration_days
+         FROM subscription_payments sp
+         JOIN subscriptions s ON s.id = sp.subscription_id
+         JOIN subscription_plans p ON p.id = s.plan_id
+        WHERE sp.id = ? FOR UPDATE`, [paymentId]
+    );
+    if (!rows.length) { await conn.rollback(); return res.status(404).json({ error: 'Payment record not found.' }); }
+    const payment = rows[0];
+    if (payment.payment_status !== 'pending') { await conn.rollback(); return res.status(409).json({ error: 'Payment has already been reviewed.' }); }
+    await conn.execute('UPDATE subscription_payments SET payment_status = ?, verified_by = ?, payment_date = NOW() WHERE id = ?', [decision, req.user.id, paymentId]);
+    if (decision === 'verified') {
+      await conn.execute("UPDATE subscriptions SET status = 'expired' WHERE owner_id = ? AND status = 'active'", [payment.owner_id]);
+      await conn.execute("UPDATE subscriptions SET status = 'active', start_date = NOW(), end_date = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id = ?", [Number(payment.duration_days), payment.subscription_id]);
+    } else {
+      await conn.execute("UPDATE subscriptions SET status = 'cancelled' WHERE id = ? AND status = 'pending'", [payment.subscription_id]);
+    }
+    await conn.commit();
+
+    try {
+      await notifyUser(
+        payment.owner_id,
+        `Subscription payment ${decision}`,
+        decision === 'verified'
+          ? 'Your subscription payment has been verified. Your subscription is now active.'
+          : 'Your subscription payment has been rejected. Please review your payment details and contact the administrator if needed.'
+      );
+    } catch (notificationError) {
+      console.error('Subscription payment notification failed:', notificationError);
+    }
+
+    res.json({
+      success: true,
+      message: decision === 'verified'
+        ? 'Payment verified and subscription activated.'
+        : 'Payment rejected.'
+    });
+  } catch (error) {
+    try { await conn.rollback(); } catch (_) {}
+    next(error);
+  } finally { conn.release(); }
+}
+
+
+async function getPaymentProof(req, res, next) {
+  try {
+    const paymentId = Number(req.params.id);
+    if (!Number.isInteger(paymentId) || paymentId < 1) return res.status(400).json({ error: 'Invalid payment ID.' });
+    const [rows] = await db.execute('SELECT proof_image FROM subscription_payments WHERE id = ? LIMIT 1', [paymentId]);
+    if (!rows.length || !rows[0].proof_image) return res.status(404).json({ error: 'Payment proof not found.' });
+    const filename = path.basename(rows[0].proof_image);
+    const filePath = path.join(__dirname, '..', '..', 'uploads', 'payment-proofs', filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Payment proof file is missing from the server.' });
+    return res.sendFile(filePath);
+  } catch (error) { next(error); }
+}
+
+module.exports = { listPlans, mySubscription, requestPlan, verifyPayment, getPaymentProof };

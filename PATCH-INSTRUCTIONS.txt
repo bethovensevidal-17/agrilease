@@ -1,0 +1,76 @@
+AGRILEASE ADMIN REPORTS + ACTIVITY PATCH
+=======================================
+
+This is an overlay patch for the existing project at C:\laragon\www\agrilease.
+Back up the matching files before replacing them. Do NOT replace the whole project.
+Do NOT replace .env, database/schema.sql, or any existing uploads/data.
+
+FRONTEND FILES
+Copy these files to the same paths in your project:
+- frontend/src/pages/Reports.jsx
+- frontend/src/pages/SubscriptionsPayments.jsx
+- frontend/src/pages/AdminDashboard.jsx
+- frontend/src/admin-modules.css
+
+BACKEND FILES
+Copy these files to the same paths in your project:
+- backend/src/controllers/adminExtraController.js
+- backend/src/routes/adminExtra.js
+- backend/src/controllers/authController.js
+- backend/src/middleware/auth.js
+
+ROUTE / IMPORT CHECKS
+1. backend/src/app.js must already contain:
+   app.use('/api/admin', require('./routes/adminExtra'));
+   Keep the existing /api/admin route too.
+2. frontend/src/App.jsx must import Reports, SubscriptionsPayments, AdminDashboard and:
+   import './admin-modules.css';
+   Keep your existing route definitions.
+
+DATABASE (ADDITIVE ONLY)
+The provided database/activity_logs_additive.sql creates activity_logs only if missing.
+If the table already exists, you do not need to run it. If it is missing, open phpMyAdmin,
+select the AGRILEASE database, open SQL, and run the contents of this file.
+This script does not delete or reset any records.
+
+WHAT CHANGED
+- Reports has no KPI/stat summary cards.
+- Date From/To filters apply to all record categories and the two analytics charts.
+- Reports sections include users, owner verification, equipment, rental requests,
+  rental sales/payments, subscriptions, subscription payments, and system activity logs.
+- Print Current Records prints the selected filtered section.
+- Print / Save All as PDF prints all sections filtered by the chosen date range.
+  In the print dialog choose Save as PDF to create a PDF.
+- Sales chart combines recorded rental payments and subscription payment records.
+- Subscription page has a clear plan table (one-time 7-day trial, monthly, quarterly,
+  semi-annual, annual) and separate Maya QR / COD payment method panels.
+- Dashboard Recent System Activity reads activity_logs and displays the actor's name,
+  role, action, and timestamp.
+- Successful logins and registrations are recorded. Successful authenticated POST, PUT,
+  PATCH, and DELETE actions are automatically logged with the actor and API action.
+
+IMPORTANT LIMITATIONS
+- Historical activity that was never logged cannot be reconstructed retroactively.
+  The activity list will show existing activity_logs rows plus new activity after this patch.
+- Rental sales only appear after a row exists in the existing payments table.
+- Subscription payment sales appear only if subscription payment rows/table are configured.
+  The UI does not fake payment transactions or mark them paid automatically.
+- Maya QR image is still a placeholder until the official merchant QR image is supplied.
+- This patch does not change the subscription pricing or automatically enforce plan limits.
+
+TEST
+Backend terminal:
+  cd C:\laragon\www\agrilease\backend
+  node --check .\src\controllers\adminExtraController.js
+  node --check .\src\controllers\authController.js
+  node --check .\src\middleware\auth.js
+  npm run dev
+
+Frontend terminal:
+  cd C:\laragon\www\agrilease\frontend
+  npm run build
+  npm run dev
+
+Then sign in as admin, open Reports, select a date range, switch record tabs,
+try Print Current Records and Print / Save All as PDF. Sign in/out and perform a
+successful admin edit to verify Recent System Activity receives new rows.

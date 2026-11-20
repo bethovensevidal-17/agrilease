@@ -9,6 +9,7 @@ const REQUIRED_COLUMNS = [
   { table: 'provider_profiles', column: 'trial_used', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
   { table: 'users', column: 'suspension_reason', ddl: 'TEXT NULL' },
   { table: 'notifications', column: 'action_url', ddl: 'VARCHAR(500) NULL' },
+  { table: 'notifications', column: 'is_archived', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
   // Payment Settings ng owner (ownerPaymentSettingsController)
   { table: 'provider_profiles', column: 'gcash_number', ddl: 'VARCHAR(30) NULL' },
   { table: 'provider_profiles', column: 'gcash_account_name', ddl: 'VARCHAR(150) NULL' },

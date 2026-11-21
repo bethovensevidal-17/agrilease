@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Tractor } from 'lucide-react';
 import { api, getToken, getUser } from '../api/client';
 import { isNetworkFailure, newRequestId, queueOfflineBooking } from '../offline/sync';
 import '../styles/booking.css';
@@ -61,13 +60,13 @@ export default function EquipmentBooking() {
 
   async function submit(e) {
     e.preventDefault(); setError(''); setMessage('');
-    if (!getToken() || user?.role !== 'farmer') { setError('Log in with a Farmer account to submit a booking.'); return; }
+    if (!getToken() || user?.role !== 'farmer') { setError('Mag-login gamit ang Farmer account para makapag-submit ng booking.'); return; }
     if (!await window.agrileaseDialog.confirm('Submit this booking request? The owner will review it after you submit.', { title: 'Submit booking', confirmText: 'Submit' })) return;
     const payload = { equipment_id: Number(id), start_date: form.start_date, start_time: form.start_time, end_date: form.end_date, end_time: form.end_time, quantity: Number(form.quantity), payment_method: form.payment_method };
     if (equipment.rate_type === 'hectare') payload.farm_area = Number(form.farm_area);
     setSubmitting(true);
     const requestId = newRequestId();
-    const pendingSyncMessage = 'Booking saved on this device as PENDING SYNC. It has not been sent to the Owner yet and the equipment is not reserved. It will be sent once you are back online, then validated by the server.';
+    const pendingSyncMessage = 'Booking saved on this device as PENDING SYNC. Hindi pa ito naipapadala sa Owner at hindi pa reserved ang equipment. Ise-send ito kapag bumalik ang internet, pagkatapos ay ive-validate ng server.';
     try {
       if (!navigator.onLine) {
         if (form.payment_method !== 'cash') throw new Error('Offline booking is currently available for Cash payment only. Please reconnect to submit other payment methods.');
@@ -101,34 +100,34 @@ export default function EquipmentBooking() {
   return <section className="booking-page">
     <Link className="booking-back-button" to={user?.role === 'farmer' ? '/farmer/equipment' : '/browse'}>Back to equipment</Link>
     <div className="booking-detail-grid">
-      <article className="booking-equipment-card">
-        {image ? <img className="booking-equipment-image" src={image} alt={equipment.equipment_name} /> : <div className="booking-image-placeholder"><Tractor size={38} strokeWidth={1.6} /><span>No equipment image</span></div>}
-        <div className="booking-equipment-info">
-        <h1>{equipment.equipment_name}</h1>
-        <p className="booking-muted">{equipment.category_name || 'Agricultural equipment'} · {equipment.brand_model || 'No brand/model specified'}</p>
-        <p className="booking-description">{equipment.description || 'No description provided.'}</p>
-        <dl className="booking-specs">
-          <div><dt>Condition</dt><dd>{equipment.condition_status || 'Not specified'}</dd></div>
-          <div><dt>Rate</dt><dd>{money.format(Number(equipment.rental_rate))} {rateType}</dd></div>
-          <div><dt>Available quantity</dt><dd>{equipment.available_quantity ?? 1}</dd></div>
-          <div>
-            <dt>Availability Status</dt>
-            <dd>
-              {equipment.availability_status === 'available'
-                ? 'Available'
-                : equipment.availability_status === 'unavailable'
-                  ? 'Unavailable'
-                  : equipment.availability_status || 'Not specified'}
-            </dd>
+      <article className="booking-equipment-card eq-detail-card">
+        <div className="eq-detail-media">
+          {image ? <img className="booking-equipment-image" src={image} alt={equipment.equipment_name} /> : <div className="booking-image-placeholder">No equipment image</div>}
+        </div>
+        <div className="booking-equipment-info eq-detail-info">
+          <div className="eq-detail-head">
+            <div>
+              <h1>{equipment.equipment_name}</h1>
+              <p className="booking-muted">{equipment.category_name || 'Agricultural equipment'} · {equipment.brand_model || 'No brand/model specified'}</p>
+            </div>
+            <span className={`eq-detail-status ${equipment.availability_status === 'available' ? 'is-available' : 'is-unavailable'}`}>
+              {equipment.availability_status === 'available' ? 'Available' : equipment.availability_status === 'unavailable' ? 'Unavailable' : String(equipment.availability_status || 'Not specified').replaceAll('_', ' ')}
+            </span>
           </div>
-          <div><dt>Location</dt><dd>{equipment.location || 'Not specified'}</dd></div>
-          <div><dt>Equipment owner</dt><dd>{equipment.owner_name || 'AgriLease owner'}</dd></div>
-        </dl>
+          <p className="booking-description eq-detail-description">{equipment.description || 'No description provided.'}</p>
+          <dl className="booking-specs eq-detail-grid">
+            <div><dt>Rate</dt><dd>{money.format(Number(equipment.rental_rate))} {rateType}</dd></div>
+            <div><dt>Available quantity</dt><dd>{equipment.available_quantity ?? 1}</dd></div>
+            <div><dt>Condition</dt><dd>{equipment.condition_status || 'Not specified'}</dd></div>
+            <div><dt>Location</dt><dd>{equipment.location || 'Not specified'}</dd></div>
+            <div><dt>Equipment owner</dt><dd>{equipment.owner_name || 'AgriLease owner'}</dd></div>
+            <div><dt>Category</dt><dd>{equipment.category_name || 'Agricultural equipment'}</dd></div>
+          </dl>
         </div>
       </article>
 
       <form className="booking-form-card" onSubmit={submit}>
-        <h2>Rental Booking Form</h2>
+        <div className="booking-form-heading"><h2>Rental Booking Form</h2><p>Choose your rental schedule and payment method, then submit your request.</p></div>
         <div className="booking-columns"><section className="booking-column"><h3>Rental Details</h3>
         <div className="booking-form-grid">
           <label>Start date<input type="date" name="start_date" min={new Date().toLocaleDateString('en-CA')} value={form.start_date} onChange={change} required /></label>
@@ -156,16 +155,16 @@ export default function EquipmentBooking() {
               {ownerPayment.gcash_number && <p><strong>GCash Number:</strong> {ownerPayment.gcash_number}</p>}
               {ownerPayment.gcash_account_name && <p><strong>Account Name:</strong> {ownerPayment.gcash_account_name}</p>}
               {ownerPayment.gcash_qr_url && <img className="booking-owner-qr" src={assetUrl(ownerPayment.gcash_qr_url)} alt="Equipment owner's GCash QR code" />}
-              {!ownerPayment.gcash_number || !ownerPayment.gcash_account_name ? <p className="booking-error">The owner's GCash details are incomplete.</p> : null}
+              {!ownerPayment.gcash_number || !ownerPayment.gcash_account_name ? <p className="booking-error">Hindi pa kumpleto ang GCash details ng owner.</p> : null}
             </>}
             {form.payment_method === 'bank_transfer' && <>
               {ownerPayment.bank_name && <p><strong>Bank:</strong> {ownerPayment.bank_name}</p>}
               {ownerPayment.bank_account_name && <p><strong>Account Name:</strong> {ownerPayment.bank_account_name}</p>}
               {ownerPayment.bank_account_number && <p><strong>Account Number:</strong> {ownerPayment.bank_account_number}</p>}
-              {!ownerPayment.bank_name || !ownerPayment.bank_account_name || !ownerPayment.bank_account_number ? <p className="booking-error">The owner's bank details are incomplete.</p> : null}
+              {!ownerPayment.bank_name || !ownerPayment.bank_account_name || !ownerPayment.bank_account_number ? <p className="booking-error">Hindi pa kumpleto ang bank details ng owner.</p> : null}
             </>}
             {form.payment_method === 'other' && <>
-              {ownerPayment.other_payment_instructions ? <p>{ownerPayment.other_payment_instructions}</p> : <p className="booking-error">The owner has not provided other payment instructions yet.</p>}
+              {ownerPayment.other_payment_instructions ? <p>{ownerPayment.other_payment_instructions}</p> : <p className="booking-error">Wala pang Other payment instructions ang owner.</p>}
             </>}
           </div>}
           <label>Payment reference number<input name="payment_reference" value={form.payment_reference} onChange={change} required maxLength="100" /></label>
@@ -175,7 +174,7 @@ export default function EquipmentBooking() {
         {error && <p className="booking-error">{error}</p>}
         {message && <p className="booking-success">{message} <Link to="/farmer/rentals">View my bookings</Link></p>}
         {equipment.availability_status && equipment.availability_status !== 'available' && <p className="booking-error">This equipment is currently {String(equipment.availability_status).replaceAll('_', ' ')} and cannot be booked.</p>}
-        <button className="booking-submit" disabled={submitting || (equipment.availability_status && equipment.availability_status !== 'available')}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button>
+        <div className="booking-submit-row"><button className="booking-submit" disabled={submitting || (equipment.availability_status && equipment.availability_status !== 'available')}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button></div>
         {!getToken() && <p className="booking-muted">You must <Link to="/login">log in</Link> as a farmer to submit a booking.</p>}
       </form>
     </div>

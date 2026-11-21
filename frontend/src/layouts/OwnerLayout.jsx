@@ -72,7 +72,7 @@ export default function OwnerLayout() {
   }, [loadIndicators]);
 
   async function logout() {
-    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?')) return;
+    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) return;
 
     clearAuth();
     navigate('/login', { replace: true });

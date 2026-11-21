@@ -12,6 +12,7 @@ import './theme-farmer.css';
 import './theme-owner.css';
 import './theme-controls.css';
 import './theme-admin.css';
+import './theme-views.css';
 import { requestSync } from './offline/sync';
 import { resyncPushSubscription } from './utils/push';
 

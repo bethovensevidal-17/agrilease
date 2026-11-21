@@ -1,0 +1,154 @@
+/* AgriLease theme: view/detail windows (modals) and the farmer Equipment Details page.
+   Imported last in main.jsx.
+   To undo: remove the `import './theme-views.css'` line in main.jsx. */
+
+/* ---------- 1. Every pop-up window sits above the header and sidebar ---------- */
+.am-modal-backdrop, .um-modal-backdrop, .owner-modal-overlay, .sub-modal-backdrop,
+[class*="modal-backdrop"], [class*="modal-overlay"] {
+  position: fixed !important; inset: 0 !important; z-index: 12000 !important;
+  display: grid !important; place-items: center; padding: 20px;
+  overflow-y: auto; overscroll-behavior: contain;
+  background: rgba(12, 34, 22, .55); backdrop-filter: blur(3px);
+}
+.al-dialog-backdrop { z-index: 13000; }
+/* the page behind a pop-up does not scroll */
+body:has(.am-modal-backdrop, .um-modal-backdrop, .owner-modal-overlay, .sub-modal-backdrop, [class*="modal-backdrop"], [class*="modal-overlay"], .al-dialog-backdrop) { overflow: hidden; }
+
+/* ---------- 2. One look for every view window ---------- */
+.am-detail-modal, .um-user-modal, .owner-review-modal, .sub-modal {
+  box-sizing: border-box; width: min(100%, 820px); max-height: 90vh; max-height: 90dvh; overflow-y: auto;
+  border: 1px solid #e1e8dd; border-radius: 18px; background: #fff; box-shadow: 0 24px 60px rgba(12, 34, 22, .28);
+  animation: view-pop-in .16s ease-out;
+}
+.um-user-modal { width: min(100%, 640px); }
+.sub-modal { width: min(100%, 560px); }
+.owner-review-modal { max-width: 880px; overflow: hidden; }
+.am-detail-modal, .um-user-modal { padding: 22px 24px 26px; }
+@keyframes view-pop-in { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+
+/* title row: plain white, stays visible while the content scrolls */
+.am-detail-modal > .um-panel-heading, .um-modal-heading, .owner-modal-header {
+  position: sticky; top: -22px; z-index: 2; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  margin: -22px -24px 18px; padding: 20px 24px 16px; border: 0; border-bottom: 1px solid #edf2ea; border-radius: 18px 18px 0 0; background: #fff;
+}
+.owner-modal-header { position: static; margin: 0; }
+.am-detail-modal > .um-panel-heading h2, .um-modal-heading h2, .owner-modal-header h2 { margin: 0; color: var(--forest); font-size: 26px; line-height: 1.15; }
+.am-detail-modal > .um-panel-heading p, .um-modal-heading p, .owner-modal-header p { margin: 5px 0 0; color: #6a7a6f; font-size: 14px; }
+.am-detail-modal img, .um-user-modal img { max-width: 100%; }
+.am-detail-grid > div, .um-detail-grid > div { border: 1px solid #e3eadf; border-radius: 12px; background: #fff; }
+
+@media (max-width: 700px) {
+  .am-modal-backdrop, .um-modal-backdrop, .owner-modal-overlay, .sub-modal-backdrop, [class*="modal-backdrop"], [class*="modal-overlay"] { padding: 10px; }
+  .am-detail-modal, .um-user-modal { padding: 18px 16px 22px; }
+  .am-detail-modal > .um-panel-heading, .um-modal-heading { top: -18px; margin: -18px -16px 16px; padding: 16px; }
+  .am-detail-modal > .um-panel-heading h2, .um-modal-heading h2, .owner-modal-header h2 { font-size: 22px; }
+}
+
+/* ---------- 3. Farmer Equipment Details page ---------- */
+.booking-page { max-width: 1240px; display: grid; gap: 18px; }
+.booking-page .booking-back-button { justify-self: start; min-height: 42px; border-radius: 12px; font-weight: 700; }
+.booking-page .booking-detail-grid { display: grid; gap: 18px; margin-top: 0; }
+
+/* detail card: picture on the left, information on the right (same tiles as the owner and admin views) */
+.booking-page .eq-detail-card {
+  display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 26px; align-items: stretch; padding: 22px;
+  border: 1px solid #e1e8dd; border-top: 1px solid #e1e8dd; border-radius: 18px; background: #fff; box-shadow: 0 6px 22px rgba(18, 67, 42, .06);
+}
+.booking-page .eq-detail-media { position: relative; min-height: 280px; overflow: hidden; border-radius: 14px; background: #f1f4ee; }
+.booking-page .eq-detail-media .booking-equipment-image, .booking-page .eq-detail-media .booking-image-placeholder {
+  position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0; object-fit: cover; transition: transform .35s ease;
+}
+.booking-page .eq-detail-media .booking-image-placeholder { display: grid; place-items: center; color: #7a897f; font-size: 14px; }
+.booking-page .eq-detail-card:hover .booking-equipment-image { transform: scale(1.03); }
+.booking-page .eq-detail-info { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.booking-page .eq-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.booking-page .eq-detail-head h1 { margin: 0; color: var(--forest); font-size: 34px; line-height: 1.1; }
+.booking-page .eq-detail-head .booking-muted { margin: 6px 0 0; color: #6a7a6f; font-size: 15px; }
+.booking-page .eq-detail-status {
+  flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; text-transform: capitalize; white-space: nowrap;
+}
+.booking-page .eq-detail-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.booking-page .eq-detail-status.is-available { background: #e1f3e6; color: #176b3a; }
+.booking-page .eq-detail-status.is-unavailable { background: #fde4e1; color: #a52a22; }
+.booking-page .eq-detail-description { display: block; margin: 0; color: #46564b; font-size: 14px; line-height: 1.6; -webkit-line-clamp: unset; overflow: visible; }
+.booking-page .eq-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: auto 0 0; }
+.booking-page .eq-detail-grid > div {
+  min-width: 0; padding: 14px 16px; border: 1px solid #e3eadf; border-radius: 12px; background: #fff;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.booking-page .eq-detail-grid > div:hover { transform: translateY(-2px); border-color: #bcd8c3; box-shadow: 0 8px 18px rgba(18, 67, 42, .08); }
+.booking-page .eq-detail-grid dt { margin: 0; color: #64748b; font-size: 12px; font-weight: 600; }
+.booking-page .eq-detail-grid dd { margin: 5px 0 0; color: var(--forest); font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+
+/* booking form card */
+.booking-page .booking-form-card {
+  padding: 26px 28px 28px; border: 1px solid #e1e8dd; border-top: 1px solid #e1e8dd; border-radius: 18px; background: #fff; box-shadow: 0 6px 22px rgba(18, 67, 42, .06);
+}
+.booking-page .booking-form-heading { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #edf2ea; }
+.booking-page .booking-form-heading h2 { margin: 0; color: var(--forest); font-size: 28px; line-height: 1.15; }
+.booking-page .booking-form-heading p { margin: 6px 0 0; color: #6a7a6f; font-size: 14px; }
+.booking-page .booking-columns { gap: 26px; }
+.booking-page .booking-column {
+  padding: 20px; border: 1px solid #e3eadf; border-radius: 16px; background: #fbfdfa;
+}
+.booking-page .booking-form-card h3 {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 0; border: 0; color: var(--forest); font-size: 21px; line-height: 1.2;
+}
+.booking-page .booking-form-card h3::before { content: ''; width: 5px; height: 22px; border-radius: 4px; background: var(--grad-green); }
+.booking-page .booking-form-grid { gap: 14px; }
+.booking-page .booking-form-card label { gap: 7px; color: #2f5a3c; font-size: 13px; font-weight: 700; }
+.booking-page .booking-form-card :is(input:not([type='file']), select) {
+  min-height: 48px; padding: 0 14px; border: 1.5px solid #d6e0d3; border-radius: 12px; background-color: #fff; color: #1f2937; font-size: 14px; box-shadow: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.booking-page .booking-form-card :is(input, select):focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+.booking-page .booking-form-card input[type='file'] {
+  min-height: 48px; padding: 7px 10px; border: 1.5px dashed #bcd3c1; border-radius: 12px; background: #fff; font-size: 13px; color: #55635a; width: 100%; box-sizing: border-box;
+}
+.booking-page .booking-form-card input[type='file']::file-selector-button {
+  margin-right: 12px; padding: 8px 14px; border: 1.5px solid #2e8b45; border-radius: 9px; background: #fff; color: var(--forest); font: 700 13px inherit; cursor: pointer;
+}
+.booking-page .booking-form-card input[type='file']::file-selector-button:hover { background: #eef7ef; }
+
+/* estimated total */
+.booking-page .booking-estimate {
+  margin-top: 18px; padding: 18px 20px; border: 1px solid #cfe4d3; border-radius: 14px; background: linear-gradient(135deg, #eef7ef, #fbf6e6);
+}
+.booking-page .booking-estimate span { color: #55635a; font-size: 13px; font-weight: 600; }
+.booking-page .booking-estimate strong { color: var(--forest); font-size: 30px; line-height: 1.15; }
+.booking-page .booking-estimate small { color: #6a7a6f; font-size: 12px; }
+
+/* payment details */
+.booking-page .booking-payment-fields { margin-top: 14px; padding: 0; border: 0; gap: 14px; }
+.booking-page .booking-payment-fields > p:first-child {
+  padding: 12px 14px; border: 1px solid #f0dfaa; border-left: 4px solid var(--gold); border-radius: 12px; background: #fff8e4; color: #6b4e0a; font-size: 13px; line-height: 1.5;
+}
+.booking-page .booking-owner-payment-info { padding: 16px; border: 1px solid #d6e6da; border-radius: 14px; background: #f1f8f2; }
+.booking-page .booking-owner-payment-info p { margin: 6px 0; color: #2b3a30; font-size: 14px; }
+.booking-page .booking-owner-payment-info strong { color: var(--forest); }
+.booking-page .booking-owner-qr { width: 100%; max-width: 230px; margin-top: 12px; padding: 8px; border: 1px solid #d9e0d8; border-radius: 12px; background: #fff; box-shadow: 0 4px 12px rgba(18, 67, 42, .08); }
+.booking-page .booking-error { padding: 11px 14px; border-radius: 12px; background: #fdeceb; color: #a52a22 !important; font-size: 13px; }
+.booking-page .booking-success { padding: 11px 14px; border-radius: 12px; background: #e1f3e6; color: #176b3a; font-size: 14px; }
+
+/* submit */
+.booking-page .booking-submit-row { display: flex; justify-content: flex-end; margin-top: 22px; padding-top: 20px; border-top: 1px solid #edf2ea; }
+.booking-page .booking-form-card .booking-submit { width: auto; min-width: 240px; min-height: 50px; margin: 0; border-radius: 12px; font-size: 15px; }
+
+@media (max-width: 1000px) {
+  .booking-page .eq-detail-card { grid-template-columns: 1fr; gap: 18px; padding: 16px; }
+  .booking-page .eq-detail-media { min-height: 230px; }
+  .booking-page .eq-detail-media .booking-equipment-image, .booking-page .eq-detail-media .booking-image-placeholder { height: 100%; }
+}
+@media (max-width: 700px) {
+  .booking-page .eq-detail-head { flex-direction: column; gap: 10px; }
+  .booking-page .eq-detail-head h1 { font-size: 28px; }
+  .booking-page .eq-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .booking-page .eq-detail-grid > div { padding: 12px 14px; }
+  .booking-page .booking-form-card { padding: 18px 16px 20px; }
+  .booking-page .booking-form-heading h2 { font-size: 24px; }
+  .booking-page .booking-column { padding: 16px; }
+  .booking-page .booking-form-grid { grid-template-columns: 1fr; }
+  .booking-page .booking-submit-row { justify-content: stretch; }
+  .booking-page .booking-form-card .booking-submit { width: 100%; min-width: 0; }
+}

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { BadgeCheck, CalendarCheck, CalendarDays, Check, ShieldCheck } from 'lucide-react';
+import { BadgeCheck, CalendarCheck, CalendarDays, Check, ShieldCheck, Layers, Activity, CalendarClock, Package } from 'lucide-react';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
 
 const PLAN_ICONS = [CalendarDays, CalendarCheck, ShieldCheck, BadgeCheck];
+const cap = v => String(v || '—').replace(/_/g, ' ');
+const fmtDate = v => v ? new Date(String(v).replace(' ', 'T')).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Awaiting verification';
 const peso = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
 
 export default function OwnerSubscription() {
@@ -71,16 +73,20 @@ export default function OwnerSubscription() {
   const paidPlans = plans.filter(plan => Number(plan.price) !== 0).sort((a, b) => Number(a.duration_days) - Number(b.duration_days));
   const trialPlan = plans.find(plan => Number(plan.price) === 0);
 
-  return <section className="am-page" style={{maxWidth: 1100, margin: '0 auto'}}>
-    <div className="admin-page-heading"><div><h1>My Subscription</h1><p>Manage your equipment listing plan and subscription status.</p></div></div>
+  return <section className="am-page sub-page">
     {error && <div className="um-message error">{error}</div>}
     {message && <div className="um-message success">{message}</div>}
-    <div className="um-panel" style={{padding:20, marginBottom:20}}>
-      <h2>Current Subscription</h2>
-      {current ? <p><strong>{current.plan_name}</strong> · {current.status} · Expires: {current.end_date || 'Awaiting verification'} · Equipment: {equipmentCount}/{current.equipment_limit == null ? 'Unlimited' : current.equipment_limit}</p> : <p>No active subscription found. Choose a plan below to list equipment.</p>}
+    <div className="um-panel sub-panel">
+      <div className="sub-panel-head"><h2>Current Subscription</h2>{current && <span className={`sub-pill st-${String(current.status || '').toLowerCase()}`}>{cap(current.status)}</span>}</div>
+      {current ? (() => { const limit = current.equipment_limit; const pct = limit == null || Number(limit) === 0 ? 0 : Math.min(100, Math.round(equipmentCount / Number(limit) * 100)); return <div className="sub-current-grid">
+        <div className="sub-stat"><span className="sub-stat-icon"><Layers size={18} /></span><div><small>Plan</small><strong>{current.plan_name}</strong></div></div>
+        <div className="sub-stat"><span className="sub-stat-icon"><Activity size={18} /></span><div><small>Status</small><strong>{cap(current.status)}</strong></div></div>
+        <div className="sub-stat"><span className="sub-stat-icon"><CalendarClock size={18} /></span><div><small>Expires</small><strong>{fmtDate(current.end_date)}</strong></div></div>
+        <div className="sub-stat"><span className="sub-stat-icon"><Package size={18} /></span><div><small>Equipment used</small><strong>{equipmentCount} / {limit == null ? 'Unlimited' : limit}</strong>{limit != null && <i className="sub-meter"><b style={{ width: pct + '%' }} /></i>}</div></div>
+      </div>; })() : <p className="sub-empty-note">No active subscription found. Choose a plan below to list equipment.</p>}
     </div>
-    <div className="um-panel" style={{ padding: 20, marginBottom: 20 }}>
-      <h2>Subscription Payment History</h2>
+    <div className="um-panel sub-panel">
+      <div className="sub-panel-head"><h2>Subscription Payment History</h2></div>
 
       <div className="um-table-wrapper">
         <table className="um-table">
@@ -101,9 +107,9 @@ export default function OwnerSubscription() {
                 <tr key={payment.id}>
                   <td>{payment.plan_name || '—'}</td>
                   <td>{peso(payment.amount)}</td>
-                  <td>{payment.payment_method || '—'}</td>
+                  <td className="sub-cap">{cap(payment.payment_method)}</td>
                   <td>{payment.reference_number || '—'}</td>
-                  <td>{payment.payment_status || '—'}</td>
+                  <td><span className={`sub-pill st-${String(payment.payment_status || '').toLowerCase()}`}>{cap(payment.payment_status)}</span></td>
                   <td>
                     {payment.payment_date
                       ? new Date(payment.payment_date).toLocaleDateString('en-PH')
@@ -122,9 +128,9 @@ export default function OwnerSubscription() {
         </table>
       </div>
     </div>
-    <div className="um-panel" style={{padding:20, marginBottom:20}}>
-      <h2>Online Payment Details</h2>
-      <p>For paid plans, submit your payment reference and proof. Your plan activates only after Admin verification.</p>
+    <div className="um-panel sub-panel">
+      <div className="sub-panel-head"><h2>Online Payment Details</h2></div>
+      <p className="sub-empty-note">For paid plans, submit your payment reference and proof. Your plan activates only after Admin verification.</p>
       <div className="sub-pay-fields">
         <label>Payment method <select value={method} onChange={e=>setMethod(e.target.value)}><option value="gcash">GCash</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select></label>
         <label>Reference number <input value={reference} onChange={e=>setReference(e.target.value)} maxLength={100} /></label>

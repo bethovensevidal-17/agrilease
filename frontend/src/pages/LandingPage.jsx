@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Sprout, Tractor, Wheat, Droplets, Search, CalendarCheck, BadgeCheck, ShieldCheck, WifiOff, Wallet } from 'lucide-react';
+import { Tractor, Wheat, Droplets, Search, CalendarCheck, BadgeCheck, ShieldCheck, WifiOff, Wallet } from 'lucide-react';
 import './landing-page.css';
+import '../logo.css';
 
 // Photo slots: put your own photos in frontend/public/images/ using these file names.
 // If a file is missing, the green gradient shows instead, so nothing breaks.
@@ -27,7 +28,7 @@ const steps = [
 function Logo() {
   return (
     <Link to="/" className="lp-logo">
-      <i><Sprout className="lu" /></i>AGRILEASE
+      <i className="has-logo"><img src="/logo-mark.png" alt="" /></i>AGRILEASE
     </Link>
   );
 }

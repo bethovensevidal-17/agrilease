@@ -1,0 +1,4 @@
+/* Real AGRILEASE emblem (public/logo-mark.png) inside a white badge so the dark-green logo stays readable on green backgrounds. */
+.lp-logo i.has-logo { width: 62px; height: 62px; border-radius: 50%; background: #fff; padding: 4px; box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
+.admin-brand-mark.has-logo, .farmer-brand-mark.has-logo { width: 56px; height: 56px; padding: 4px; border-radius: 50%; border-color: transparent; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.lp-logo i.has-logo img, .admin-brand-mark.has-logo img, .farmer-brand-mark.has-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { api, getUser, clearAuth } from '../api/client';
+import '../logo.css';
 
 const navigation = [
   { label: 'Dashboard', path: '/owner', icon: LayoutDashboard, end: true },
@@ -73,7 +74,7 @@ export default function OwnerLayout() {
       )}
 
       <aside className={`owner-sidebar ${menuOpen ? 'open' : ''}`}>
-        <div className="admin-brand admin-reference-brand"><span className="admin-brand-mark">A</span><span className="admin-brand-copy"><strong>AGRILEASE</strong><small>OWNER PORTAL</small></span></div>
+        <div className="admin-brand admin-reference-brand"><span className="admin-brand-mark has-logo"><img src="/logo-mark.png" alt="" /></span><span className="admin-brand-copy"><strong>AGRILEASE</strong><small>OWNER PORTAL</small></span></div>
 
         <div className="owner-nav-heading">MAIN MENU</div>
 

@@ -7,6 +7,7 @@ import {
   ArcElement, Tooltip, Legend, Filler,
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
+import '../logo.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -44,7 +45,7 @@ export default function FarmerDashboard() {
     <div className="farmer-dashboard">
       {menuOpen && <button type="button" className="farmer-backdrop" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)} />}
       <aside className={`farmer-sidebar ${menuOpen ? 'open' : ''}`}>
-        <div className="farmer-brand-wrap"><div className="farmer-brand-mark">A</div><div><strong>AGRILEASE</strong><small>FARMER PORTAL</small></div></div>
+        <div className="farmer-brand-wrap"><div className="farmer-brand-mark has-logo"><img src="/logo-mark.png" alt="" /></div><div><strong>AGRILEASE</strong><small>FARMER PORTAL</small></div></div>
         <p className="farmer-sidebar-label">FARMER MENU</p>
         <nav className="farmer-nav" aria-label="Farmer navigation">
           {primaryLinks.map(({ to, label, end, icon: Icon }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => isActive ? 'farmer-nav-link active' : 'farmer-nav-link'}><Icon size={18} strokeWidth={1.8}/><span>{label}</span></NavLink>)}

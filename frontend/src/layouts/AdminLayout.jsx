@@ -16,6 +16,7 @@ import {
 
 import { api, getUser, clearAuth } from '../api/client';
 import '../admin.css';
+import '../logo.css';
 
 const navigation = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
@@ -69,7 +70,7 @@ export default function AdminLayout() {
 
       <aside className={`admin-sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="admin-brand admin-reference-brand">
-          <span className="admin-brand-mark">A</span>
+          <span className="admin-brand-mark has-logo"><img src="/logo-mark.png" alt="" /></span>
           <span className="admin-brand-copy"><strong>AGRILEASE</strong><small>ADMIN PORTAL</small></span>
         </div>
 

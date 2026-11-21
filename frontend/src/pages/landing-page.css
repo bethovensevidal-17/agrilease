@@ -1,7 +1,8 @@
 .lp { color: #1d2a22; background: #f5f6ef; }
 .lp a { text-decoration: none; }
+.lp-top { background: linear-gradient(135deg,#12432a,#1f6b3b 55%,#2e8b45); }
 .lp svg.lu { width: 1.15em; height: 1.15em; flex: none; }
-.lp-nav { display: flex; align-items: center; gap: 26px; padding: 16px 6%; background: linear-gradient(135deg,#12432a,#1f6b3b 55%,#2e8b45); color: #fff; }
+.lp-nav { display: flex; align-items: center; gap: 26px; padding: 16px 6%; color: #fff; }
 .lp-logo { display: flex; align-items: center; gap: 10px; margin-right: auto; color: #fff; font: 700 24px 'Barlow Condensed', sans-serif; }
 .lp-logo i { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg,#f0c04a,#d9962a); color: #2a1d00; }
 .lp-nav .lp-link { color: #dcebe0; font-weight: 600; font-size: 14px; }
@@ -9,7 +10,7 @@
 .lp-gold { background: linear-gradient(135deg,#f0c04a,#d9962a); color: #2a1d00; }
 .lp-ghost { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.4); }
 .lp-green { background: linear-gradient(135deg,#12432a,#2e8b45); color: #fff; }
-.lp-hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 30px; align-items: end; padding: 20px 6% 0; color: #fff; background: linear-gradient(135deg,#12432a,#1f6b3b 55%,#2e8b45); overflow: hidden; }
+.lp-hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 30px; align-items: end; padding: 20px 6% 0; color: #fff; overflow: hidden; }
 .lp-hero-text { padding: 48px 0 70px; }
 .lp-hero h1 { font-size: clamp(46px, 7vw, 84px); line-height: 1.02; margin: 0; }
 .lp-hero p { max-width: 46ch; margin: 18px 0 26px; color: #d5e8da; font-size: 18px; line-height: 1.55; }
@@ -22,7 +23,7 @@
 .lp-sec { padding: 56px 6%; }
 .lp-sec h2 { margin: 0; color: #12432a; font-size: clamp(32px, 4vw, 46px); }
 .lp-sec > p { max-width: 60ch; margin: 8px 0 28px; color: #5f6f65; line-height: 1.55; }
-.lp-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+.lp-cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
 .lp-cat { position: relative; display: flex; align-items: flex-end; min-height: 240px; border-radius: 20px; overflow: hidden; color: #fff; }
 .lp-cat .lp-photo { position: absolute; inset: 0; }
 .lp-cat::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(8,30,18,.88)); }

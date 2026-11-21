@@ -35,6 +35,7 @@ function Logo() {
 export default function LandingPage() {
   return (
     <div className="lp">
+      <div className="lp-top">
       <header className="lp-nav">
         <Logo />
         <a className="lp-link" href="#about">About</a>
@@ -44,7 +45,6 @@ export default function LandingPage() {
         <Link className="lp-btn lp-gold" to="/register" style={{ padding: '9px 18px' }}>Get started</Link>
       </header>
 
-      <main>
         <section className="lp-hero" id="home">
           <div className="lp-hero-text">
             <h1>Rent the machine.<br />Keep the harvest.</h1>
@@ -61,7 +61,9 @@ export default function LandingPage() {
           </div>
           <Photo src="/images/hero.jpg" alt="Tractor working in a rice field" />
         </section>
+      </div>
 
+      <main>
         <section className="lp-sec" id="about">
           <h2>What do you need on your field?</h2>
           <p>AGRILEASE helps farmers find and request the machinery they need for their farming activities.</p>

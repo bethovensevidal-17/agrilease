@@ -14,18 +14,21 @@ body { font-family: 'Source Sans 3', Inter, system-ui, -apple-system, 'Segoe UI'
 h1, h2, h3 { font-family: 'Barlow Condensed', 'Arial Narrow', Inter, sans-serif; letter-spacing: .2px; }
 
 /* Sidebars (farmer, owner, admin) */
-.sidebar, .owner-sidebar, .admin-sidebar { background: var(--grad-side); }
+.sidebar, .owner-sidebar, .admin-sidebar, .farmer-sidebar { background: var(--grad-side); }
 .topbar { background: var(--grad-green); }
-.sidebar a.active, .owner-nav-link:hover, .owner-nav-link.active, .admin-nav-link.active {
+.sidebar a.active, .owner-nav-link:hover, .owner-nav-link.active, .admin-nav-link.active,
+.farmer-nav-link:hover, .farmer-nav-link.active {
   background: rgba(255, 255, 255, .14); box-shadow: inset 3px 0 0 var(--gold); color: #fff;
 }
-.admin-brand-mark { background: var(--grad-gold); border-color: transparent; color: #2a1d00; }
+.admin-brand-mark, .farmer-brand-mark { background: var(--grad-gold); border-color: transparent; color: #2a1d00; }
 
 /* Primary buttons */
-.btn-primary, .booking-submit, .mb-btn.primary, .equipment-view-link {
+.btn-primary, .booking-submit, .equipment-view-link,
+.mb-btn:not(.mb-btn-secondary):not(.mb-btn-danger) {
   background: var(--grad-green); border-color: transparent; color: #fff;
 }
-.btn-primary:hover, .booking-submit:hover, .equipment-view-link:hover { filter: brightness(1.08); }
+.btn-primary:hover:not(:disabled), .booking-submit:hover:not(:disabled), .equipment-view-link:hover,
+.mb-btn:not(.mb-btn-secondary):not(.mb-btn-danger):hover:not(:disabled) { filter: brightness(1.08); }
 
 /* Equipment cards */
 .card { border-radius: 16px; border-color: var(--border); transition: box-shadow .2s ease; }
@@ -36,3 +39,27 @@ h1, h2, h3 { font-family: 'Barlow Condensed', 'Arial Narrow', Inter, sans-serif;
 
 /* Dashboard accents (additive: only touches background of existing stat cards if present) */
 .owner-topbar, .admin-topbar { border-bottom-color: var(--border); }
+
+/* ---------- Phase 2 ---------- */
+/* Welcome banners (farmer + owner) */
+.role-welcome-banner, .farmer-welcome-banner { background: var(--grad-green); }
+.farmer-primary-action { background: var(--grad-gold); color: #2a1d00; }
+
+/* Stat cards: keep white cards and readable text, add a colored top accent */
+.farmer-stat-card, .owner-stat-card, .admin-stat-card { border-top: 4px solid var(--leaf); }
+.farmer-stat-card:nth-child(2), .owner-stat-card:nth-child(2), .admin-stat-card:nth-child(2) { border-top-color: var(--navy); }
+.farmer-stat-card:nth-child(3), .owner-stat-card:nth-child(3), .admin-stat-card:nth-child(3) { border-top-color: var(--gold); }
+.farmer-stat-card:nth-child(4), .owner-stat-card:nth-child(4), .admin-stat-card:nth-child(4) { border-top-color: var(--lime); }
+
+/* Login and register: green gradient behind the card; add public/images/login-bg.jpg for a photo */
+.auth-container {
+  background:
+    linear-gradient(135deg, rgba(18, 67, 42, .88), rgba(46, 139, 69, .78)),
+    url('/images/login-bg.jpg') center / cover no-repeat,
+    #1f6b3b;
+}
+.auth-card { box-shadow: 0 18px 50px rgba(0, 0, 0, .25); border-color: transparent; }
+
+/* Equipment card placeholder when there is no photo */
+.card-img { height: 170px; }
+.card-noimg { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #5f7a68; font-size: 13px; font-weight: 600; }

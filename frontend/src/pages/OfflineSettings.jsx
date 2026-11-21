@@ -129,7 +129,7 @@ export default function OfflineSettings() {
           <p className="offline-eyebrow">AGRILEASE · {role.toUpperCase()} PORTAL</p>
           <h1>{guidance.title}</h1>
           <p className="offline-intro">{guidance.intro}</p>
-          {role === 'admin' && <Link className="offline-back-link" to={`/${role}`}>Back to dashboard</Link>}
+          
         </div>
         <span className={`offline-connection ${online ? 'is-online' : 'is-offline'}`}>
           <span className="offline-connection-dot" />{online ? 'Online' : 'Offline'}
@@ -155,14 +155,14 @@ export default function OfflineSettings() {
         </div>
       </section>
 
-      {role === 'admin' && <section className="offline-limit-note"><strong>Important limitations</strong><ul>{guidance.limits.map(item => <li key={item}>{item}</li>)}</ul></section>}
+      
 
       {role === 'farmer' && <section className="offline-howto"><strong>Cash booking synchronization</strong><p>When you submit a Cash booking while offline, it is saved on this device as Pending Sync. It is not official yet and the equipment is not reserved. Once you are back online, the server verifies the schedule, availability, quantity, and your account before it becomes an official booking.</p></section>}
 
       {role === 'owner' && <section className="offline-howto"><strong>Equipment synchronization</strong><p>When you add equipment while offline, it is saved on this device (with its image) as Pending Sync. It is not listed on the server yet. Once you are back online it is sent automatically; if accepted, it goes to Admin approval.</p></section>}
 
       <section className="offline-howto offline-queue-section">
-        <div className="offline-queue-heading"><div><strong>Synchronization queue</strong><p>{pending.length} pending · {failed.length} needs review</p></div><div className="offline-queue-tools"><button type="button" className="offline-save-button" onClick={turnOnPush}>Turn on push notifications</button>{role === 'admin' && <button type="button" className="offline-save-button" onClick={refreshStatus}>Refresh status</button>}</div></div>
+        <div className="offline-queue-heading"><div><strong>Synchronization queue</strong><p>{pending.length} pending · {failed.length} needs review</p></div><div className="offline-queue-tools"><button type="button" className="offline-save-button" onClick={turnOnPush}>Turn on push notifications</button></div></div>
         {message && <p className="offline-status" role="status">{message}</p>}
         {queue.length === 0 ? <p className="offline-empty-queue">There are no pending or failed actions on this device.</p> : (
           <div className="offline-queue-list">

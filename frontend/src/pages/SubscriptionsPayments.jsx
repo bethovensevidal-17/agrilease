@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 
@@ -150,10 +151,9 @@ export default function SubscriptionsPayments() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
-  async function load() {
+  async function load(silent = false) {
     try {
-      setLoading(true);
-      setError('');
+      if (!silent) { setLoading(true); setError(''); }
 
       const [result, ownerResult] = await Promise.all([
         api('/admin/subscriptions'),
@@ -169,13 +169,14 @@ export default function SubscriptionsPayments() {
       });
       setOwners(ownerResult.data || []);
     } catch (err) {
-      setError(err.message || 'Unable to load subscription records.');
+      if (!silent) setError(err.message || 'Unable to load subscription records.');
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => { load(); }, []);
+  useAutoRefresh(() => load(true));
 
   const subscriptionStats = useMemo(() => {
     const counts = { active: 0, trial: 0, expired: 0, pending: 0 };
@@ -304,17 +305,6 @@ export default function SubscriptionsPayments() {
 
   return (
     <div className="am-page am-subscriptions-page">
-      <div className="admin-page-heading">
-        <div>
-          <h1>Subscriptions</h1>
-          <p>Manage subscription plans, equipment-owner subscriptions, and subscription payments.</p>
-        </div>
-
-        <button className="um-refresh" type="button" onClick={load} disabled={loading}>
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
-      </div>
-
       {error && <div className="um-message error">{error}</div>}
       {notice && <div className="um-message success">{notice}</div>}
 

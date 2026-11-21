@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 import { assetUrl } from '../api/config';
@@ -23,9 +24,9 @@ export default function EquipmentManagement() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  async function load() {
+  async function load(silent = false) {
     try {
-      setLoading(true); setError('');
+      if (!silent) { setLoading(true); setError(''); }
       const params = new URLSearchParams();
       if (status) params.set('status', status);
       if (availability) params.set('availability', availability);
@@ -34,13 +35,15 @@ export default function EquipmentManagement() {
       if (archive === 'archived') params.set('archived', '1');
       const result = await api(`/equipment/admin?${params.toString()}`);
       setItems(result.data || []);
-    } catch (err) { setError(err.message || 'Unable to load equipment.'); setItems([]); }
+    } catch (err) { if (!silent) { setError(err.message || 'Unable to load equipment.'); setItems([]); } }
     finally { setLoading(false); }
   }
 
   useEffect(() => { api('/categories').then(r => setCategories(r.data || [])).catch(() => setCategories([])); }, []);
   useEffect(() => { setPage(1); load(); }, [status, availability, category, archive]);
   useEffect(() => { const timer = setTimeout(() => { setPage(1); load(); }, 250); return () => clearTimeout(timer); }, [search]);
+
+  useAutoRefresh(() => load(true));
 
   const filtered = useMemo(() => items, [items]);
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -59,9 +62,6 @@ export default function EquipmentManagement() {
   }
 
   return <div className="am-page">
-    <div className="admin-page-heading"><div><h1>Equipment Management</h1><p>Review, approve, and monitor equipment listings submitted by owners.</p></div>
-      <button className="um-refresh" type="button" onClick={load} disabled={loading}>{loading ? 'Loading...' : 'Refresh'}</button></div>
-
     <div className="am-stats">
       <div className="am-stat"><span>Total Listings</span><strong>{items.length}</strong></div>
       <div className="am-stat"><span>Pending Approval</span><strong>{count('pending')}</strong></div>

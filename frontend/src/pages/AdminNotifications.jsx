@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 import { useNavigate } from 'react-router-dom';
@@ -18,15 +19,16 @@ export default function AdminNotifications() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  async function load() {
+  async function load(silent = false) {
     try {
-      setLoading(true); setError('');
+      if (!silent) { setLoading(true); setError(''); }
       const result = await api('/admin/notifications');
       setItems(result.data || []);
-    } catch (err) { setError(err.message || 'Unable to load notifications.'); }
+    } catch (err) { if (!silent) setError(err.message || 'Unable to load notifications.'); }
     finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
+  useAutoRefresh(() => load(true), 30000);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedItems = items.slice(startIndex, startIndex + itemsPerPage);
@@ -53,9 +55,7 @@ export default function AdminNotifications() {
   return (
     <div className="am-page">
       <div className="admin-page-heading">
-        <div><h1>Notifications</h1><p>Administrative alerts and account activity updates.</p></div>
         <div className="am-actions">
-          <button className="um-refresh" onClick={load} disabled={loading}>Refresh</button>
           <button className="am-button approve" onClick={markAllRead} disabled={busy || !items.some(n => !Number(n.is_read))}>Mark All Read</button>
         </div>
       </div>

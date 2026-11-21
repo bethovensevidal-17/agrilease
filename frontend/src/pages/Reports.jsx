@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api } from '../api/client';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -213,9 +214,8 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState([]);
 
-  async function load() {
-    setLoading(true);
-    setErrors([]);
+  async function load(silent = false) {
+    if (!silent) { setLoading(true); setErrors([]); }
 
     const jobs = [
       ['users', () => api('/admin/users')],
@@ -253,13 +253,16 @@ export default function Reports() {
     });
 
     setRecords(next);
-    setErrors(failed);
+    if (!silent || failed.length === 0) setErrors(failed);
     setLoading(false);
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  // Reports load seven endpoints, so they refresh every minute instead of every 15 seconds.
+  useAutoRefresh(() => load(true), 60000);
 
   const dateFilteredRecords = useMemo(() => {
     return Object.fromEntries(
@@ -545,26 +548,6 @@ export default function Reports() {
     <div className="am-page am-reports-page">
 
       {/* PAGE HEADING */}
-      <div className="admin-page-heading am-no-print">
-        <div>
-          <h1>Reports &amp; Records</h1>
-          <p>
-            Monitor all available platform records and sales by date.
-            View analytics and manage system records.
-          </p>
-        </div>
-
-        <div className="am-actions">
-          <button
-            className="um-refresh"
-            onClick={load}
-            disabled={loading}
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
-        </div>
-      </div>
-
       {errors.length > 0 && (
         <div className="um-message error am-no-print">
           Some data sources could not be loaded: {errors.join(', ')}.

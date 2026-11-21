@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import {
   Search,
   Users,
   UserCheck,
   UserX,
-  RefreshCw,
   ShieldCheck
 } from 'lucide-react';
 
@@ -43,10 +43,9 @@ export default function UserManagement() {
   const [summary, setSummary] = useState({ total: 0, active: 0, pending: 0, suspended: 0, farmers: 0, owners: 0 });
   const [selectedUser, setSelectedUser] = useState(null);
 
-  async function loadUsers() {
+  async function loadUsers(silent = false) {
     try {
-      setLoading(true);
-      setError('');
+      if (!silent) { setLoading(true); setError(''); }
 
       const params = new URLSearchParams();
 
@@ -62,7 +61,7 @@ export default function UserManagement() {
       setUsers(result.data || []);
       setSummary(result.summary || { total: result.total || 0, active: 0, pending: 0, suspended: 0, farmers: 0, owners: 0 });
     } catch (err) {
-      setError(err.message || 'Unable to load users.');
+      if (!silent) setError(err.message || 'Unable to load users.');
     } finally {
       setLoading(false);
     }
@@ -77,6 +76,8 @@ export default function UserManagement() {
 
     return () => clearTimeout(timer);
   }, [search, role, status]);
+
+  useAutoRefresh(() => loadUsers(true));
 
   async function handleStatusChange(user) {
     const newStatus =
@@ -124,22 +125,6 @@ export default function UserManagement() {
 
   return (
     <div className="um-page">
-      <div className="admin-page-heading">
-        <div>
-          <h1>User Management</h1>
-          <p>Manage and monitor all registered AGRILEASE accounts.</p>
-        </div>
-
-        <button
-          className="um-refresh"
-          onClick={loadUsers}
-          disabled={loading}
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
-      </div>
-
       <div className="um-summary">
         <div className="um-summary-card">
           <div className="um-summary-icon">

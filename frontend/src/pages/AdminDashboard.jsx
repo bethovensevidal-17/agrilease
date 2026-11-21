@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { Tractor, ClipboardList, Hourglass, Check } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     load();
-    const timer = setInterval(load, 60000);
+    const timer = setInterval(load, 15000);
     return () => clearInterval(timer);
   }, [load]);
 
@@ -65,45 +65,35 @@ export default function AdminDashboard() {
   const visibleActivity = activity.slice(activityStart, activityStart + activityPageSize);
   const bookingChart = {
     labels: monthly.map(row => row.month),
-    datasets: [{ label: 'Reservations', data: monthly.map(row => Number(row.rentals || 0)), backgroundColor: '#2e8b45', hoverBackgroundColor: '#12432a', borderRadius: 8 }],
+    datasets: [{ label: 'Reservations', data: monthly.map(row => Number(row.rentals || 0)), backgroundColor: '#176b3a', borderRadius: 6 }],
   };
   const statusChart = {
     labels: ['Pending', 'Approved', 'Completed', 'Rejected', 'Cancelled'],
     datasets: [{
       data: [s.pending_rentals || 0, s.approved_rentals || 0, s.completed_rentals || 0, s.rejected_rentals || 0, s.cancelled_rentals || 0].map(Number),
-      backgroundColor: ['#e0a82e', '#2e8b45', '#1b2a4a', '#d9534f', '#8a9a8f'],
+      backgroundColor: ['#e8a317', '#176b3a', '#2787c7', '#dc4c4c', '#64748b'],
       borderWidth: 0,
-      hoverOffset: 6,
     }],
   };
 
   return (
     <div className="admin-dashboard-page admin-reference-dashboard">
-      <div className="admin-reference-heading">
-        <div>
-          <div className="admin-breadcrumb">AGRILEASE / ADMINISTRATION</div>
-          <h1>Dashboard Overview</h1>
-          <p>Monitor your agricultural rental operations.</p>
-        </div>
-        <span className="admin-today">{new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-      </div>
-
-      <section className="admin-welcome-banner">
-        <small>ADMINISTRATION PORTAL</small>
+      <section className="role-welcome-banner admin-welcome-banner">
+        <small className="farmer-welcome-kicker">ADMINISTRATION PORTAL</small>
         <h2>Welcome back, AgriLease Admin!</h2>
         <p>Here's an overview of your AgriLease rental operations and current system activities.</p>
+        <div className="farmer-welcome-actions"><Link to="/admin/owners" className="farmer-primary-action">Owner Verification</Link><Link to="/admin/equipment" className="farmer-secondary-action">Equipment Management</Link></div>
       </section>
 
       {error && <div className="admin-error">{error}<button onClick={load}>Retry</button></div>}
       {loading && !stats ? <div className="admin-loading">Loading dashboard statistics...</div> : (
         <>
           <h2 className="admin-section-heading">System Overview</h2>
-          <p className="admin-section-description">Current equipment and reservation statistics.</p>
           <div className="admin-summary-grid admin-four-stats">
-            <StatCard title="Total Equipment" value={s.total_equipment} subtitle="Equipment records" icon={Tractor} />
-            <StatCard title="Total Reservations" value={s.total_rentals} subtitle="All booking requests" icon={ClipboardList} color="blue" />
-            <StatCard title="Pending Reservations" value={s.pending_rentals} subtitle="Awaiting a decision" icon={Hourglass} color="orange" />
-            <StatCard title="Approved Reservations" value={s.approved_rentals} subtitle="Approved requests" icon={Check} color="purple" />
+            <StatCard title="Total Equipment" value={s.total_equipment} subtitle="Equipment records" />
+            <StatCard title="Total Reservations" value={s.total_rentals} subtitle="All booking requests" />
+            <StatCard title="Pending Reservations" value={s.pending_rentals} subtitle="Awaiting a decision" color="orange" />
+            <StatCard title="Approved Reservations" value={s.approved_rentals} subtitle="Approved requests" />
           </div>
 
           <div className="admin-reference-chart-grid">

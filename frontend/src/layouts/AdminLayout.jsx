@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -28,7 +28,27 @@ const navigation = [
   { label: 'Offline Access', path: '/admin/offline', icon: WifiOff },
 ];
 
+const ADMIN_PAGE_TITLES = {
+  '/admin': 'Dashboard',
+  '/admin/users': 'User Management',
+  '/admin/owners': 'Owner Verification',
+  '/admin/equipment': 'Equipment Management',
+  '/admin/rentals': 'Rental Monitoring',
+  '/admin/booking-payments': 'Booking Payments',
+  '/admin/subscriptions': 'Subscription Management',
+  '/admin/reports': 'Reports',
+  '/admin/offline': 'Offline Access',
+  '/admin/notifications': 'Notifications',
+  '/admin/profile': 'My Profile',
+  '/admin/content': 'Website Content',
+};
+function adminPageTitle(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/admin';
+  return ADMIN_PAGE_TITLES[path] || 'Dashboard';
+}
+
 export default function AdminLayout() {
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const user = getUser();
@@ -75,6 +95,8 @@ export default function AdminLayout() {
         </div>
 
 
+        <div className="admin-nav-heading">MAIN MENU</div>
+
         <nav className="admin-navigation">
           {navigation.map(({ label, path, icon: Icon, end }) => (
             <NavLink
@@ -94,7 +116,7 @@ export default function AdminLayout() {
 
         <button className="admin-logout" onClick={logout}>
           <LogOut size={19} />
-          <span>Logout</span>
+          <span>Log Out</span>
         </button>
       </aside>
 
@@ -110,11 +132,7 @@ export default function AdminLayout() {
               {menuOpen ? <X size={23} /> : <Menu size={23} />}
             </button>
 
-            <div className="role-header-title">
-              <small>AGRILEASE / ADMIN PORTAL</small>
-              <strong>Administration Portal</strong>
-              <span>Manage users, equipment, subscriptions and reports.</span>
-            </div>
+            <h1 className="admin-page-title">{adminPageTitle(location.pathname)}</h1>
           </div>
 
           <div className="admin-topbar-right">

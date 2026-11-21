@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 
@@ -26,9 +27,9 @@ export default function RentalMonitoring() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  async function load() {
+  async function load(silent = false) {
     try {
-      setLoading(true); setError('');
+      if (!silent) { setLoading(true); setError(''); }
       const params = new URLSearchParams();
       if (status) params.set('status', status);
       if (owner.trim()) params.set('owner', owner.trim());
@@ -38,8 +39,7 @@ export default function RentalMonitoring() {
       const result = await api(`/admin/rentals${query ? `?${query}` : ''}`);
       setRentals(result.data || []);
     } catch (err) {
-      setError(err.message || 'Unable to load rental records.');
-      setRentals([]);
+      if (!silent) { setError(err.message || 'Unable to load rental records.'); setRentals([]); }
     } finally { setLoading(false); }
   }
 
@@ -48,6 +48,8 @@ export default function RentalMonitoring() {
     const timer = window.setTimeout(load, 250);
     return () => window.clearTimeout(timer);
   }, [status, owner, dateFrom, dateTo]);
+
+  useAutoRefresh(() => load(true));
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -61,13 +63,6 @@ export default function RentalMonitoring() {
 
   return (
     <div className="am-page">
-      <div className="admin-page-heading">
-        <div><h1>Rental Monitoring</h1><p>Monitor rental requests and their current status.</p></div>
-        <button className="um-refresh" type="button" onClick={load} disabled={loading}>
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
-      </div>
-
       <div className="am-stats">
         <div className="am-stat"><span>Total Rentals</span><strong>{rentals.length}</strong></div>
         <div className="am-stat"><span>Pending</span><strong>{rentals.filter(r => r.status === 'pending').length}</strong></div>

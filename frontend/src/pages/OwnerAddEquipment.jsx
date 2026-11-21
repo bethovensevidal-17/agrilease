@@ -1,8 +1,9 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, getToken } from '../api/client';
 import { isNetworkFailure, newRequestId, queueOfflineEquipment } from '../offline/sync';
+import { compressImage } from '../utils/imageCompress';
 
 const initialForm = {
   name: '',
@@ -28,6 +29,8 @@ export default function OwnerAddEquipment() {
   const [success, setSuccess] = useState('');
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [compressing, setCompressing] = useState(false);
+  const imageRequest = useRef(0);
 
   useEffect(() => {
     async function loadCategories() {
@@ -61,8 +64,9 @@ export default function OwnerAddEquipment() {
     }));
   }
 
-  function handleImageChange(e) {
-    const file = e.target.files[0];
+  async function handleImageChange(e) {
+    const input = e.target;
+    const file = input.files[0];
 
     if (!file) return;
 
@@ -70,19 +74,39 @@ export default function OwnerAddEquipment() {
 
     if (!allowedTypes.includes(file.type)) {
       setError('JPG, PNG, or WEBP images only.');
-      e.target.value = '';
+      input.value = '';
       return;
     }
 
-    if (file.size > 1024 * 1024) {
-      setError('Image size must not exceed 1MB.');
-      e.target.value = '';
+    // Napakalaking file (halimbawa RAW o 50MB na litrato) ay hindi na pinoproseso para hindi mag-hang ang phone.
+    if (file.size > 20 * 1024 * 1024) {
+      setError('This photo is too large. Please choose one under 20MB.');
+      input.value = '';
       return;
     }
 
+    const requestNumber = ++imageRequest.current;
     setError('');
-    setImage(file);
-    setImagePreview(URL.createObjectURL(file));
+    setCompressing(true);
+
+    try {
+      // Kung lampas 1MB, kusa itong pinaliliit. Kung pasok na, hindi ito ginagalaw.
+      const prepared = await compressImage(file);
+
+      // Kung may mas bagong napili habang nagpoproseso, balewalain ang luma.
+      if (requestNumber !== imageRequest.current) return;
+
+      setImage(prepared);
+      setImagePreview(URL.createObjectURL(prepared));
+    } catch (err) {
+      if (requestNumber !== imageRequest.current) return;
+      setImage(null);
+      setImagePreview('');
+      input.value = '';
+      setError(err.message || 'Unable to process this image.');
+    } finally {
+      if (requestNumber === imageRequest.current) setCompressing(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -346,7 +370,10 @@ export default function OwnerAddEquipment() {
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleImageChange}
               />
-              <small>Accepted formats: JPG, PNG, WEBP. Maximum size: 1MB.</small>
+              <small>
+                Accepted formats: JPG, PNG, WEBP. Large photos are automatically resized to fit.
+              </small>
+              {compressing && <small>Optimizing photo...</small>}
 
               {imagePreview && (
                 <div style={{ marginTop: '12px' }}>
@@ -386,7 +413,7 @@ export default function OwnerAddEquipment() {
             <button
               type="submit"
               className="owner-submit-button"
-              disabled={submitting || loadingCategories}
+              disabled={submitting || loadingCategories || compressing}
             >
               {submitting ? 'Submitting...' : 'Submit Equipment'}
             </button>

@@ -403,13 +403,22 @@ html:has(.owner-shell), body:has(.owner-shell) { overflow-x: clip; }
 }
 
 /* ---------- 22. Rental Bookings: status dropdown ---------- */
-.owner-page-content .ob-filter-bar { margin: 0 0 18px; }
+.owner-page-content .ob-filter-bar { display: flex; align-items: center; gap: 12px; margin: 0 0 18px; }
+.owner-page-content .ob-search { position: relative; flex: 1 1 auto; min-width: 0; margin: 0; }
+.owner-page-content .ob-search svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #2e8b45; pointer-events: none; }
+.owner-page-content .ob-search input {
+  width: 100%; height: 48px; box-sizing: border-box; padding: 0 16px 0 44px; border: 1.5px solid #d6e0d3; border-radius: 12px; background: #fff;
+  color: #20372a; font: inherit; font-size: 14px; font-weight: 600; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.owner-page-content .ob-search input::placeholder { color: #9aa79e; font-weight: 400; }
+.owner-page-content .ob-search input:hover { border-color: #bcd8c3; }
+.owner-page-content .ob-search input:focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
 .owner-page-content .ob-select {
-  width: 260px; max-width: 100%; height: 48px; padding: 0 44px 0 16px; border: 1.5px solid #d6e0d3; border-radius: 12px; cursor: pointer;
+  flex: 0 0 220px; width: 220px; max-width: 100%; height: 48px; padding: 0 44px 0 16px; border: 1.5px solid #d6e0d3; border-radius: 12px; cursor: pointer;
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232e8b45' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 16px center;
   color: var(--forest); font: inherit; font-size: 14px; font-weight: 700; -webkit-appearance: none; appearance: none;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 .owner-page-content .ob-select:hover { border-color: #bcd8c3; }
 .owner-page-content .ob-select:focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
-@media (max-width: 650px) { .owner-page-content .ob-select { width: 100%; } }
+@media (max-width: 650px) { .owner-page-content .ob-filter-bar { flex-direction: column; align-items: stretch; gap: 10px; } .owner-page-content .ob-select { flex: none; width: 100%; } }

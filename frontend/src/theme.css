@@ -68,3 +68,7 @@ h1, h2, h3 { font-family: 'Barlow Condensed', 'Arial Narrow', Inter, sans-serif;
 .auth-container {
   background: url('/images/login-bg.jpg') center / cover no-repeat, #1f6b3b;
 }
+
+/* Hide the browser's built-in password reveal icon; the page has its own eye button */
+.password-wrapper input::-ms-reveal { display: none; }
+.password-wrapper input::-ms-clear { display: none; }

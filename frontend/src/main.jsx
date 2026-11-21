@@ -8,6 +8,7 @@ import './ui-consistency.css';
 import './theme.css';
 import './theme-phase3.css';
 import './theme-modals.css';
+import './theme-farmer.css';
 import { requestSync } from './offline/sync';
 import { resyncPushSubscription } from './utils/push';
 

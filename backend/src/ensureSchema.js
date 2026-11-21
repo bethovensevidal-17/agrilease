@@ -75,7 +75,7 @@ async function ensureSchema() {
       await db.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${ddl}`);
       console.log(`[ensureSchema] Added ${table}.${column}`);
     } catch (error) {
-      console.error(`[ensureSchema] Hindi nadagdag ang ${table}.${column}:`, error.message);
+      console.error(`[ensureSchema] Could not add ${table}.${column}:`, error.message);
     }
   }
 
@@ -89,14 +89,14 @@ async function ensureSchema() {
       await db.query(ddl);
       console.log(`[ensureSchema] Created table ${name}`);
     } catch (error) {
-      console.error(`[ensureSchema] Hindi nagawa ang table ${name}:`, error.message);
+      console.error(`[ensureSchema] Could not create table ${name}:`, error.message);
     }
   }
 
   try {
     await db.query(PLAN_SEED);
   } catch (error) {
-    console.error('[ensureSchema] Hindi na-seed ang subscription plans:', error.message);
+    console.error('[ensureSchema] Could not seed subscription plans:', error.message);
   }
 }
 

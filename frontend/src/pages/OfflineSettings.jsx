@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ClipboardList, Package, RefreshCw } from 'lucide-react';
 import { clearQueueItem, countSnapshots, readQueue, updateQueueItem } from '../offline/idb';
 import { getToken, getUser } from '../api/client';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { requestSync } from '../offline/sync';
 import { enablePushNotifications } from '../utils/push';
 import './offline-settings.css';
@@ -9,21 +11,21 @@ import './offline-settings.css';
 const ROLE_GUIDANCE = {
   farmer: {
     title: 'Farmer Offline Access',
-    intro: 'Maaari mong buksan ang AgriLease gamit ang dati mong naka-login na session. Ang mga GET data na nabuksan habang online ay awtomatikong sine-save sa device.',
+    intro: 'You can open AgriLease using your previously signed-in session. Data you open while online is saved on this device automatically.',
     available: ['Previously loaded equipment and public pages', 'Previously synchronized rentals, transactions, and profile information', 'Create a Cash booking request and keep it pending on this device'],
-    limits: ['Hindi pa official ang offline booking at hindi pa reserved ang equipment hangga’t hindi ito validated at na-save ng server.', 'GCash at Bank Transfer submissions require internet.', 'Hindi available ang unang login habang offline.'],
+    limits: ['An offline booking is not official and the equipment is not reserved until the server validates and saves it.', 'GCash at Bank Transfer submissions require internet.', 'The first login is not available while offline.'],
   },
   owner: {
     title: 'Owner Offline Access',
-    intro: 'Makikita mo offline ang dati nang na-load na dashboard at records. Puwede ka ring mag-add ng bagong equipment: mase-save ito sa device at awtomatikong ipapadala kapag may internet na.',
+    intro: 'You can view your previously loaded dashboard and records offline. You can also add new equipment: it is saved on this device and sent automatically once you are back online.',
     available: ['Previously loaded dashboard and equipment information', 'Previously synchronized bookings and transactions', 'Add new equipment (with image) and keep it pending on this device'],
-    limits: ['Hindi puwedeng mag-approve/reject o magpalit ng booking status offline.', 'Hindi mase-save ang equipment edits, archive, payment, o subscription changes offline.', 'Ang bagong equipment na na-save offline ay hindi pa nakalista hangga’t hindi ito natatanggap ng server at naaprubahan ng Admin.', 'Kailangan mong nabuksan ang Add Equipment page habang online kahit minsan para ma-save ang category list.'],
+    limits: ['Approving, rejecting, or changing a booking status is not possible offline.', 'Equipment edits, archiving, payment, and subscription changes cannot be saved offline.', 'New equipment saved offline is not listed until the server receives it and the Admin approves it.', 'Open the Add Equipment page at least once while online so the category list is saved.'],
   },
   admin: {
     title: 'Admin Offline Access',
-    intro: 'Read-only monitoring ang offline mode. Ang dati nang na-load na dashboard at reports ay naka-save sa kasalukuyang browser account.',
+    intro: 'Offline mode is read-only monitoring. Previously loaded dashboards and reports are saved in the current browser account.',
     available: ['Previously loaded dashboard and analytics', 'Previously synchronized reports and activity information', 'Previously loaded user and equipment lists'],
-    limits: ['Hindi puwedeng mag-approve/reject ng accounts, equipment, payments, o subscriptions offline.', 'Hindi mase-save ang administrative changes offline.', 'I-refresh ang reports kapag bumalik ang internet.'],
+    limits: ['Approving or rejecting accounts, equipment, payments, or subscriptions is not possible offline.', 'Administrative changes cannot be saved offline.', 'Refresh the reports once you are back online.'],
   },
 };
 
@@ -45,7 +47,7 @@ export default function OfflineSettings() {
       setQueue(items.filter(item => !item.ownerKey || item.ownerKey === ownerKey));
       setCachedCount(snapshots);
     } catch (error) {
-      setMessage(error.message || 'Hindi mabasa ang offline storage.');
+      setMessage(error.message || 'Unable to read offline storage.');
     }
   }, [user?.role, user?.id, user?.email]);
 
@@ -53,13 +55,13 @@ export default function OfflineSettings() {
     refreshStatus();
     const onOnline = () => {
       setOnline(true);
-      setMessage('May internet na. Sinusubukang i-sync ang pending actions.');
+      setMessage('You are back online. Syncing pending actions.');
       requestSync({ release: true });
       window.setTimeout(refreshStatus, 1200);
     };
     const onOffline = () => {
       setOnline(false);
-      setMessage('Offline ka ngayon. Ang saved records ay read-only; ang Cash booking (Farmer) at bagong equipment (Owner) ay mananatiling pending sa device.');
+      setMessage('You are offline. Saved records are read-only; Cash bookings (Farmer) and new equipment (Owner) stay pending on this device.');
     };
     const onMessage = event => {
       if (event.data?.type === 'BACKGROUND_SYNC_COMPLETE') {
@@ -77,6 +79,7 @@ export default function OfflineSettings() {
       window.removeEventListener('agrilease:sync-complete', onSyncComplete);
     };
   }, [refreshStatus]);
+  useAutoRefresh(refreshStatus, 10000, { offline: true });
 
   const pending = useMemo(() => queue.filter(item => item.status !== 'failed' && !item.failed), [queue]);
   const failed = useMemo(() => queue.filter(item => item.status === 'failed' || item.failed), [queue]);
@@ -84,7 +87,7 @@ export default function OfflineSettings() {
   async function retryItem(item) {
     const token = getToken();
     if (!token) {
-      setMessage('Walang active saved session. Mag-login muna online bago i-retry ang action.');
+      setMessage('There is no active saved session. Log in online first before retrying the action.');
       return;
     }
     setBusyId(item.id);
@@ -92,13 +95,13 @@ export default function OfflineSettings() {
       await updateQueueItem(item.id, { token, status: 'pending', failed: false, lastError: '', held: !navigator.onLine });
       await refreshStatus();
       if (!navigator.onLine) {
-        setMessage('Naka-queue na ulit. Awtomatikong susubukan kapag bumalik ang internet.');
+        setMessage('Queued again. It will be retried automatically once you are back online.');
       } else {
         requestSync({ release: true });
-        setMessage('Sinusubukang ipadala ulit sa server.');
+        setMessage('Retrying to send to the server.');
       }
     } catch (error) {
-      setMessage(error.message || 'Hindi na-retry ang action.');
+      setMessage(error.message || 'Unable to retry the action.');
     } finally { setBusyId(null); }
   }
 
@@ -113,9 +116,9 @@ export default function OfflineSettings() {
     try {
       await clearQueueItem(item.id);
       await refreshStatus();
-      setMessage('Inalis ang queued action sa device.');
+      setMessage('The queued action was removed from this device.');
     } catch (error) {
-      setMessage(error.message || 'Hindi maalis ang queued action.');
+      setMessage(error.message || 'Unable to remove the queued action.');
     } finally { setBusyId(null); }
   }
 
@@ -126,7 +129,7 @@ export default function OfflineSettings() {
           <p className="offline-eyebrow">AGRILEASE · {role.toUpperCase()} PORTAL</p>
           <h1>{guidance.title}</h1>
           <p className="offline-intro">{guidance.intro}</p>
-          <Link className="offline-back-link" to={`/${role}`}>Back to dashboard</Link>
+          {role !== 'farmer' && <Link className="offline-back-link" to={`/${role}`}>Back to dashboard</Link>}
         </div>
         <span className={`offline-connection ${online ? 'is-online' : 'is-offline'}`}>
           <span className="offline-connection-dot" />{online ? 'Online' : 'Offline'}
@@ -140,28 +143,28 @@ export default function OfflineSettings() {
       </section>
 
       <section className="offline-feature-section">
-        <div className="offline-section-heading"><div><h2>Available offline</h2><p>Automatic ang caching habang online at ginagamit mo ang bawat page.</p></div></div>
+        <div className="offline-section-heading"><div><h2>Available offline</h2><p>Pages are cached automatically while you are online and using them.</p></div></div>
         <div className="offline-feature-grid">
           {guidance.available.map((item, index) => (
             <article className="offline-feature-card is-selected" key={item}>
-              <span className="offline-feature-icon">{index === 0 ? '📥' : index === 1 ? '📋' : '🔄'}</span>
-              <span className="offline-feature-copy"><span className="offline-feature-title">{item}</span><span className="offline-feature-description">Kailangan munang mabuksan habang online para ma-save ang pinakabagong data sa device.</span></span>
+              <span className="offline-feature-icon">{index === 0 ? <Package size={22} strokeWidth={1.8} /> : index === 1 ? <ClipboardList size={22} strokeWidth={1.8} /> : <RefreshCw size={22} strokeWidth={1.8} />}</span>
+              <span className="offline-feature-copy"><span className="offline-feature-title">{item}</span></span>
               <span className="offline-card-state">Automatic cache</span>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="offline-limit-note"><strong>Importanteng limitasyon</strong><ul>{guidance.limits.map(item => <li key={item}>{item}</li>)}</ul></section>
+      {role !== 'farmer' && <section className="offline-limit-note"><strong>Important limitations</strong><ul>{guidance.limits.map(item => <li key={item}>{item}</li>)}</ul></section>}
 
-      {role === 'farmer' && <section className="offline-howto"><strong>Cash booking synchronization</strong><p>Kapag nag-submit ka ng Cash booking habang offline, mase-save ito bilang Pending Sync sa device. Hindi pa ito official at hindi pa reserved ang equipment. Kapag bumalik ang internet, ibe-verify ng server ang schedule, availability, quantity, at account bago ito maging official booking.</p></section>}
+      {role === 'farmer' && <section className="offline-howto"><strong>Cash booking synchronization</strong><p>When you submit a Cash booking while offline, it is saved on this device as Pending Sync. It is not official yet and the equipment is not reserved. Once you are back online, the server verifies the schedule, availability, quantity, and your account before it becomes an official booking.</p></section>}
 
-      {role === 'owner' && <section className="offline-howto"><strong>Equipment synchronization</strong><p>Kapag nag-add ka ng equipment habang offline, mase-save ito (kasama ang image) bilang Pending Sync sa device. Hindi pa ito nakalista sa server. Kapag bumalik ang internet, awtomatiko itong ipapadala; kung tanggap, mapupunta ito sa Admin approval.</p></section>}
+      {role === 'owner' && <section className="offline-howto"><strong>Equipment synchronization</strong><p>When you add equipment while offline, it is saved on this device (with its image) as Pending Sync. It is not listed on the server yet. Once you are back online it is sent automatically; if accepted, it goes to Admin approval.</p></section>}
 
       <section className="offline-howto offline-queue-section">
-        <div className="offline-queue-heading"><div><strong>Synchronization queue</strong><p>{pending.length} pending · {failed.length} needs review</p></div><div className="offline-queue-tools"><button type="button" className="offline-save-button" onClick={turnOnPush}>Turn on push notifications</button><button type="button" className="offline-save-button" onClick={refreshStatus}>Refresh status</button></div></div>
+        <div className="offline-queue-heading"><div><strong>Synchronization queue</strong><p>{pending.length} pending · {failed.length} needs review</p></div><div className="offline-queue-tools"><button type="button" className="offline-save-button" onClick={turnOnPush}>Turn on push notifications</button>{role !== 'farmer' && <button type="button" className="offline-save-button" onClick={refreshStatus}>Refresh status</button>}</div></div>
         {message && <p className="offline-status" role="status">{message}</p>}
-        {queue.length === 0 ? <p className="offline-empty-queue">Walang pending o failed action sa device na ito.</p> : (
+        {queue.length === 0 ? <p className="offline-empty-queue">There are no pending or failed actions on this device.</p> : (
           <div className="offline-queue-list">
             {queue.map(item => {
               const isFailed = item.status === 'failed' || item.failed;

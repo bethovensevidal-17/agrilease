@@ -39,11 +39,11 @@ app.use('/api/owner/payment-settings', require('./routes/ownerPaymentSettings'))
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin', require('./routes/adminExtra'));
 
-app.use((req, res) => res.status(404).json({ error: 'Hindi nahanap ang route.' }));
+app.use((req, res) => res.status(404).json({ error: 'Route not found.' }));
 app.use((err, req, res, next) => {
   console.error('[API ERROR]', req.method, req.originalUrl, err);
   if (res.headersSent) return next(err);
-  const payload = { error: 'May nangyaring error sa server.' };
+  const payload = { error: 'A server error occurred.' };
   if (process.env.NODE_ENV !== 'production') payload.detail = err.message;
   res.status(500).json(payload);
 });

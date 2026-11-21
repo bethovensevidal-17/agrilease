@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 import PendingSyncList from '../components/PendingSyncList.jsx';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import '../styles/booking.css';
 
 const money = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
@@ -34,19 +35,20 @@ export default function MyRentals() {
   const [tab, setTab] = useState('active');
   const itemsPerPage = 8;
 
-  async function load() {
+  async function load(quiet = false) {
     try {
-      setError('');
+      if (quiet !== true) setError('');
       const result = await api(tab === 'archived' ? '/rentals/mine?archived=1' : '/rentals/mine');
       setRows(result.data || []);
     } catch (e) {
-      setError(e.message);
+      if (quiet !== true) setError(e.message);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => { load(); }, [tab]);
+  useAutoRefresh(() => load(true));
 
   async function cancel(id) {
     if (!await window.agrileaseDialog.confirm('Cancel this pending booking? This cannot be undone.', { title: 'Cancel booking', confirmText: 'Cancel booking' })) return;
@@ -117,7 +119,6 @@ export default function MyRentals() {
           <h1>My Bookings</h1>
           <p>Track your rental requests, schedules, and payment status.</p>
         </div>
-        <button type="button" className="mb-btn mb-btn-secondary" onClick={load}>Refresh</button>
       </div>
 
       {error && <p className="booking-error">{error}</p>}
@@ -152,8 +153,6 @@ export default function MyRentals() {
         <button type="button" className="mb-btn mb-btn-secondary mb-filter-reset" onClick={reset} disabled={!hasFilters}>Reset</button>
       </div>
       {invalidRange && <p className="booking-error">The start date cannot be later than the end date.</p>}
-
-      <p className="mb-count">{filtered.length} of {rows.length} booking{rows.length === 1 ? '' : 's'}</p>
 
       {!rows.length ? (
         <div className="mb-empty">{tab === 'archived' ? 'No archived bookings.' : 'You do not have any bookings yet.'}</div>

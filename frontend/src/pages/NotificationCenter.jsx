@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import { getNotificationTarget } from '../utils/notificationTarget';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -32,10 +33,9 @@ export default function NotificationCenter({ title = 'Notifications', role = 'fa
 
   useEffect(() => {
     load(true);
-    // Polling keeps notifications fresh without requiring an additional WebSocket service.
-    const timer = window.setInterval(() => load(false), 30000);
-    return () => window.clearInterval(timer);
   }, [load]);
+  // Polling keeps notifications fresh without requiring an additional WebSocket service.
+  useAutoRefresh(() => load(false), 30000);
 
   function notificationTarget(item) { return getNotificationTarget(item, role); }
 
@@ -77,7 +77,7 @@ export default function NotificationCenter({ title = 'Notifications', role = 'fa
       <div className="admin-page-heading">
         <div><h1>{title}</h1><p>Booking, payment, and account updates for your AgriLease account.</p></div>
         <div className="am-actions">
-          <button className="um-refresh" onClick={() => load(true)} disabled={loading}>Refresh</button>
+          {role !== 'farmer' && <button className="um-refresh" onClick={() => load(true)} disabled={loading}>Refresh</button>}
           <button className="am-button approve" onClick={markAllRead} disabled={busy || unread === 0}>Mark All Read</button>
         </div>
       </div>

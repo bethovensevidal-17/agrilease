@@ -120,7 +120,7 @@ export default function Register() {
         !allowedTypes.includes(businessPermit.type) ||
         !allowedTypes.includes(governmentId.type)
       ) {
-        setError('PDF, JPG, at PNG files lamang ang pinapayagan.');
+        setError('Only PDF, JPG, and PNG files are allowed.');
         return;
       }
 

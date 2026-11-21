@@ -135,7 +135,7 @@ export default function OwnerAddEquipment() {
     async function saveOnDevice() {
       await queueOfflineEquipment({ ...form }, image, getToken(), requestId);
       setSuccess(
-        'Saved on this device as PENDING SYNC. Hindi pa ito naipapadala sa server. Kapag bumalik ang internet, awtomatiko itong ise-save at mapupunta sa Admin approval.'
+        'Saved on this device as PENDING SYNC. It has not been sent to the server yet. Once you are back online it is saved automatically and goes to Admin approval.'
       );
       resetForm();
     }

@@ -61,13 +61,13 @@ export default function EquipmentBooking() {
 
   async function submit(e) {
     e.preventDefault(); setError(''); setMessage('');
-    if (!getToken() || user?.role !== 'farmer') { setError('Mag-login gamit ang Farmer account para makapag-submit ng booking.'); return; }
+    if (!getToken() || user?.role !== 'farmer') { setError('Log in with a Farmer account to submit a booking.'); return; }
     if (!await window.agrileaseDialog.confirm('Submit this booking request? The owner will review it after you submit.', { title: 'Submit booking', confirmText: 'Submit' })) return;
     const payload = { equipment_id: Number(id), start_date: form.start_date, start_time: form.start_time, end_date: form.end_date, end_time: form.end_time, quantity: Number(form.quantity), payment_method: form.payment_method };
     if (equipment.rate_type === 'hectare') payload.farm_area = Number(form.farm_area);
     setSubmitting(true);
     const requestId = newRequestId();
-    const pendingSyncMessage = 'Booking saved on this device as PENDING SYNC. Hindi pa ito naipapadala sa Owner at hindi pa reserved ang equipment. Ise-send ito kapag bumalik ang internet, pagkatapos ay ive-validate ng server.';
+    const pendingSyncMessage = 'Booking saved on this device as PENDING SYNC. It has not been sent to the Owner yet and the equipment is not reserved. It will be sent once you are back online, then validated by the server.';
     try {
       if (!navigator.onLine) {
         if (form.payment_method !== 'cash') throw new Error('Offline booking is currently available for Cash payment only. Please reconnect to submit other payment methods.');
@@ -156,16 +156,16 @@ export default function EquipmentBooking() {
               {ownerPayment.gcash_number && <p><strong>GCash Number:</strong> {ownerPayment.gcash_number}</p>}
               {ownerPayment.gcash_account_name && <p><strong>Account Name:</strong> {ownerPayment.gcash_account_name}</p>}
               {ownerPayment.gcash_qr_url && <img className="booking-owner-qr" src={assetUrl(ownerPayment.gcash_qr_url)} alt="Equipment owner's GCash QR code" />}
-              {!ownerPayment.gcash_number || !ownerPayment.gcash_account_name ? <p className="booking-error">Hindi pa kumpleto ang GCash details ng owner.</p> : null}
+              {!ownerPayment.gcash_number || !ownerPayment.gcash_account_name ? <p className="booking-error">The owner's GCash details are incomplete.</p> : null}
             </>}
             {form.payment_method === 'bank_transfer' && <>
               {ownerPayment.bank_name && <p><strong>Bank:</strong> {ownerPayment.bank_name}</p>}
               {ownerPayment.bank_account_name && <p><strong>Account Name:</strong> {ownerPayment.bank_account_name}</p>}
               {ownerPayment.bank_account_number && <p><strong>Account Number:</strong> {ownerPayment.bank_account_number}</p>}
-              {!ownerPayment.bank_name || !ownerPayment.bank_account_name || !ownerPayment.bank_account_number ? <p className="booking-error">Hindi pa kumpleto ang bank details ng owner.</p> : null}
+              {!ownerPayment.bank_name || !ownerPayment.bank_account_name || !ownerPayment.bank_account_number ? <p className="booking-error">The owner's bank details are incomplete.</p> : null}
             </>}
             {form.payment_method === 'other' && <>
-              {ownerPayment.other_payment_instructions ? <p>{ownerPayment.other_payment_instructions}</p> : <p className="booking-error">Wala pang Other payment instructions ang owner.</p>}
+              {ownerPayment.other_payment_instructions ? <p>{ownerPayment.other_payment_instructions}</p> : <p className="booking-error">The owner has not provided other payment instructions yet.</p>}
             </>}
           </div>}
           <label>Payment reference number<input name="payment_reference" value={form.payment_reference} onChange={change} required maxLength="100" /></label>

@@ -19,6 +19,22 @@ const primaryLinks = [
   { to: '/farmer/offline', label: 'Offline Access', icon: WifiOff },
 ];
 
+const FARMER_PAGE_TITLES = {
+  '/farmer': 'Dashboard',
+  '/farmer/equipment': 'Browse Equipment',
+  '/farmer/rentals': 'My Bookings',
+  '/farmer/transactions': 'Rental Transactions',
+  '/farmer/messages': 'Messages',
+  '/farmer/offline': 'Farmer Offline Access',
+  '/farmer/notifications': 'Farmer Notifications',
+  '/farmer/profile': 'My Profile',
+};
+function farmerPageTitle(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/farmer';
+  if (/^\/farmer\/equipment\/[^/]+/.test(path)) return 'Equipment Details';
+  return FARMER_PAGE_TITLES[path] || 'Dashboard';
+}
+
 export default function FarmerDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,7 +71,8 @@ export default function FarmerDashboard() {
       <main className="farmer-main">
         <header className="farmer-topbar portal-topbar">
           <button type="button" className="farmer-menu-button" onClick={() => setMenuOpen(open => !open)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>{menuOpen ? <X size={23}/> : <Menu size={23}/>}</button>
-          <div className="role-header-title"><small>AGRILEASE / FARMER PORTAL</small><strong>My Rental Dashboard</strong><span>Browse equipment and manage your rental activity.</span></div>
+          <h1 className="farmer-page-title">{farmerPageTitle(location.pathname)}</h1>
+          
           <div className="farmer-account"><button className="farmer-header-icon portal-header-icon" title="Messages" aria-label={`Messages${unreadMessages ? `, ${unreadMessages} unread` : ''}`} onClick={() => navigate('/farmer/messages')}><MessageCircle size={19}/>{unreadMessages > 0 && <span className="portal-header-count">{unreadMessages > 99 ? '99+' : unreadMessages}</span>}</button><button className="farmer-header-icon portal-header-icon" title="Notifications" aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`} onClick={() => navigate('/farmer/notifications')}><Bell size={19}/>{unreadNotifications > 0 && <span className="portal-header-count">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}</button><button className="farmer-profile-shortcut" onClick={() => navigate('/farmer/profile')} title="My Profile"><span className="farmer-avatar portal-avatar">{user?.full_name?.charAt(0)?.toUpperCase() || 'F'}</span><span className="farmer-account-copy"><strong>{user?.full_name || 'Farmer'}</strong><small>Farmer Account</small></span></button></div>
         </header>
         <section className="farmer-content"><Outlet /></section>
@@ -76,7 +93,7 @@ function loadLeaflet() {
       const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; link.dataset.agrileaseLeaflet = 'true'; document.head.appendChild(link);
     }
     const script = document.createElement('script'); script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; script.async = true;
-    script.onload = () => resolve(window.L); script.onerror = () => reject(new Error('Hindi ma-load ang map library. I-check ang internet connection.'));
+    script.onload = () => resolve(window.L); script.onerror = () => reject(new Error('Unable to load the map library. Please check your internet connection.'));
     document.body.appendChild(script);
   });
   return window.__agrileaseLeafletPromise;

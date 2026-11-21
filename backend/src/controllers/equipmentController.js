@@ -10,32 +10,32 @@ function validate(body) {
   const rate = Number(body.rate);
 
   if (!body.name || String(body.name).trim().length < 2) {
-    errors.push('Kailangan ng pangalan ng equipment.');
+    errors.push('Equipment name is required.');
   }
 
   if (!Number(body.category_id)) {
-    errors.push('Pumili ng category.');
+    errors.push('Select a category.');
   }
 
   if (!(rate > 0)) {
-    errors.push('Ang rate ay dapat higit sa 0.');
+    errors.push('The rate must be greater than 0.');
   }
 
   const quantity = Number(body.available_quantity ?? body.quantity ?? 1);
   if (!Number.isInteger(quantity) || quantity < 1) {
-    errors.push('Ang available quantity ay dapat whole number na hindi bababa sa 1.');
+    errors.push('Available quantity must be a whole number of at least 1.');
   }
 
   if (!RATE_TYPES.includes(body.rate_type)) {
-    errors.push('Gumamit ng hour, day, o hectare.');
+    errors.push('Use hour, day, or hectare.');
   }
 
   if (!CONDITIONS.includes(body.condition_status)) {
-    errors.push('Mali ang condition.');
+    errors.push('Invalid condition.');
   }
 
   if (!body.location || String(body.location).trim().length < 2 || String(body.location).trim().length > 255) {
-    errors.push('Maglagay ng valid na equipment location (2–255 characters).');
+    errors.push('Enter a valid equipment location (2–255 characters).');
   }
 
   return errors;
@@ -129,7 +129,7 @@ async function getOne(req, res) {
 
   if (!rows.length) {
     return res.status(404).json({
-      error: 'Hindi nahanap ang equipment.'
+      error: 'Equipment not found.'
     });
   }
 
@@ -178,7 +178,7 @@ async function create(req, res) {
     [req.user.id]
   );
   if (!subscriptions.length) {
-    return res.status(403).json({ error: 'Wala kang active subscription. Pumili muna ng subscription plan bago magdagdag ng equipment.' });
+    return res.status(403).json({ error: 'You do not have an active subscription. Please choose a subscription plan before adding equipment.' });
   }
   const limit = subscriptions[0].equipment_limit;
   if (limit !== null && limit !== undefined) {
@@ -188,7 +188,7 @@ async function create(req, res) {
     );
     if (Number(count.total) >= Number(limit)) {
       return res.status(403).json({
-        error: `Naabot mo na ang equipment listing limit na ${limit} para sa iyong subscription. Mag-upgrade para makapaglista pa.`,
+        error: `You have reached the equipment listing limit of ${limit} for your subscription. Upgrade to list more.`,
         code: 'SUBSCRIPTION_LIMIT_REACHED',
         equipment_limit: Number(limit),
         equipment_count: Number(count.total)
@@ -252,7 +252,7 @@ async function update(req, res) {
 
   if (!rows.length) {
     return res.status(404).json({
-      error: 'Hindi nahanap ang equipment.'
+      error: 'Equipment not found.'
     });
   }
 
@@ -314,7 +314,7 @@ async function archive(req, res) {
 
   if (!result.affectedRows) {
     return res.status(404).json({
-      error: 'Hindi nahanap o naka-archive na.'
+      error: 'Not found or already archived.'
     });
   }
 
@@ -332,7 +332,7 @@ async function restore(req, res) {
 
   if (!result.affectedRows) {
     return res.status(404).json({
-      error: 'Hindi nahanap o hindi naka-archive.'
+      error: 'Not found or not archived.'
     });
   }
 
@@ -393,7 +393,7 @@ async function setApproval(req, res) {
 
   if (!['approved', 'rejected'].includes(status)) {
     return res.status(400).json({
-      error: 'approved o rejected lang.'
+      error: 'Only approved or rejected is allowed.'
     });
   }
 
@@ -404,7 +404,7 @@ async function setApproval(req, res) {
 
   if (!result.affectedRows) {
     return res.status(404).json({
-      error: 'Hindi nahanap ang equipment.'
+      error: 'Equipment not found.'
     });
   }
 

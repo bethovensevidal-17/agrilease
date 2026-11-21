@@ -57,7 +57,7 @@ async function idempotency(req, res, next) {
         return res.status(row.status_code || 200).json(body);
       }
       if (row && Number(row.idle_seconds) < STALE_AFTER_SECONDS) {
-        return res.status(409).json({ code: 'REQUEST_IN_PROGRESS', error: 'Pinoproseso pa ang request na ito. Susubukan ulit.' });
+        return res.status(409).json({ code: 'REQUEST_IN_PROGRESS', error: 'This request is still being processed. Please try again.' });
       }
       // Stale 'processing' row (server stopped mid-request): take it over and process again.
       await db.execute('UPDATE offline_sync_requests SET updated_at = NOW() WHERE user_id = ? AND idem_key = ?', [req.user.id, key]);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import './register.css';
 
 function EyeIcon({ visible }) {
   return visible ? (
@@ -65,6 +66,15 @@ export default function Register() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // The password checklist only appears once the user starts typing, and disappears when every rule is met.
+  const pwChecks = {
+    length: form.password.length >= 8,
+    letters: /[A-Za-z]/.test(form.password),
+    numbers: /[0-9]/.test(form.password),
+    special: /[^A-Za-z0-9]/.test(form.password),
+  };
+  const showPwChecklist = form.password.length > 0 && !Object.values(pwChecks).every(Boolean);
+
   function handleChange(e) {
     const { name, value } = e.target;
 
@@ -110,7 +120,7 @@ export default function Register() {
         !allowedTypes.includes(businessPermit.type) ||
         !allowedTypes.includes(governmentId.type)
       ) {
-        setError('PDF, JPG, at PNG files lamang ang pinapayagan.');
+        setError('Only PDF, JPG, and PNG files are allowed.');
         return;
       }
 
@@ -322,7 +332,6 @@ export default function Register() {
           <div className="auth-grid">
             <div className="auth-field">
               <label htmlFor="register-password">Password</label>
-              <small className="auth-hint">Minimum 8 characters with letters, numbers, and special characters.</small>
               <div className="password-wrapper">
                 <input
                   id="register-password"
@@ -345,12 +354,6 @@ export default function Register() {
                   <EyeIcon visible={showPassword} />
                 </button>
               </div>
-              <ul className="pw-checklist" aria-live="polite">
-                <li className={form.password.length >= 8 ? 'ok' : ''}>At least 8 characters</li>
-                <li className={/[A-Za-z]/.test(form.password) ? 'ok' : ''}>Contains letters</li>
-                <li className={/[0-9]/.test(form.password) ? 'ok' : ''}>Contains numbers</li>
-                <li className={/[^A-Za-z0-9]/.test(form.password) ? 'ok' : ''}>Contains a special character (e.g. @ # ! %)</li>
-              </ul>
             </div>
 
             <div className="auth-field">
@@ -384,6 +387,15 @@ export default function Register() {
               </div>
             </div>
           </div>
+
+          {showPwChecklist && (
+            <ul className="pw-checklist" aria-live="polite">
+              <li className={pwChecks.length ? 'ok' : ''}>At least 8 characters</li>
+              <li className={pwChecks.letters ? 'ok' : ''}>Contains letters</li>
+              <li className={pwChecks.numbers ? 'ok' : ''}>Contains numbers</li>
+              <li className={pwChecks.special ? 'ok' : ''}>Contains a special character (e.g. @ # ! %)</li>
+            </ul>
+          )}
         </div>
 
         <button

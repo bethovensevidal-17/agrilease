@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../api/client';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
+import { api, getUser } from '../api/client';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -20,7 +21,7 @@ ChartJS.register(
   Legend
 );
 
-const SECTIONS = [
+const BASE_SECTIONS = [
   { key: 'users', label: 'All Users', date: ['created_at'] },
   { key: 'owners', label: 'Owner Verification', date: ['created_at', 'reviewed_at'] },
   { key: 'equipment', label: 'Equipment Listings', date: ['created_at', 'updated_at'] },
@@ -31,8 +32,19 @@ const SECTIONS = [
   { key: 'activity', label: 'System Activity Logs', date: ['created_at'] }
 ];
 
+// Summary reports are calculated from the loaded records, so they always match the data below them.
+const SUMMARY_SECTIONS = [
+  { key: 'summary', label: 'System Summary', kind: 'summary' },
+  { key: 'revenue', label: 'Revenue by Month', kind: 'derived' },
+  { key: 'equipmentPerformance', label: 'Equipment Performance', kind: 'derived' },
+  { key: 'ownerPerformance', label: 'Owner Performance', kind: 'derived' },
+  { key: 'farmerActivity', label: 'Farmer Activity', kind: 'derived' }
+];
+
+const ALL_SECTIONS = [...SUMMARY_SECTIONS, ...BASE_SECTIONS];
+
 const EMPTY = Object.fromEntries(
-  SECTIONS.map(section => [section.key, []])
+  BASE_SECTIONS.map(section => [section.key, []])
 );
 
 const LABELS = {
@@ -73,7 +85,23 @@ const LABELS = {
   created_at: 'Date / Time',
   paid_at: 'Paid At',
   reviewed_at: 'Reviewed At',
-  recorded_by_name: 'Recorded By'
+  recorded_by_name: 'Recorded By',
+  month: 'Month',
+  bookings: 'Bookings',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rejected: 'Rejected',
+  listings: 'Listings',
+  approved_listings: 'Approved Listings',
+  rental_revenue: 'Rental Revenue',
+  subscription_revenue: 'Subscription Revenue',
+  total_revenue: 'Total Revenue',
+  revenue: 'Revenue',
+  total_spent: 'Total Spent',
+  subscription_plan: 'Subscription Plan',
+  subscription_status: 'Subscription Status',
+  metric: 'Item',
+  value: 'Value'
 };
 
 const DATE_KEYS = new Set([
@@ -96,7 +124,12 @@ const MONEY_KEYS = new Set([
   'base_amount',
   'price',
   'rate',
-  'rental_rate'
+  'rental_rate',
+  'rental_revenue',
+  'subscription_revenue',
+  'total_revenue',
+  'revenue',
+  'total_spent'
 ]);
 
 const safeRows = value =>
@@ -137,6 +170,70 @@ const showValue = (key, value) => {
 
   return String(value);
 };
+
+const num = value => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+const lower = value => String(value ?? '').trim().toLowerCase();
+const peso = value => num(value).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+const percent = (part, total) => (total > 0 ? `${Math.round((part / total) * 100)}%` : '0%');
+const monthKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+const monthLabel = date => date.toLocaleDateString('en-PH', { month: 'short', year: 'numeric' });
+const countWhere = (rows, test) => rows.reduce((total, row) => total + (test(row) ? 1 : 0), 0);
+const sumBy = (rows, pick) => rows.reduce((total, row) => total + num(pick(row)), 0);
+
+function groupCount(rows, pick) {
+  const map = new Map();
+  rows.forEach(row => {
+    const key = String(pick(row) || 'Not specified');
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return [...map.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+const escapeHtml = value =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
+function sortById(rows) {
+  return [...rows].sort((a, b) => {
+    const idA = Number(a.id);
+    const idB = Number(b.id);
+    if (Number.isFinite(idA) && Number.isFinite(idB)) return idA - idB;
+    return String(a.id ?? '').localeCompare(String(b.id ?? ''));
+  });
+}
+
+function tableHtml(rows) {
+  const sorted = sortById(rows);
+  const keys = [...new Set(sorted.flatMap(row => Object.keys(row)))]
+    .filter(key => !['password', 'password_hash', 'token'].includes(key));
+  const head = keys.map(key => `<th>${escapeHtml(LABELS[key] || key.replaceAll('_', ' '))}</th>`).join('');
+  const body = sorted.map(row =>
+    `<tr>${keys.map(key => `<td>${escapeHtml(showValue(key, row[key]))}</td>`).join('')}</tr>`
+  ).join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function summaryHtml(summary) {
+  const groups = summary.groups.map(group => `
+    <div class="group">
+      <h3>${escapeHtml(group.title)}</h3>
+      <table class="kv"><tbody>${group.items.map(item =>
+        `<tr><td>${escapeHtml(item.label)}</td><td class="num">${escapeHtml(item.value)}</td></tr>`).join('')}</tbody></table>
+    </div>`).join('');
+  const tables = summary.tables.map(item => `
+    <div class="wide">
+      <h3>${escapeHtml(item.title)}</h3>
+      ${item.rows.length ? tableHtml(item.rows) : '<p>No records for the selected period.</p>'}
+    </div>`).join('');
+  return `<div class="groups">${groups}</div>${tables}`;
+}
 
 function RecordsTable({ rows }) {
   if (!rows.length) {
@@ -196,13 +293,10 @@ function RecordsTable({ rows }) {
 
 export default function Reports() {
   const [records, setRecords] = useState(EMPTY);
-  const [active, setActive] = useState('users');
+  const [active, setActive] = useState('summary');
 
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-
-  const [draftFromDate, setDraftFromDate] = useState('');
-  const [draftToDate, setDraftToDate] = useState('');
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -213,9 +307,8 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState([]);
 
-  async function load() {
-    setLoading(true);
-    setErrors([]);
+  async function load(silent = false) {
+    if (!silent) { setLoading(true); setErrors([]); }
 
     const jobs = [
       ['users', () => api('/admin/users')],
@@ -253,7 +346,7 @@ export default function Reports() {
     });
 
     setRecords(next);
-    setErrors(failed);
+    if (!silent || failed.length === 0) setErrors(failed);
     setLoading(false);
   }
 
@@ -261,9 +354,12 @@ export default function Reports() {
     load();
   }, []);
 
+  // Reports load seven endpoints, so they refresh every minute instead of every 15 seconds.
+  useAutoRefresh(() => load(true), 60000);
+
   const dateFilteredRecords = useMemo(() => {
     return Object.fromEntries(
-      SECTIONS.map(section => [
+      BASE_SECTIONS.map(section => [
         section.key,
         records[section.key].filter(row => {
           const date = section.date
@@ -289,6 +385,217 @@ export default function Reports() {
       ])
     );
   }, [records, fromDate, toDate]);
+
+  // System summary and derived reports (calculated from the loaded records, respecting the date range)
+  const derived = useMemo(() => {
+    const f = dateFilteredRecords;
+    const users = f.users;
+    const owners = f.owners;
+    const rentals = f.rentals;
+    const rentalPayments = f.rentalPayments;
+    const subscriptions = f.subscriptions;
+    const subPayments = f.payments;
+    const allEquipment = records.equipment;
+    const equipment = f.equipment;
+
+    const verifiedSubPayments = subPayments.filter(row => lower(row.payment_status ?? row.status) === 'verified');
+    const rentalRevenue = sumBy(rentalPayments, row => row.amount ?? row.total_amount);
+    const subscriptionRevenue = sumBy(verifiedSubPayments, row => row.amount);
+    const rentalStatus = status => countWhere(rentals, row => lower(row.status) === status);
+    const completedRentals = rentalStatus('completed');
+    const bookingValue = sumBy(
+      rentals.filter(row => ['approved', 'ongoing', 'completed'].includes(lower(row.status))),
+      row => row.total_amount
+    );
+
+    const ownerKey = row => lower(row.owner_name);
+    const equipmentKey = row => `${lower(row.equipment_name)}|${ownerKey(row)}`;
+
+    // ----- Revenue by month -----
+    const months = new Map();
+    const bucket = date => {
+      const key = monthKey(date);
+      if (!months.has(key)) months.set(key, { month: monthLabel(date), bookings: 0, completed: 0, rental_revenue: 0, subscription_revenue: 0, total_revenue: 0 });
+      return months.get(key);
+    };
+    rentals.forEach(row => {
+      const date = parseDate(row.created_at || row.start_at);
+      if (!date) return;
+      const entry = bucket(date);
+      entry.bookings += 1;
+      if (lower(row.status) === 'completed') entry.completed += 1;
+    });
+    rentalPayments.forEach(row => {
+      const date = parseDate(row.paid_at || row.created_at);
+      if (!date) return;
+      bucket(date).rental_revenue += num(row.amount ?? row.total_amount);
+    });
+    verifiedSubPayments.forEach(row => {
+      const date = parseDate(row.paid_at || row.payment_date || row.created_at);
+      if (!date) return;
+      bucket(date).subscription_revenue += num(row.amount);
+    });
+    const revenueRows = [...months.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([, entry]) => ({ ...entry, total_revenue: entry.rental_revenue + entry.subscription_revenue }));
+    if (revenueRows.length) {
+      revenueRows.push({
+        month: 'TOTAL',
+        bookings: sumBy(revenueRows, row => row.bookings),
+        completed: sumBy(revenueRows, row => row.completed),
+        rental_revenue: sumBy(revenueRows, row => row.rental_revenue),
+        subscription_revenue: sumBy(revenueRows, row => row.subscription_revenue),
+        total_revenue: sumBy(revenueRows, row => row.total_revenue)
+      });
+    }
+
+    // ----- Equipment performance -----
+    const equipmentMap = new Map();
+    allEquipment.forEach(row => {
+      equipmentMap.set(equipmentKey(row), {
+        equipment_name: row.equipment_name || row.name || 'Equipment',
+        owner_name: row.owner_name || '—',
+        category_name: row.category_name || row.category || '—',
+        availability_status: row.availability_status || '—',
+        bookings: 0, completed: 0, revenue: 0
+      });
+    });
+    const equipmentEntry = row => {
+      const key = equipmentKey(row);
+      if (!equipmentMap.has(key)) {
+        equipmentMap.set(key, { equipment_name: row.equipment_name || 'Equipment', owner_name: row.owner_name || '—', category_name: '—', availability_status: '—', bookings: 0, completed: 0, revenue: 0 });
+      }
+      return equipmentMap.get(key);
+    };
+    rentals.forEach(row => {
+      const entry = equipmentEntry(row);
+      entry.bookings += 1;
+      if (lower(row.status) === 'completed') entry.completed += 1;
+    });
+    rentalPayments.forEach(row => { equipmentEntry(row).revenue += num(row.amount ?? row.total_amount); });
+    const equipmentPerformance = [...equipmentMap.values()].sort((a, b) => b.revenue - a.revenue || b.bookings - a.bookings || a.equipment_name.localeCompare(b.equipment_name));
+
+    // ----- Owner performance -----
+    const ownerMap = new Map();
+    const ownerEntry = (name) => {
+      const key = lower(name) || 'unknown';
+      if (!ownerMap.has(key)) ownerMap.set(key, { owner_name: name || 'Unknown owner', listings: 0, approved_listings: 0, bookings: 0, completed: 0, revenue: 0, subscription_plan: '—', subscription_status: '—' });
+      return ownerMap.get(key);
+    };
+    allEquipment.forEach(row => {
+      const entry = ownerEntry(row.owner_name);
+      entry.listings += 1;
+      if (lower(row.approval_status) === 'approved') entry.approved_listings += 1;
+    });
+    rentals.forEach(row => {
+      const entry = ownerEntry(row.owner_name);
+      entry.bookings += 1;
+      if (lower(row.status) === 'completed') entry.completed += 1;
+    });
+    rentalPayments.forEach(row => { ownerEntry(row.owner_name).revenue += num(row.amount ?? row.total_amount); });
+    [...records.subscriptions].sort((a, b) => num(a.id) - num(b.id)).forEach(row => {
+      if (!row.owner_name) return;
+      const entry = ownerEntry(row.owner_name);
+      entry.subscription_plan = row.plan_name || '—';
+      entry.subscription_status = row.status || '—';
+    });
+    const ownerPerformance = [...ownerMap.values()].sort((a, b) => b.revenue - a.revenue || b.bookings - a.bookings || a.owner_name.localeCompare(b.owner_name));
+
+    // ----- Farmer activity -----
+    const farmerMap = new Map();
+    const farmerEntry = name => {
+      const key = lower(name) || 'unknown';
+      if (!farmerMap.has(key)) farmerMap.set(key, { farmer_name: name || 'Unknown farmer', bookings: 0, completed: 0, cancelled: 0, rejected: 0, total_spent: 0 });
+      return farmerMap.get(key);
+    };
+    rentals.forEach(row => {
+      const entry = farmerEntry(row.farmer_name);
+      const status = lower(row.status);
+      entry.bookings += 1;
+      if (status === 'completed') entry.completed += 1;
+      if (status === 'cancelled') entry.cancelled += 1;
+      if (status === 'rejected') entry.rejected += 1;
+    });
+    rentalPayments.forEach(row => { farmerEntry(row.farmer_name).total_spent += num(row.amount ?? row.total_amount); });
+    const farmerActivity = [...farmerMap.values()].sort((a, b) => b.total_spent - a.total_spent || b.bookings - a.bookings || a.farmer_name.localeCompare(b.farmer_name));
+
+    // ----- System summary -----
+    const roleCount = role => countWhere(users, row => lower(row.role) === role);
+    const ownerStatus = row => lower(row.verification_status ?? row.status);
+    const subStatus = status => countWhere(subscriptions, row => lower(row.status) === status);
+    const categories = groupCount(allEquipment, row => row.category_name || row.category)
+      .map(([category, listings]) => ({ category_name: category, listings }));
+    const planCounts = groupCount(subscriptions, row => row.plan_name)
+      .map(([plan, count]) => ({ plan_name: plan, subscriptions: count }));
+
+    const summary = {
+      groups: [
+        { title: 'Users', items: [
+          { label: 'Total users', value: String(users.length) },
+          { label: 'Farmers', value: String(roleCount('farmer')) },
+          { label: 'Equipment owners', value: String(roleCount('owner')) },
+          { label: 'Administrators', value: String(roleCount('admin')) },
+          { label: 'Active accounts', value: String(countWhere(users, row => lower(row.status) === 'active')) },
+          { label: 'Suspended accounts', value: String(countWhere(users, row => lower(row.status) === 'suspended')) }
+        ] },
+        { title: 'Owner Verification', items: [
+          { label: 'Applications', value: String(owners.length) },
+          { label: 'Pending review', value: String(countWhere(owners, row => ownerStatus(row) === 'pending')) },
+          { label: 'Approved', value: String(countWhere(owners, row => ownerStatus(row) === 'approved')) },
+          { label: 'Rejected', value: String(countWhere(owners, row => ownerStatus(row) === 'rejected')) }
+        ] },
+        { title: 'Equipment', items: [
+          { label: 'Total listings', value: String(equipment.length) },
+          { label: 'Approved', value: String(countWhere(equipment, row => lower(row.approval_status) === 'approved')) },
+          { label: 'Pending approval', value: String(countWhere(equipment, row => lower(row.approval_status) === 'pending')) },
+          { label: 'Rejected', value: String(countWhere(equipment, row => lower(row.approval_status) === 'rejected')) },
+          { label: 'Available', value: String(countWhere(equipment, row => lower(row.availability_status) === 'available')) },
+          { label: 'Unavailable', value: String(countWhere(equipment, row => lower(row.availability_status) === 'unavailable')) }
+        ] },
+        { title: 'Rental Bookings', items: [
+          { label: 'Total bookings', value: String(rentals.length) },
+          { label: 'Pending', value: String(rentalStatus('pending')) },
+          { label: 'Approved', value: String(rentalStatus('approved')) },
+          { label: 'Ongoing', value: String(rentalStatus('ongoing')) },
+          { label: 'Completed', value: String(completedRentals) },
+          { label: 'Rejected', value: String(rentalStatus('rejected')) },
+          { label: 'Cancelled', value: String(rentalStatus('cancelled')) },
+          { label: 'Completion rate', value: percent(completedRentals, rentals.length) },
+          { label: 'Value of approved bookings', value: peso(bookingValue) }
+        ] },
+        { title: 'Revenue', items: [
+          { label: 'Rental revenue (verified payments)', value: peso(rentalRevenue) },
+          { label: 'Subscription revenue (verified)', value: peso(subscriptionRevenue) },
+          { label: 'Total recorded revenue', value: peso(rentalRevenue + subscriptionRevenue) },
+          { label: 'Verified rental payments', value: String(rentalPayments.length) },
+          { label: 'Subscription payments awaiting review', value: String(countWhere(subPayments, row => lower(row.payment_status ?? row.status) === 'pending')) }
+        ] },
+        { title: 'Subscriptions', items: [
+          { label: 'Total subscriptions', value: String(subscriptions.length) },
+          { label: 'Active', value: String(subStatus('active')) },
+          { label: 'Free trial', value: String(subStatus('trial') + subStatus('free_trial')) },
+          { label: 'Expired', value: String(subStatus('expired')) },
+          { label: 'Cancelled', value: String(subStatus('cancelled')) }
+        ] },
+        { title: 'System Activity', items: [
+          { label: 'Logged events', value: String(f.activity.length) }
+        ] }
+      ],
+      tables: [
+        { title: 'Top equipment by revenue', rows: equipmentPerformance.filter(row => row.bookings > 0 || row.revenue > 0).slice(0, 5) },
+        { title: 'Top owners by revenue', rows: ownerPerformance.filter(row => row.bookings > 0 || row.revenue > 0).slice(0, 5) },
+        { title: 'Equipment listings by category', rows: categories },
+        { title: 'Subscriptions by plan', rows: planCounts }
+      ]
+    };
+
+    return {
+      summary,
+      tables: { revenue: revenueRows, equipmentPerformance, ownerPerformance, farmerActivity }
+    };
+  }, [dateFilteredRecords, records]);
+
+  const tableData = useMemo(() => ({ ...dateFilteredRecords, ...derived.tables }), [dateFilteredRecords, derived]);
 
   const salesByMonth = useMemo(() => {
     const monthly = new Map();
@@ -317,10 +624,10 @@ export default function Reports() {
   };
 
   const categoryChart = {
-    labels: SECTIONS.map(section => section.label),
+    labels: BASE_SECTIONS.map(section => section.label),
     datasets: [
       {
-        data: SECTIONS.map(
+        data: BASE_SECTIONS.map(
           section => dateFilteredRecords[section.key].length
         ),
         backgroundColor: [
@@ -353,7 +660,9 @@ export default function Reports() {
     }
   };
 
-  const allRows = dateFilteredRecords[active] || [];
+  const activeSection = ALL_SECTIONS.find(section => section.key === active) || ALL_SECTIONS[0];
+  const isSummary = activeSection.kind === 'summary';
+  const allRows = isSummary ? [] : (tableData[active] || []);
 
   const filtered = useMemo(() => {
     return allRows.filter(row => {
@@ -380,23 +689,21 @@ export default function Reports() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const uniqueCategories = [...new Set(allRows.map(row => row.category_name ?? row.category).filter(Boolean))];
 
-  async function applyDateFilter() {
-    if (
-      draftFromDate &&
-      draftToDate &&
-      draftFromDate > draftToDate
-    ) {
+  // Dates apply automatically as soon as they are picked.
+  async function changeDate(which, value) {
+    const nextFrom = which === 'from' ? value : fromDate;
+    const nextTo = which === 'to' ? value : toDate;
+
+    if (nextFrom && nextTo && nextFrom > nextTo) {
       await window.agrileaseDialog.alert('Date From cannot be later than Date To.');
       return;
     }
 
-    setFromDate(draftFromDate);
-    setToDate(draftToDate);
+    if (which === 'from') setFromDate(value);
+    else setToDate(value);
   }
 
   function resetFilters() {
-    setDraftFromDate('');
-    setDraftToDate('');
     setFromDate('');
     setToDate('');
     setSearch('');
@@ -406,69 +713,23 @@ export default function Reports() {
   }
 
   async function printRecords(all = false) {
-    const sections = all
-      ? SECTIONS
-      : [SECTIONS.find(section => section.key === active)];
+    const sections = all ? ALL_SECTIONS : [activeSection];
 
     const html = sections.map(section => {
-      const rows = all
-        ? dateFilteredRecords[section.key]
-        : filtered;
-
-      // Keep printed records in ascending ID order too
-      const sortedRows = [...rows].sort((a, b) => {
-        const idA = Number(a.id);
-        const idB = Number(b.id);
-
-        if (Number.isFinite(idA) && Number.isFinite(idB)) {
-          return idA - idB;
-        }
-
-        return String(a.id ?? '').localeCompare(String(b.id ?? ''));
-      });
-
-      if (!sortedRows.length) {
-        return `
-          <section>
-            <h2>${section.label}</h2>
-            <p>No records for selected date range.</p>
-          </section>
-        `;
+      if (section.kind === 'summary') {
+        return `<section><h2>${escapeHtml(section.label)}</h2>${summaryHtml(derived.summary)}</section>`;
       }
 
-      const keys = [
-        ...new Set(sortedRows.flatMap(row => Object.keys(row)))
-      ].filter(key =>
-        !['password', 'password_hash', 'token'].includes(key)
-      );
+      const rows = all || section.kind === 'derived'
+        ? (tableData[section.key] || [])
+        : filtered;
+      const data = !all && section.key === active ? filtered : rows;
 
-      const escapeHtml = value =>
-        String(value)
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;')
-          .replaceAll('"', '&quot;')
-          .replaceAll("'", '&#039;');
+      if (!data.length) {
+        return `<section><h2>${escapeHtml(section.label)}</h2><p>No records for the selected date range.</p></section>`;
+      }
 
-      const head = keys.map(key =>
-        `<th>${escapeHtml(LABELS[key] || key.replaceAll('_', ' '))}</th>`
-      ).join('');
-
-      const body = sortedRows.map(row =>
-        `<tr>${keys.map(key =>
-          `<td>${escapeHtml(showValue(key, row[key]))}</td>`
-        ).join('')}</tr>`
-      ).join('');
-
-      return `
-        <section>
-          <h2>${escapeHtml(section.label)} (${sortedRows.length})</h2>
-          <table>
-            <thead><tr>${head}</tr></thead>
-            <tbody>${body}</tbody>
-          </table>
-        </section>
-      `;
+      return `<section><h2>${escapeHtml(section.label)} (${data.length})</h2>${tableHtml(data)}</section>`;
     }).join('');
 
     const windowRef = window.open('', '_blank');
@@ -478,58 +739,52 @@ export default function Reports() {
       return;
     }
 
+    const preparedBy = getUser()?.full_name || 'Administrator';
+    const title = all ? 'System Report' : activeSection.label;
+
     windowRef.document.write(`
       <!doctype html>
       <html>
       <head>
-        <title>AGRILEASE Reports</title>
+        <title>AGRILEASE ${escapeHtml(title)}</title>
         <style>
-          body {
-            font: 12px Arial, sans-serif;
-            color: #17251a;
-            padding: 24px;
-          }
-
-          h1 { font-size: 22px; }
-          h2 { font-size: 16px; margin: 24px 0 8px; }
+          @page { size: A4 landscape; margin: 12mm; }
+          * { box-sizing: border-box; }
+          body { font: 12px Arial, sans-serif; color: #17251a; padding: 24px; }
+          .report-head { padding: 16px 20px; margin-bottom: 18px; border-radius: 10px; background: #12432a; color: #fff; }
+          .report-head h1 { margin: 0; font-size: 22px; }
+          .report-head p { margin: 6px 0 0; color: #d7ead9; font-size: 12px; }
+          h2 { font-size: 16px; margin: 24px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #43834d; color: #12432a; }
+          h3 { font-size: 13px; margin: 0 0 6px; color: #12432a; }
           p { color: #555; }
-
-          table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 10px;
-            table-layout: auto;
-          }
-
-          th, td {
-            border: 1px solid #bbb;
-            padding: 6px;
-            text-align: left;
-            overflow-wrap: anywhere;
-          }
-
+          table { border-collapse: collapse; width: 100%; font-size: 10px; table-layout: auto; }
+          th, td { border: 1px solid #bbb; padding: 6px; text-align: left; overflow-wrap: anywhere; }
           th { background: #eaf1e8; }
-
-          section {
-            break-inside: avoid;
-            margin-bottom: 24px;
-          }
-
+          .groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+          .group { break-inside: avoid; }
+          .kv td { font-size: 11px; }
+          .kv td.num { width: 38%; font-weight: 700; text-align: right; }
+          .wide { margin-top: 14px; break-inside: avoid; }
+          section { margin-bottom: 24px; }
           @media print {
             body { padding: 0; }
-            section { break-inside: auto; }
             tr { break-inside: avoid; }
+            thead { display: table-header-group; }
+            .report-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           }
         </style>
       </head>
 
       <body>
-        <h1>AGRILEASE — ${all ? 'All Records' : sections[0].label}</h1>
-
-        <p>
-          Generated: ${new Date().toLocaleString('en-PH')}
-          · Date filter: ${fromDate || 'Any'} to ${toDate || 'Any'}
-        </p>
+        <div class="report-head">
+          <h1>AGRILEASE — ${escapeHtml(title)}</h1>
+          <p>
+            Generated: ${escapeHtml(new Date().toLocaleString('en-PH'))}
+            · Prepared by: ${escapeHtml(preparedBy)}
+            · Period: ${escapeHtml(fromDate || 'Start')} to ${escapeHtml(toDate || 'Today')}
+          </p>
+        </div>
 
         ${html}
       </body>
@@ -545,26 +800,6 @@ export default function Reports() {
     <div className="am-page am-reports-page">
 
       {/* PAGE HEADING */}
-      <div className="admin-page-heading am-no-print">
-        <div>
-          <h1>Reports &amp; Records</h1>
-          <p>
-            Monitor all available platform records and sales by date.
-            View analytics and manage system records.
-          </p>
-        </div>
-
-        <div className="am-actions">
-          <button
-            className="um-refresh"
-            onClick={load}
-            disabled={loading}
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
-        </div>
-      </div>
-
       {errors.length > 0 && (
         <div className="um-message error am-no-print">
           Some data sources could not be loaded: {errors.join(', ')}.
@@ -642,11 +877,20 @@ export default function Reports() {
                 setSearch('');
               }}
             >
-              {SECTIONS.map(section => (
-                <option key={section.key} value={section.key}>
-                  {section.label} ({records[section.key].length})
-                </option>
-              ))}
+              <optgroup label="Summary reports">
+                {SUMMARY_SECTIONS.map(section => (
+                  <option key={section.key} value={section.key}>
+                    {section.label}{section.kind === 'derived' ? ` (${tableData[section.key].length})` : ''}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Records">
+                {BASE_SECTIONS.map(section => (
+                  <option key={section.key} value={section.key}>
+                    {section.label} ({records[section.key].length})
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </label>
         </div>
@@ -663,10 +907,9 @@ export default function Reports() {
               <span>From</span>
               <input
                 type="date"
-                value={draftFromDate}
-                onChange={event =>
-                  setDraftFromDate(event.target.value)
-                }
+                value={fromDate}
+                max={toDate || undefined}
+                onChange={event => changeDate('from', event.target.value)}
               />
             </label>
 
@@ -674,20 +917,11 @@ export default function Reports() {
               <span>To</span>
               <input
                 type="date"
-                value={draftToDate}
-                onChange={event =>
-                  setDraftToDate(event.target.value)
-                }
+                value={toDate}
+                min={fromDate || undefined}
+                onChange={event => changeDate('to', event.target.value)}
               />
             </label>
-
-            <button
-              className="am-button approve"
-              onClick={applyDateFilter}
-              disabled={loading}
-            >
-              Apply
-            </button>
 
             <button
               className="am-button neutral"
@@ -703,7 +937,7 @@ export default function Reports() {
               onClick={() => printRecords(false)}
               disabled={loading}
             >
-              Print Current
+              Print Current Report
             </button>
 
             <button
@@ -711,7 +945,7 @@ export default function Reports() {
               onClick={() => printRecords(true)}
               disabled={loading}
             >
-              Print / Save All as PDF
+              Print Full Report (PDF)
             </button>
           </div>
 
@@ -721,16 +955,20 @@ export default function Reports() {
         <div className="am-record-search-row">
           <div>
             <h3>
-              {SECTIONS.find(section => section.key === active)?.label}
+              {activeSection.label}
             </h3>
-            <p>
-              {filtered.length} records shown
-              {' · '}
-              {allRows.length} total records
-            </p>
+            {isSummary ? (
+              <p>Overview of the whole system for {fromDate || toDate ? `${fromDate || 'the start'} to ${toDate || 'today'}` : 'all dates'}.</p>
+            ) : (
+              <p>
+                {filtered.length} records shown
+                {' · '}
+                {allRows.length} total records
+              </p>
+            )}
           </div>
 
-          <div className="am-report-filter-controls">
+          {!isSummary && <div className="am-report-filter-controls">
             <input className="am-report-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search records..." />
             <input className="am-report-search" value={ownerFilter} onChange={event => setOwnerFilter(event.target.value)} placeholder="Filter owner..." />
             <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} aria-label="Filter status">
@@ -739,7 +977,7 @@ export default function Reports() {
             <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filter category">
               <option value="">All Categories</option>{uniqueCategories.map(value => <option key={value} value={value}>{value}</option>)}
             </select>
-          </div>
+          </div>}
         </div>
 
         {/* RECORDS TABLE */}
@@ -747,10 +985,35 @@ export default function Reports() {
           <div className="am-empty">
             Loading records...
           </div>
+        ) : isSummary ? (
+          <div className="am-summary-view">
+            <div className="am-summary-groups">
+              {derived.summary.groups.map(group => (
+                <section className="am-summary-group" key={group.title}>
+                  <h4>{group.title}</h4>
+                  <div className="am-summary-tiles">
+                    {group.items.map(item => (
+                      <div className="am-summary-tile" key={item.label}>
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+
+            {derived.summary.tables.map(item => (
+              <section className="am-summary-table" key={item.title}>
+                <h4>{item.title}</h4>
+                <RecordsTable rows={item.rows} />
+              </section>
+            ))}
+          </div>
         ) : (
           <RecordsTable rows={pageRows} />
         )}
-        {!loading && filtered.length > 0 && (
+        {!loading && !isSummary && filtered.length > 0 && (
           <div className="am-report-pagination">
             <span>Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length}</span>
             <div><button className="am-button neutral" disabled={page <= 1} onClick={() => setPage(value => Math.max(1, value - 1))}>Previous</button><strong>Page {page} of {pageCount}</strong><button className="am-button neutral" disabled={page >= pageCount} onClick={() => setPage(value => Math.min(pageCount, value + 1))}>Next</button></div>

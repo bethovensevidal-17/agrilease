@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { BadgeCheck, CalendarCheck, CalendarDays, Check, ShieldCheck, Layers, Activity, CalendarClock, Package } from 'lucide-react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 
+const PLAN_ICONS = [CalendarDays, CalendarCheck, ShieldCheck, BadgeCheck];
+const cap = v => String(v || '—').replace(/_/g, ' ');
+const fmtDate = v => v ? new Date(String(v).replace(' ', 'T')).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Awaiting verification';
 const peso = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
 
 export default function OwnerSubscription() {
@@ -15,7 +20,7 @@ export default function OwnerSubscription() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  async function load() {
+  async function load(quiet = false) {
     try {
       const [planResult, mine, paymentResult] = await Promise.all([
         api('/subscriptions/plans'),
@@ -28,11 +33,12 @@ export default function OwnerSubscription() {
       setEquipmentCount(Number(mine.equipment_count || 0));
       setPayments(paymentResult.data || []);
     } catch (err) {
-      setError(err.message || 'Unable to load subscriptions.');
+      if (!quiet) setError(err.message || 'Unable to load subscriptions.');
     }
   }
 
   useEffect(() => { load(); }, []);
+  useAutoRefresh(() => load(true));
 
   async function choosePlan(plan) {
     setError(''); setMessage('');
@@ -64,16 +70,23 @@ export default function OwnerSubscription() {
     finally { setBusy(false); }
   }
 
-  return <section className="am-page" style={{maxWidth: 1100, margin: '0 auto'}}>
-    <div className="admin-page-heading"><div><h1>My Subscription</h1><p>Manage your equipment listing plan and subscription status.</p></div><button className="um-refresh" onClick={load}>Refresh</button></div>
+  const paidPlans = plans.filter(plan => Number(plan.price) !== 0).sort((a, b) => Number(a.duration_days) - Number(b.duration_days));
+  const trialPlan = plans.find(plan => Number(plan.price) === 0);
+
+  return <section className="am-page sub-page">
     {error && <div className="um-message error">{error}</div>}
     {message && <div className="um-message success">{message}</div>}
-    <div className="um-panel" style={{padding:20, marginBottom:20}}>
-      <h2>Current Subscription</h2>
-      {current ? <p><strong>{current.plan_name}</strong> · {current.status} · Expires: {current.end_date || 'Awaiting verification'} · Equipment: {equipmentCount}/{current.equipment_limit == null ? 'Unlimited' : current.equipment_limit}</p> : <p>No active subscription found. Choose a plan below to list equipment.</p>}
+    <div className="um-panel sub-panel">
+      <div className="sub-panel-head"><h2>Current Subscription</h2>{current && <span className={`sub-pill st-${String(current.status || '').toLowerCase()}`}>{cap(current.status)}</span>}</div>
+      {current ? (() => { const limit = current.equipment_limit; const pct = limit == null || Number(limit) === 0 ? 0 : Math.min(100, Math.round(equipmentCount / Number(limit) * 100)); return <div className="sub-current-grid">
+        <div className="sub-stat"><span className="sub-stat-icon"><Layers size={18} /></span><div><small>Plan</small><strong>{current.plan_name}</strong></div></div>
+        <div className="sub-stat"><span className="sub-stat-icon"><Activity size={18} /></span><div><small>Status</small><strong>{cap(current.status)}</strong></div></div>
+        <div className="sub-stat"><span className="sub-stat-icon"><CalendarClock size={18} /></span><div><small>Expires</small><strong>{fmtDate(current.end_date)}</strong></div></div>
+        <div className="sub-stat"><span className="sub-stat-icon"><Package size={18} /></span><div><small>Equipment used</small><strong>{equipmentCount} / {limit == null ? 'Unlimited' : limit}</strong>{limit != null && <i className="sub-meter"><b style={{ width: pct + '%' }} /></i>}</div></div>
+      </div>; })() : <p className="sub-empty-note">No active subscription found. Choose a plan below to list equipment.</p>}
     </div>
-    <div className="um-panel" style={{ padding: 20, marginBottom: 20 }}>
-      <h2>Subscription Payment History</h2>
+    <div className="um-panel sub-panel">
+      <div className="sub-panel-head"><h2>Subscription Payment History</h2></div>
 
       <div className="um-table-wrapper">
         <table className="um-table">
@@ -94,9 +107,9 @@ export default function OwnerSubscription() {
                 <tr key={payment.id}>
                   <td>{payment.plan_name || '—'}</td>
                   <td>{peso(payment.amount)}</td>
-                  <td>{payment.payment_method || '—'}</td>
+                  <td className="sub-cap">{cap(payment.payment_method)}</td>
                   <td>{payment.reference_number || '—'}</td>
-                  <td>{payment.payment_status || '—'}</td>
+                  <td><span className={`sub-pill st-${String(payment.payment_status || '').toLowerCase()}`}>{cap(payment.payment_status)}</span></td>
                   <td>
                     {payment.payment_date
                       ? new Date(payment.payment_date).toLocaleDateString('en-PH')
@@ -115,23 +128,27 @@ export default function OwnerSubscription() {
         </table>
       </div>
     </div>
-    <div className="um-panel" style={{padding:20, marginBottom:20}}>
-      <h2>Online Payment Details</h2>
-      <p>For paid plans, submit your payment reference and proof. Your plan activates only after Admin verification.</p>
-      <div style={{display:'flex', gap:12, flexWrap:'wrap', marginTop:12}}>
+    <div className="um-panel sub-panel">
+      <div className="sub-panel-head"><h2>Online Payment Details</h2></div>
+      <p className="sub-empty-note">For paid plans, submit your payment reference and proof. Your plan activates only after Admin verification.</p>
+      <div className="sub-pay-fields">
         <label>Payment method <select value={method} onChange={e=>setMethod(e.target.value)}><option value="gcash">GCash</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option></select></label>
         <label>Reference number <input value={reference} onChange={e=>setReference(e.target.value)} maxLength={100} /></label>
         <label>Proof of payment (JPG/PNG/WEBP, max 5MB) <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setProof(e.target.files?.[0] || null)} /></label>
       </div>
     </div>
-    <div className="am-stats" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:16}}>
-      {plans.map(plan => <article className="um-panel" key={plan.id} style={{padding:20}}>
-        <h3>{plan.plan_name}</h3><h2>{Number(plan.price) === 0 ? 'FREE' : peso(plan.price)}</h2>
-        <p>{plan.duration_days} days</p>
-        <p>{plan.equipment_limit == null ? 'Unlimited equipment listings' : `Up to ${plan.equipment_limit} equipment listings`}</p>
-        <p>{plan.description}</p>
-        <button className="um-refresh" disabled={busy} onClick={()=>choosePlan(plan)}>{busy ? 'Please wait...' : Number(plan.price) === 0 ? 'Start Free Trial' : 'Submit Payment & Request Plan'}</button>
-      </article>)}
+    {!current && trialPlan && <div className="sub-trial"><div><strong>{trialPlan.plan_name}</strong><span>{trialPlan.description || `One-time ${trialPlan.duration_days}-day trial.`}</span></div><button type="button" className="um-refresh" disabled={busy} onClick={()=>choosePlan(trialPlan)}>{busy ? 'Please wait...' : 'Start Free Trial'}</button></div>}
+    <div className="sub-plan-grid">
+      {paidPlans.map((plan, index) => { const Icon = PLAN_ICONS[index % PLAN_ICONS.length]; return <article className="sub-plan-card" key={plan.id}>
+        <span className="sub-plan-icon"><Icon size={22} strokeWidth={1.8} /></span>
+        <h3>{plan.plan_name}</h3>
+        <div className="sub-plan-price"><strong>{peso(plan.price)}</strong><small>/ {plan.duration_days} days</small></div>
+        <ul className="sub-plan-list">
+          <li><Check size={15} strokeWidth={2.4} />{plan.equipment_limit == null ? 'Unlimited equipment listings' : `Up to ${plan.equipment_limit} equipment listings`}</li>
+          {plan.description && <li><Check size={15} strokeWidth={2.4} />{plan.description}</li>}
+        </ul>
+        <button type="button" className="um-refresh sub-plan-btn" disabled={busy} onClick={()=>choosePlan(plan)}>{busy ? 'Please wait...' : 'Submit Payment & Request Plan'}</button>
+      </article>; })}
     </div>
   </section>;
 }

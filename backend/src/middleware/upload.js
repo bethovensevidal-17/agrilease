@@ -20,7 +20,7 @@ const uploadEquipmentImage = multer({
   storage,
   limits: { fileSize: 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (!allowed[file.mimetype]) return cb(new Error('JPG, PNG, o WEBP lang ang tinatanggap.'));
+    if (!allowed[file.mimetype]) return cb(new Error('Only JPG, PNG, or WEBP files are accepted.'));
     cb(null, true);
   },
 }).single('image');

@@ -1,180 +1,139 @@
 import { Link } from 'react-router-dom';
+import { Tractor, Wheat, Droplets, Search, CalendarCheck, BadgeCheck, ShieldCheck, WifiOff, Wallet } from 'lucide-react';
 import './landing-page.css';
+import './landing-about.css';
+import '../logo.css';
 
-const equipmentCategories = [
-  {
-    icon: '🚜',
-    name: 'Tractors',
-    description: 'Support for land preparation and other farm operations.',
-  },
-  {
-    icon: '🌾',
-    name: 'Harvesting Equipment',
-    description: 'Make harvesting tasks more efficient and manageable.',
-  },
-  {
-    icon: '💧',
-    name: 'Irrigation Equipment',
-    description: 'Equipment to help support your farm watering needs.',
-  },
+// Photo slots: put your own photos in frontend/public/images/ using these file names.
+// If a file is missing, the green gradient shows instead, so nothing breaks.
+function Photo({ src, alt = '' }) {
+  return (
+    <div className="lp-photo">
+      <img src={src} alt={alt} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+    </div>
+  );
+}
+
+const categories = [
+  { Icon: Tractor, name: 'Tractors', text: 'Land preparation and hauling', img: '/images/tractor.jpg' },
+  { Icon: Wheat, name: 'Harvesters', text: 'Rice and corn harvesting', img: '/images/harvester.jpg' },
+  { Icon: Droplets, name: 'Irrigation', text: 'Pumps and sprinklers', img: '/images/irrigation.jpg' },
 ];
 
 const steps = [
-  {
-    number: '01',
-    title: 'Create an Account',
-    description: 'Register as a farmer and set up your account.',
-  },
-  {
-    number: '02',
-    title: 'Browse Equipment',
-    description: 'Explore agricultural equipment available for rent.',
-  },
-  {
-    number: '03',
-    title: 'Submit a Rental Request',
-    description: 'Choose your equipment and send your rental request.',
-  },
+  { Icon: Search, title: 'Find equipment', text: 'Filter by type, price, and location.' },
+  { Icon: CalendarCheck, title: 'Pick your dates', text: 'Send a rental request for the days you need.' },
+  { Icon: BadgeCheck, title: 'Get confirmed', text: 'The owner approves and you get notified.' },
 ];
+
+function Logo() {
+  return (
+    <Link to="/" className="lp-logo">
+      <i className="has-logo"><img src="/logo-mark.png" alt="" /></i>AGRILEASE
+    </Link>
+  );
+}
 
 export default function LandingPage() {
   return (
-    <div className="landing-page">
-      <header className="landing-navbar">
-        <Link to="/" className="landing-logo">
-          <span className="landing-logo-icon">🌱</span>
-          <span>AGRI<span className="logo-highlight">LEASE</span></span>
-        </Link>
-
-        <nav className="landing-nav-links">
-          <Link to="/">Home</Link>
-          <a href="#about">About</a>
-          <a href="#how-it-works">How It Works</a>
-          <Link to="/browse">Browse Equipment</Link>
-        </nav>
-
-        <div className="landing-nav-actions">
-          <Link to="/login" className="landing-login-link">Log In</Link>
-          <Link to="/register" className="landing-register-button">
-            Get Started
-          </Link>
-        </div>
+    <div className="lp">
+      <div className="lp-top">
+      <header className="lp-nav">
+        <Logo />
+        <a className="lp-link" href="#about">About</a>
+        <a className="lp-link" href="#how-it-works">How it works</a>
+        <Link className="lp-link" to="/browse">Browse equipment</Link>
+        <Link className="lp-link" to="/login">Log in</Link>
+        <Link className="lp-btn lp-gold" to="/register" style={{ padding: '9px 18px' }}>Get started</Link>
       </header>
 
+        <section className="lp-hero" id="home">
+          <div className="lp-hero-text">
+            <h1>Rent the machine.<br />Keep the harvest.</h1>
+            <p>Tractors, harvesters, and irrigation pumps from owners near your farm. Request by the hour, day, or hectare.</p>
+            <div className="lp-actions">
+              <Link className="lp-btn lp-gold" to="/browse"><Search className="lu" />Browse equipment</Link>
+              <Link className="lp-btn lp-ghost" to="/register">Create account</Link>
+            </div>
+            <div className="lp-trust">
+              <span><ShieldCheck className="lu" />Verified owners</span>
+              <span><WifiOff className="lu" />Works offline</span>
+              <span><Wallet className="lu" />Clear pricing</span>
+            </div>
+          </div>
+          <Photo src="/images/hero.jpg" alt="Tractor working in a rice field" />
+        </section>
+      </div>
+
       <main>
-        <section className="landing-hero" id="home">
-          <div className="landing-hero-content">
-            <span className="landing-eyebrow">
-              AGRICULTURAL EQUIPMENT RENTAL PLATFORM
-            </span>
-
-            <h1>
-              Grow More.
-              <br />
-              <span>Rent Smarter.</span>
-            </h1>
-
-            <p>
-              Access the agricultural equipment you need without the
-              high cost of ownership. AGRILEASE connects farmers with
-              equipment rental opportunities in one convenient platform.
-            </p>
-
-            <div className="landing-hero-actions">
-              <Link to="/browse" className="landing-primary-button">
-                Browse Equipment
-              </Link>
-              <Link to="/register" className="landing-secondary-button">
-                Create an Account
-              </Link>
-            </div>
-
-            <div className="landing-hero-note">
-              <span>✓</span> A convenient way to access farm equipment
-            </div>
-          </div>
-
-          <div className="landing-hero-visual">
-            <div className="hero-circle hero-circle-one"></div>
-            <div className="hero-circle hero-circle-two"></div>
-            <div className="hero-illustration">
-              <span className="hero-tractor">🚜</span>
-              <div className="hero-ground"></div>
-            </div>
-            <div className="hero-floating-card">
-              <span>🌱</span>
-              <div>
-                <strong>Better Access</strong>
-                <small>For every growing farm</small>
-              </div>
-            </div>
+        <section className="lp-sec lp-about" id="about">
+          <Photo src="/images/about.jpg" alt="Farmers with a carabao and cart in a rice field" />
+          <div className="lp-about-text">
+            <h2>Built for farmers in Oriental Mindoro</h2>
+            <p>AGRILEASE connects farmers who need machinery with owners who have it available. Browse equipment, request your dates, and track every rental in one place.</p>
+            <ul className="lp-about-list">
+              <li>
+                <span className="lp-ic"><ShieldCheck className="lu" /></span>
+                <div><h3>Verified owners</h3><p>Owners submit a business permit and a valid ID, and an admin approves each listing before it appears.</p></div>
+              </li>
+              <li>
+                <span className="lp-ic"><Wallet className="lu" /></span>
+                <div><h3>Clear pricing</h3><p>See the rate per hour, day, or hectare before you send a request.</p></div>
+              </li>
+              <li>
+                <span className="lp-ic"><WifiOff className="lu" /></span>
+                <div><h3>Works offline</h3><p>Requests and listings made without internet are saved on your device and sent when you reconnect.</p></div>
+              </li>
+            </ul>
           </div>
         </section>
 
-        <section className="landing-about" id="about">
-          <div className="landing-section-heading">
-            <span className="landing-eyebrow">ABOUT AGRILEASE</span>
-            <h2>Making Farm Equipment More Accessible</h2>
-            <p>
-              AGRILEASE is a web-based agricultural equipment rental
-              platform designed to help farmers find and request the
-              machinery they need for their farming activities.
-            </p>
+        <section className="lp-sec" style={{ paddingTop: 0 }}>
+          <h2>What do you need on your field?</h2>
+          <p>AGRILEASE helps farmers find and request the machinery they need for their farming activities.</p>
+          <div className="lp-cats">
+            {categories.map(({ Icon, name, text, img }) => (
+              <Link className="lp-cat" to="/browse" key={name}>
+                <Photo src={img} alt={name} />
+                <div className="lp-cat-text">
+                  <h3><Icon className="lu" />{name}</h3>
+                  <small>{text}</small>
+                </div>
+              </Link>
+            ))}
           </div>
+        </section>
 
-          <div className="landing-category-grid">
-            {equipmentCategories.map((item) => (
-              <article className="landing-category-card" key={item.name}>
-                <div className="landing-category-icon">{item.icon}</div>
-                <h3>{item.name}</h3>
-                <p>{item.description}</p>
+        <section className="lp-sec" id="how-it-works" style={{ paddingTop: 0 }}>
+          <h2>Three steps to your rental</h2>
+          <p>Get started with just a few simple steps.</p>
+          <div className="lp-steps">
+            {steps.map(({ Icon, title, text }) => (
+              <article className="lp-step" key={title}>
+                <span className="lp-ic"><Icon className="lu" /></span>
+                <h3>{title}</h3>
+                <p>{text}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="landing-how" id="how-it-works">
-          <div className="landing-section-heading">
-            <span className="landing-eyebrow">SIMPLE AND CONVENIENT</span>
-            <h2>How AGRILEASE Works</h2>
-            <p>Get started with just a few simple steps.</p>
-          </div>
-
-          <div className="landing-steps-grid">
-            {steps.map((step) => (
-              <article className="landing-step-card" key={step.number}>
-                <span className="landing-step-number">{step.number}</span>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="landing-cta">
+        <section className="lp-cta">
           <div>
-            <span className="landing-eyebrow">START WITH AGRILEASE</span>
-            <h2>Make Your Next Farming Task Easier.</h2>
-            <p>
-              Explore equipment rental opportunities and get started today.
-            </p>
+            <h2>Make your next farming task easier.</h2>
+            <p>Explore equipment rental options and get started today.</p>
           </div>
-          <Link to="/register" className="landing-cta-button">
-            Join AGRILEASE
-          </Link>
+          <Link className="lp-btn lp-gold" to="/register">Join AGRILEASE</Link>
         </section>
       </main>
 
-      <footer className="landing-footer">
-        <Link to="/" className="landing-logo">
-          <span className="landing-logo-icon">🌱</span>
-          <span>AGRI<span className="logo-highlight">LEASE</span></span>
-        </Link>
+      <footer className="lp-footer">
+        <Logo />
         <p>Making agricultural equipment more accessible to farmers.</p>
-        <div className="landing-footer-links">
-          <Link to="/browse">Browse Equipment</Link>
-          <Link to="/login">Log In</Link>
-          <Link to="/register">Register</Link>
+        <div>
+          <Link className="lp-link" to="/browse">Browse equipment</Link>
+          <Link className="lp-link" to="/login">Log in</Link>
+          <Link className="lp-link" to="/register">Register</Link>
         </div>
         <small>© {new Date().getFullYear()} AGRILEASE. All rights reserved.</small>
       </footer>

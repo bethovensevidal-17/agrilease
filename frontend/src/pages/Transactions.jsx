@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 
 const peso = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
 const pretty = value => String(value || '—').replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -19,20 +20,20 @@ export default function Transactions({ role = 'farmer' }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) { setLoading(true); setError(''); }
     try {
       const result = await api('/rentals');
       setRows(result.data || []);
     } catch (err) {
-      setError(err.message || 'Unable to load rental transactions.');
+      if (!quiet) setError(err.message || 'Unable to load rental transactions.');
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useAutoRefresh(() => load(true));
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -65,7 +66,6 @@ export default function Transactions({ role = 'farmer' }) {
           <h1>Rental Transactions</h1>
           <p>{role === 'owner' ? 'Monitor payments and transaction records for your equipment rentals.' : 'View your rental payment records, payment methods, and payment history.'}</p>
         </div>
-        <button className="um-refresh" type="button" onClick={load} disabled={loading}>{loading ? 'Loading...' : 'Refresh'}</button>
       </div>
 
       {error && <div className="um-message error" role="alert">{error}</div>}
@@ -105,7 +105,7 @@ export default function Transactions({ role = 'farmer' }) {
                   <td>{pretty(row.payment_method)}</td>
                   <td>{row.payment_reference || '—'}</td>
                   <td>{row.payment_proof ? <button type="button" className="um-refresh" onClick={() => openProof(row.id)}>View Proof</button> : '—'}</td>
-                  <td><span className="am-pill">{pretty(row.payment_status || 'unpaid')}</span></td>
+                  <td><span className={`am-pill pay-${String(row.payment_status || 'unpaid').toLowerCase()}`}>{pretty(row.payment_status || 'unpaid')}</span></td>
                   <td>{dateText(row.paid_at || row.payment_date || row.created_at)}</td>
                 </tr>
               ))}</tbody>

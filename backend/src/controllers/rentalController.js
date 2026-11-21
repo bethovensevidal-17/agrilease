@@ -38,7 +38,7 @@ async function listMine(req, res) {
     res.json({ success: true, data: rows });
   } catch (error) {
     console.error('List farmer bookings:', error);
-    publicError(res, 500, 'Hindi makuha ang booking records. Tiyaking na-apply ang booking database migration.');
+    publicError(res, 500, 'Unable to load booking records. Make sure the booking database migration has been applied.');
   }
 }
 
@@ -55,15 +55,15 @@ async function create(req, res) {
     const end = parseDateTime(req.body, 'end');
     const farmArea = req.body.farm_area ?? req.body.hectares ?? null;
 
-    if (!Number.isInteger(equipmentId) || equipmentId < 1) return publicError(res, 400, 'Pumili ng valid na equipment.');
-    if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return publicError(res, 400, 'Kailangan ang valid start at end date/time.');
-    if (start < new Date()) return publicError(res, 400, 'Hindi puwedeng magsimula ang rental sa nakaraan.');
-    if (end <= start) return publicError(res, 400, 'Dapat mas huli ang end date/time kaysa start date/time.');
-    if (!Number.isInteger(quantity) || quantity < 1) return publicError(res, 400, 'Ang quantity ay dapat hindi bababa sa 1.');
-    if (!PAYMENT_METHODS.includes(paymentMethod)) return publicError(res, 400, 'Pumili ng valid na payment method.');
+    if (!Number.isInteger(equipmentId) || equipmentId < 1) return publicError(res, 400, 'Select valid equipment.');
+    if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return publicError(res, 400, 'A valid start and end date/time are required.');
+    if (start < new Date()) return publicError(res, 400, 'A rental cannot start in the past.');
+    if (end <= start) return publicError(res, 400, 'The end date/time must be later than the start date/time.');
+    if (!Number.isInteger(quantity) || quantity < 1) return publicError(res, 400, 'Quantity must be at least 1.');
+    if (!PAYMENT_METHODS.includes(paymentMethod)) return publicError(res, 400, 'Select a valid payment method.');
     if (paymentMethod !== 'cash') {
-      if (!String(req.body.payment_reference || '').trim()) return publicError(res, 400, 'Kailangan ang payment reference number.');
-      if (!req.file) return publicError(res, 400, 'Kailangan i-upload ang proof of payment (JPG, PNG, WEBP; maximum 5 MB).');
+      if (!String(req.body.payment_reference || '').trim()) return publicError(res, 400, 'A payment reference number is required.');
+      if (!req.file) return publicError(res, 400, 'Proof of payment must be uploaded (JPG, PNG, WEBP; maximum 5 MB).');
     }
 
     connection = await db.getConnection();
@@ -72,7 +72,7 @@ async function create(req, res) {
     const [equipmentRows] = await connection.query(
       `SELECT id, owner_id, rental_rate, rate_type, quantity, availability_status, approval_status, is_archived
        FROM equipment WHERE id = ? FOR UPDATE`, [equipmentId]);
-    if (!equipmentRows.length) { await connection.rollback(); return publicError(res, 404, 'Hindi nahanap ang equipment.'); }
+    if (!equipmentRows.length) { await connection.rollback(); return publicError(res, 404, 'Equipment not found.'); }
     const equipment = equipmentRows[0];
     if (paymentMethod !== 'cash') {
       const [ownerPaymentRows] = await connection.query(
@@ -90,23 +90,23 @@ async function create(req, res) {
       if (!configured) {
         await connection.rollback();
         const labels = { gcash: 'GCash', bank_transfer: 'Bank Transfer', other: 'Other payment' };
-        return publicError(res, 409, `Hindi pa naka-configure ang ${labels[paymentMethod]} details ng equipment owner. Pumili ng ibang payment method o kontakin ang owner.`);
+        return publicError(res, 409, `The equipment owner has not set up ${labels[paymentMethod]} details yet. Choose another payment method or contact the owner.`);
       }
     }
-    if (Number(equipment.owner_id) === farmerId) { await connection.rollback(); return publicError(res, 400, 'Hindi mo puwedeng rentahan ang sarili mong equipment.'); }
+    if (Number(equipment.owner_id) === farmerId) { await connection.rollback(); return publicError(res, 400, 'You cannot rent your own equipment.'); }
     if (equipment.approval_status !== 'approved' || equipment.availability_status !== 'available' || Number(equipment.is_archived) === 1) {
-      await connection.rollback(); return publicError(res, 409, 'Hindi available o hindi pa approved ang equipment.');
+      await connection.rollback(); return publicError(res, 409, 'The equipment is unavailable or has not been approved yet.');
     }
     const availableQuantity = Number(equipment.quantity);
 
     if (!Number.isInteger(availableQuantity) || availableQuantity < 1) {
       await connection.rollback();
-      return publicError(res, 409, 'Walang available na equipment quantity.');
+      return publicError(res, 409, 'No equipment quantity is available.');
     }
 
     if (quantity > availableQuantity) {
       await connection.rollback();
-      return publicError(res, 400, `Ang maximum available quantity ay ${availableQuantity}.`);
+      return publicError(res, 400, `The maximum available quantity is ${availableQuantity}.`);
     }
 
     // Check overlapping confirmed bookings and reserve only the remaining quantity.
@@ -117,7 +117,7 @@ async function create(req, res) {
        FROM rental_requests WHERE equipment_id = ? AND status IN ('approved','ongoing')
        AND start_date < ? AND end_date > ?`, [equipmentId, endSql, startSql]);
     const remaining = availableQuantity - Number(overlaps[0].reserved || 0);
-    if (quantity > remaining) { await connection.rollback(); return publicError(res, 409, `Hindi sapat ang available quantity sa napiling schedule. Remaining: ${Math.max(0, remaining)}.`); }
+    if (quantity > remaining) { await connection.rollback(); return publicError(res, 409, `Not enough quantity is available for the selected schedule. Remaining: ${Math.max(0, remaining)}.`); }
 
     let total;
     try {
@@ -156,9 +156,9 @@ async function create(req, res) {
     return res.status(201).json({ success: true, message: 'Booking request submitted. Waiting for owner approval.', data: created[0] });
   } catch (error) {
     if (connection) await connection.rollback();
-    if (error.code === 'ER_DUP_ENTRY') return publicError(res, 409, 'Naipadala na ang booking request na ito.');
+    if (error.code === 'ER_DUP_ENTRY') return publicError(res, 409, 'This booking request has already been submitted.');
     console.error('Create booking error:', error);
-    return publicError(res, 500, 'May error sa pag-save ng booking. Tiyaking na-apply ang database migration.');
+    return publicError(res, 500, 'An error occurred while saving the booking. Make sure the database migration has been applied.');
   } finally {
     if (!keepUploadedProof && req.file?.path) {
       await fs.unlink(req.file.path).catch((error) => {
@@ -190,7 +190,7 @@ async function list(req, res) {
     res.json({ success: true, data: rows });
   } catch (error) {
     console.error('List bookings error:', error);
-    publicError(res, 500, 'Hindi makuha ang bookings.');
+    publicError(res, 500, 'Unable to load bookings.');
   }
 }
 
@@ -203,14 +203,14 @@ async function getOne(req, res) {
        FROM rental_requests r JOIN equipment e ON e.id = r.equipment_id
        JOIN users u ON u.id = r.farmer_id LEFT JOIN booking_payments p ON p.booking_id = r.id
        WHERE r.id = ?`, [req.params.id]);
-    if (!rows.length) return publicError(res, 404, 'Hindi nahanap ang booking.');
+    if (!rows.length) return publicError(res, 404, 'Booking not found.');
     const booking = rows[0];
     const isAllowed = req.user.role === 'admin' ||
       (req.user.role === 'farmer' && Number(booking.farmer_id) === Number(req.user.id)) ||
       (req.user.role === 'owner' && Number(booking.owner_id) === Number(req.user.id));
-    if (!isAllowed) return publicError(res, 403, 'Wala kang access sa booking na ito.');
+    if (!isAllowed) return publicError(res, 403, 'You do not have access to this booking.');
     res.json({ success: true, data: booking });
-  } catch (error) { console.error('Get booking:', error); publicError(res, 500, 'Hindi makuha ang booking details.'); }
+  } catch (error) { console.error('Get booking:', error); publicError(res, 500, 'Unable to load booking details.'); }
 }
 
 async function cancel(req, res) {
@@ -218,11 +218,11 @@ async function cancel(req, res) {
     const [result] = await db.query(
       `UPDATE rental_requests SET status = 'cancelled' WHERE id = ? AND farmer_id = ? AND status = 'pending'`,
       [req.params.id, req.user.id]);
-    if (!result.affectedRows) return publicError(res, 409, 'Hindi ma-cancel ang booking. Pending bookings lamang ang maaaring i-cancel.');
+    if (!result.affectedRows) return publicError(res, 409, 'Unable to cancel this booking. Only pending bookings can be cancelled.');
     const [ownerRows] = await db.query('SELECT e.owner_id FROM rental_requests r JOIN equipment e ON e.id = r.equipment_id WHERE r.id = ?', [req.params.id]);
     if (ownerRows.length) { try { await notifyUser(ownerRows[0].owner_id, 'Booking cancelled', `Farmer cancelled booking #${req.params.id}.`, '/owner/bookings'); } catch (notificationError) { console.error('Cancellation notification failed:', notificationError); } }
     res.json({ success: true, message: 'Booking cancelled.' });
-  } catch (error) { console.error('Cancel booking:', error); publicError(res, 500, 'Hindi ma-cancel ang booking.'); }
+  } catch (error) { console.error('Cancel booking:', error); publicError(res, 500, 'Unable to cancel the booking.'); }
 }
 
 async function updateStatus(req, res) {
@@ -374,7 +374,7 @@ async function updateStatus(req, res) {
 
     console.error('Update booking status:', error);
 
-    return publicError(res, 500, 'Hindi ma-update ang booking status.');
+    return publicError(res, 500, 'Unable to update the booking status.');
 
   } finally {
     if (connection) connection.release();

@@ -1,0 +1,422 @@
+/* AgriLease theme: Owner portal polish. Same design as the farmer portal (theme-farmer.css).
+   Colors, spacing, borders, shadows and header only. Everything is scoped to the owner portal,
+   so the farmer and admin pages are not affected. Imported after theme-farmer.css in main.jsx.
+   To undo: remove the `import './theme-owner.css'` line in main.jsx. */
+
+/* ---------- 1. Same width and alignment on every owner page ---------- */
+.owner-page-content > *:not([hidden]) {
+  width: 100%; max-width: 1360px !important; margin-left: auto; margin-right: auto; padding-left: 0; padding-right: 0; box-sizing: border-box;
+}
+
+/* ---------- 2. Header: stays on top while scrolling ---------- */
+html:has(.owner-shell), body:has(.owner-shell) { overflow-x: clip; }
+.owner-topbar { position: sticky; top: 0; z-index: 1100; min-height: 68px; padding: 10px 28px; box-shadow: 0 1px 0 #e5e9e4, 0 10px 26px rgba(18, 67, 42, .045); }
+.owner-header-icon { transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+.owner-header-icon:hover { background: #eef7ef; border-color: #bcd8c3; transform: translateY(-1px); }
+@media (max-width: 760px) {
+  .owner-topbar { z-index: 500; min-height: 62px; padding: 8px 14px; }
+}
+
+/* ---------- 3. Page titles live in the header ---------- */
+.owner-topbar .owner-page-title {
+  margin: 0; color: var(--forest); font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 28px; font-weight: 700; line-height: 1.1; letter-spacing: .2px;
+}
+@media (max-width: 760px) { .owner-topbar .owner-page-title { font-size: 22px; } }
+.owner-page-content :is(.admin-page-heading, .owner-welcome:not(.owner-welcome--banner), .messages-page > header, .offline-settings-header) h1,
+.owner-page-content > h1,
+.owner-page-content > section > h1 { display: none; }
+.owner-page-content :is(.admin-page-heading, .owner-welcome) p,
+.owner-page-content .offline-intro,
+.owner-page-content .offline-eyebrow { display: none; }
+.owner-page-content :is(.admin-page-heading, .owner-welcome):not(:has(button, a)) { display: none; }
+.owner-page-content :is(.admin-page-heading, .owner-welcome) { margin-bottom: 18px; justify-content: flex-end; }
+.owner-page-content .owner-welcome .owner-equipment-actions { margin-left: auto; }
+.owner-page-content .messages-page > header { margin-bottom: 10px; }
+
+/* ---------- 4. Cards ---------- */
+.owner-page-content :is(.um-panel, .mb-filters, .mb-table-wrap, .messages-shell, .owner-dashboard-panel, .owner-form-panel, .owner-equipment-card, .ob-card, .owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card, .offline-feature-section, .offline-howto) {
+  border: 1px solid #e1e8dd; border-radius: 16px; background: #fff; box-shadow: 0 6px 22px rgba(18, 67, 42, .05);
+}
+.owner-page-content :is(.um-panel, .mb-table-wrap, .owner-recent-panel) { overflow: hidden; }
+.owner-page-content .owner-form-panel { border-top: 1px solid #e1e8dd; }
+.owner-page-content .um-panel-heading { padding: 22px 28px; background: linear-gradient(180deg, #fbfdf9, #fff); }
+.owner-page-content .um-panel-heading h2,
+.owner-page-content .owner-panel-heading h2,
+.owner-page-content .farmer-section-heading h2,
+.owner-page-content .owner-form-heading h2,
+.owner-page-content .offline-section-heading h2 { color: var(--forest); font-size: 24px; }
+.owner-page-content .um-panel-heading p,
+.owner-page-content .um-total { color: #6a7a6f; font-size: 14px; }
+.owner-page-content .owner-text-link { color: var(--leaf); font-weight: 800; }
+
+/* ---------- 5. Buttons: one primary, one secondary ---------- */
+.owner-page-content :is(.mb-btn:not(.mb-btn-secondary):not(.mb-btn-danger), .am-button.approve, .um-save-button, .offline-save-button, .offline-queue-actions button, .messages-compose button, .owner-add-button, .ob-card .approve) {
+  border: 1.5px solid transparent; background: var(--grad-green); color: #fff; box-shadow: 0 6px 14px rgba(18, 67, 42, .2);
+  transition: filter .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.owner-page-content :is(.mb-btn:not(.mb-btn-secondary):not(.mb-btn-danger), .am-button.approve, .um-save-button, .offline-save-button, .offline-queue-actions button, .messages-compose button, .owner-add-button, .ob-card .approve):hover:not(:disabled) {
+  background: var(--grad-green); filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 9px 18px rgba(18, 67, 42, .25);
+}
+.owner-page-content :is(.mb-btn, .am-button, .um-save-button, .offline-save-button, .messages-compose button, .owner-add-button, .ob-card footer button):disabled { opacity: .5; box-shadow: none; transform: none; }
+
+.owner-page-content :is(.um-refresh:not(.um-save-button), .mb-btn-secondary, .am-button.neutral, .offline-back-link, .pager button, .owner-edit-button, .owner-restore-button, .ob-filter select) {
+  border: 1.5px solid #2e8b45; background: #fff; color: var(--forest); box-shadow: none;
+  transition: background .15s ease, transform .15s ease;
+}
+.owner-page-content :is(.um-refresh:not(.um-save-button), .mb-btn-secondary, .am-button.neutral, .offline-back-link, .pager button, .owner-edit-button, .owner-restore-button):hover:not(:disabled) {
+  background: #eef7ef; color: var(--forest); transform: translateY(-1px);
+}
+.owner-page-content .owner-archive-button, .owner-page-content .ob-card .reject { border: 1.5px solid #e7b9b5; background: #fff; color: #a52a22; }
+.owner-page-content :is(.owner-archive-button, .ob-card .reject):hover:not(:disabled) { background: #fdeceb; }
+
+/* ---------- 6. Search boxes, filters and form fields ---------- */
+.owner-page-content :is(.mb-filter input, .mb-filter select, .tx-filters input, .tx-filters select, .search, .messages-compose input, .um-panel form input, .um-panel form select, .um-panel form textarea, .owner-form-panel input, .owner-form-panel select, .owner-form-panel textarea) {
+  border: 1.5px solid #d6e0d3; border-radius: 12px; background-color: #fff; font-size: 14px; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.owner-page-content :is(.mb-filter input, .mb-filter select, .tx-filters input, .tx-filters select, .search, .messages-compose input, .um-panel form input, .um-panel form select, .um-panel form textarea, .owner-form-panel input, .owner-form-panel select, .owner-form-panel textarea):focus {
+  outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14);
+}
+.owner-page-content :is(.mb-filter input, .mb-filter select, .tx-filters input, .tx-filters select) { height: 46px; }
+.owner-page-content .mb-filters { padding: 18px 20px; }
+.owner-page-content .mb-filter label, .owner-page-content .mb-filter > span, .owner-page-content .um-panel form label { color: #2f5a3c; font-size: 12px; font-weight: 700; }
+.owner-page-content .um-panel form input, .owner-page-content .um-panel form select { height: 48px; }
+.owner-page-content .um-message { padding: 12px 16px; border-radius: 12px; font-size: 14px; }
+.owner-page-content .mb-count { color: #5f6f65; font-size: 14px; }
+.owner-page-content .ob-filter { margin: 0 0 18px; }
+.owner-page-content .ob-filter select { height: 44px; padding: 0 14px; border-radius: 12px; }
+
+/* ---------- 7. Tables ---------- */
+@media (min-width: 801px) {
+  .owner-page-content :is(.mb-table, .um-table, .owner-dashboard-table) { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .owner-page-content :is(.mb-table, .um-table, .owner-dashboard-table) thead th {
+    padding: 14px 20px; border-bottom: 1px solid #dbe6d8; background: #eef5ec; color: #2f5a3c;
+    font-size: 11px; font-weight: 800; letter-spacing: .7px; text-align: left; text-transform: uppercase; white-space: nowrap;
+  }
+  .owner-page-content :is(.mb-table, .um-table, .owner-dashboard-table) tbody td {
+    padding: 16px 20px; border-top: 1px solid #edf2ea; color: #2b3a30; font-size: 14px; vertical-align: middle;
+  }
+  .owner-page-content :is(.mb-table, .um-table, .owner-dashboard-table) tbody tr:first-child td { border-top: 0; }
+  .owner-page-content :is(.mb-table, .um-table, .owner-dashboard-table) tbody tr { transition: background .12s ease; }
+  .owner-page-content :is(.mb-table, .um-table, .owner-dashboard-table) tbody tr:hover td { background: #f8fbf6; }
+}
+.owner-page-content :is(.mb-table, .um-table) small, .owner-page-content .mb-muted { color: #7a897f; }
+
+/* ---------- 8. Status pills: same look and colors everywhere ---------- */
+.owner-page-content :where(.rental-status, .am-pill, .owner-booking-status, .ob-status, .owner-status:not(.owner-equipment-image .owner-status)) {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px;
+  background: #eef1ec; color: #55635a; font-size: 12px; font-weight: 700; text-transform: capitalize;
+}
+.owner-page-content :is(.rental-status, .am-pill, .owner-booking-status, .ob-status)::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.owner-page-content :is(.rental-status.pending, .owner-booking-status.status-pending, .ob-status.pending, .am-pill.pay-pending, .am-pill.pay-unpaid, .owner-status-pending) { background: #fff3d4; color: #8a5a00; }
+.owner-page-content :is(.rental-status.approved, .owner-booking-status.status-approved, .ob-status.approved, .am-pill.pay-paid, .am-pill.pay-verified, .owner-status-approved) { background: #e1f3e6; color: #176b3a; }
+.owner-page-content :is(.rental-status.completed, .owner-booking-status.status-completed, .ob-status.completed) { background: #d6e9dc; color: #12432a; }
+.owner-page-content :is(.rental-status.ongoing, .owner-booking-status.status-ongoing, .ob-status.ongoing) { background: #e0eefa; color: #1d5f95; }
+.owner-page-content :is(.rental-status.rejected, .owner-booking-status.status-rejected, .ob-status.rejected, .am-pill.pay-failed, .am-pill.pay-rejected, .owner-status-rejected) { background: #fde4e1; color: #a52a22; }
+.owner-page-content :is(.rental-status.cancelled, .owner-booking-status.status-cancelled, .ob-status.cancelled) { background: #eceeed; color: #5f6a63; }
+
+/* ---------- 9. Equipment and booking cards ---------- */
+.owner-page-content :is(.owner-equipment-card, .ob-card) { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.owner-page-content :is(.owner-equipment-card, .ob-card):hover { transform: translateY(-3px); border-color: #cfe3d3; box-shadow: 0 14px 30px rgba(18, 67, 42, .12); }
+.owner-page-content .owner-equipment-card h3, .owner-page-content .ob-card h2 { color: var(--forest); }
+.owner-page-content .owner-category-heading h2, .owner-page-content .owner-category-heading h3 { color: var(--forest); }
+.owner-page-content .ob-grid svg { color: var(--leaf); }
+
+/* ---------- 10. Messages ---------- */
+.owner-page-content .messages-shell { border-radius: 18px; }
+.owner-page-content .messages-contacts { border-right: 1px solid #e1e8dd; background: #f6faf4; }
+.owner-page-content .messages-contacts h2 { color: var(--forest); font-size: 22px; }
+.owner-page-content .messages-contacts button { border: 1px solid transparent; border-radius: 12px; transition: background .15s ease; }
+.owner-page-content .messages-contacts button.active { border-color: #cfe3d3; background: #e6f2e8; }
+.owner-page-content .messages-thread-head { padding: 18px 24px; background: #fff; }
+.owner-page-content .messages-thread-head strong { color: var(--forest); font-size: 18px; }
+.owner-page-content .messages-list { padding: 24px; background: linear-gradient(180deg, #f8fbf6, #f2f7f0); gap: 12px; }
+.owner-page-content .message-bubble { padding: 12px 16px; border: 1px solid #e3eae0; border-radius: 18px 18px 18px 6px; background: #fff; box-shadow: 0 2px 8px rgba(18, 67, 42, .06); }
+.owner-page-content .message-bubble.mine { border-color: transparent; border-radius: 18px 18px 6px 18px; background: var(--grad-green); color: #fff; }
+.owner-page-content .messages-compose { padding: 16px 20px; background: #fff; }
+.owner-page-content .messages-compose input { height: 46px; padding: 0 18px; border-radius: 999px; }
+.owner-page-content .messages-compose button { height: 46px; padding: 0 26px; border-radius: 999px; }
+
+/* ---------- 11. Notifications ---------- */
+.owner-page-content .am-notification { padding: 18px 28px; border-left: 4px solid transparent; transition: background .15s ease; }
+.owner-page-content .am-notification.unread { border-left-color: var(--gold); background: linear-gradient(90deg, #fff8e4, #fff 45%); }
+.owner-page-content .am-notification strong { color: var(--forest); font-size: 16px; }
+.owner-page-content .am-notification.notification-clickable:hover { background: #f6faf4; }
+
+/* ---------- 12. Offline access ---------- */
+.owner-page-content .offline-connection.is-online { background: #e3f4e8; color: #176b3a; }
+.owner-page-content .offline-feature-section, .owner-page-content .offline-howto { padding: 18px 20px; }
+.owner-page-content .offline-feature-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.owner-page-content .offline-feature-card { align-content: start; gap: 4px 12px; padding: 14px 16px; border: 1px solid #e1e8dd; border-radius: 13px; background: #fafcf8; transition: border-color .15s ease, box-shadow .15s ease; }
+.owner-page-content .offline-feature-card:hover { border-color: #bcd8c3; box-shadow: 0 6px 16px rgba(18, 67, 42, .07); }
+.owner-page-content .offline-feature-title { font-family: 'Source Sans 3', Inter, sans-serif; font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--forest); }
+.owner-page-content .offline-card-state { padding: 2px 10px; border-radius: 999px; background: #e3f4e8; color: #176b3a; font-size: 11px; font-weight: 800; justify-self: start; }
+@media (max-width: 900px) { .owner-page-content .offline-feature-grid { grid-template-columns: 1fr; } }
+
+/* ---------- 13. Summary cards (Dashboard + Offline Access): plain white, green edge slides in on hover/tap ---------- */
+.owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card) {
+  position: relative; overflow: hidden; cursor: pointer; display: grid; gap: 4px; min-height: 112px; padding: 17px 18px;
+  border-radius: 13px; box-shadow: 0 2px 5px rgba(15, 45, 30, .035); align-content: start; -webkit-tap-highlight-color: transparent;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card) span { margin: 0; color: #64748b; font-size: 12px; font-weight: 600; }
+.owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card) strong { margin: 6px 0 2px; color: var(--forest); font-size: 27px; line-height: 1.1; }
+.owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card) small { margin: 0; color: #8492a6; font-size: 11px; }
+.owner-page-content .owner-kpi-cards .owner-kpi-warning { color: #d97706; }
+.owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card)::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--grad-green);
+  transform: scaleY(0); transform-origin: top; transition: transform .28s ease;
+}
+.owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card):is(:hover, :active, :focus-within) {
+  transform: translateY(-2px); border-color: #bcd8c3; box-shadow: 0 10px 22px rgba(18, 67, 42, .1);
+}
+.owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card):is(:hover, :active, :focus-within)::before { transform: scaleY(1); }
+.owner-page-content .owner-kpi-strip.owner-kpi-cards, .owner-page-content .offline-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+@media (max-width: 700px) {
+  /* keep 3 equal columns on phones, like the farmer dashboard */
+  .owner-page-content .owner-kpi-strip.owner-kpi-cards, .owner-page-content .offline-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card) { grid-template-rows: auto auto 1fr; padding: 17px 18px; }
+  .owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card) span { line-height: 1.3; min-height: 2.6em; }
+  .owner-page-content :is(.owner-kpi-strip.owner-kpi-cards > div, .offline-summary-card) small { line-height: 1.35; }
+}
+
+/* ---------- 14. Dashboard: section headings and panels ---------- */
+.owner-page-content .owner-panel-heading { margin-bottom: 14px; }
+.owner-page-content .owner-dashboard-panel { padding: 20px 22px; }
+.owner-page-content .owner-dashboard-panel:hover { transform: none; box-shadow: 0 6px 22px rgba(18, 67, 42, .05); }
+.owner-page-content .owner-panel-icon { background: #e3f4e8; color: var(--leaf); }
+
+/* ---------- 15. Sidebar: Log Out sits at the bottom of the drawer ---------- */
+.owner-sidebar { display: flex; flex-direction: column; box-sizing: border-box; }
+.owner-sidebar .owner-navigation { margin-bottom: 24px; }
+.owner-sidebar .owner-logout { margin-top: auto; margin-bottom: 4px; width: 100%; }
+@media (max-width: 760px) {
+  .owner-sidebar { height: 100vh; height: 100dvh; overflow-y: auto; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ---------- 16. My Equipment: summary cards like the Dashboard cards, photos fill the frame like the farmer cards ---------- */
+.owner-page-content .owner-equipment-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; margin-bottom: 26px; }
+.owner-page-content .owner-equipment-summary > span {
+  position: relative; overflow: hidden; cursor: pointer; display: grid; gap: 4px; align-content: start; min-height: 112px; padding: 17px 18px;
+  border: 1px solid #e1e8dd; border-radius: 13px; background: #fff; box-shadow: 0 2px 5px rgba(15, 45, 30, .035); -webkit-tap-highlight-color: transparent;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.owner-page-content .owner-equipment-summary > span small { color: #64748b; font-size: 12px; font-weight: 600; }
+.owner-page-content .owner-equipment-summary > span strong { margin: 6px 0 2px; color: var(--forest); font-size: 27px; line-height: 1.1; }
+.owner-page-content .owner-equipment-summary > span::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--grad-green);
+  transform: scaleY(0); transform-origin: top; transition: transform .28s ease;
+}
+.owner-page-content .owner-equipment-summary > span:is(:hover, :active, :focus-within) { transform: translateY(-2px); border-color: #bcd8c3; box-shadow: 0 10px 22px rgba(18, 67, 42, .1); }
+.owner-page-content .owner-equipment-summary > span:is(:hover, :active, :focus-within)::before { transform: scaleY(1); }
+@media (max-width: 700px) {
+  .owner-page-content .owner-equipment-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .owner-page-content .owner-equipment-summary > span:only-child { grid-column: 1 / -1; }
+}
+
+.owner-page-content .owner-equipment-card { padding: 0 0 20px; overflow: hidden; border-radius: 18px; }
+.owner-page-content .owner-equipment-card > :not(.owner-equipment-image) { margin-left: 20px; margin-right: 20px; }
+.owner-page-content .owner-equipment-image { height: 190px; margin: 0 0 17px; border-radius: 0; background: linear-gradient(135deg, #dcebe0, #f3ecd2); }
+.owner-page-content .owner-equipment-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.owner-page-content .owner-equipment-card:hover .owner-equipment-image img { transform: scale(1.05); }
+
+/* ---------- 17. Rental Bookings ---------- */
+.owner-page-content .ob-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 2px; }
+.owner-page-content .ob-chips button {
+  flex: 0 0 auto; height: 38px; padding: 0 16px; border: 1.5px solid #d6e0d3; border-radius: 999px; background: #fff; color: #2f5a3c;
+  font-size: 13px; font-weight: 700; text-transform: capitalize; cursor: pointer; transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.owner-page-content .ob-chips button:hover { background: #eef7ef; border-color: #bcd8c3; transform: translateY(-1px); }
+.owner-page-content .ob-chips button.active { border-color: transparent; background: var(--grad-green); color: #fff; box-shadow: 0 6px 14px rgba(18, 67, 42, .2); }
+.owner-page-content .ob-list { gap: 16px; }
+.owner-page-content .ob-card { padding: 22px 24px; }
+.owner-page-content .ob-card header small { color: #7a897f; font-size: 12px; font-weight: 700; letter-spacing: .4px; }
+.owner-page-content .ob-card h2 { margin: 4px 0 2px; font-size: 26px; line-height: 1.1; }
+.owner-page-content .ob-card header p { margin: 0; color: #6a7a6f; font-size: 14px; }
+.owner-page-content .ob-grid { gap: 18px 28px; margin: 22px 0 20px; }
+.owner-page-content .ob-grid > div { align-items: center; gap: 14px; }
+.owner-page-content .ob-grid svg { box-sizing: content-box; width: 18px; height: 18px; padding: 10px; border-radius: 12px; background: #e3f4e8; color: var(--leaf); }
+.owner-page-content .ob-grid span { gap: 3px; color: #20372a; font-size: 15px; font-weight: 600; }
+.owner-page-content .ob-grid b { color: #64748b; font-size: 12px; font-weight: 600; }
+.owner-page-content .ob-payment { gap: 10px; padding-top: 16px; border-top: 1px solid #edf2ea; }
+.owner-page-content .ob-payment > b { color: #64748b; font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+.owner-page-content .ob-method { display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 999px; background: #eef1ec; color: #55635a; font-size: 12px; font-weight: 700; text-transform: capitalize; }
+.owner-page-content .ob-payment small { color: #7a897f; font-size: 12px; }
+.owner-page-content .ob-payment button {
+  margin-left: auto; padding: 7px 13px; border: 1.5px solid #2e8b45; border-radius: 10px; background: #fff; color: var(--forest);
+  font-size: 13px; font-weight: 700; transition: background .15s ease, transform .15s ease;
+}
+.owner-page-content .ob-payment button:hover { background: #eef7ef; transform: translateY(-1px); }
+.owner-page-content .ob-card footer { margin-top: 18px; }
+.owner-page-content .ob-card footer button { min-height: 42px; padding: 0 18px; border-radius: 10px; }
+.owner-page-content .ob-empty { border-radius: 16px; }
+@media (max-width: 650px) {
+  .owner-page-content .ob-card { padding: 18px 16px; }
+  .owner-page-content .ob-card h2 { font-size: 22px; }
+  .owner-page-content .ob-payment button { margin-left: 0; }
+}
+
+/* ---------- 18. Subscription Plans: four equal cards with icons ---------- */
+.owner-page-content .sub-pay-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.owner-page-content .sub-pay-fields label { display: flex; flex-direction: column; gap: 7px; color: #2f5a3c; font-size: 12px; font-weight: 700; }
+.owner-page-content .sub-pay-fields :is(input, select) {
+  width: 100%; height: 48px; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #d6e0d3; border-radius: 12px; background-color: #fff; font-size: 14px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.owner-page-content .sub-pay-fields :is(input, select):focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+.owner-page-content .sub-pay-fields input[type="file"] { padding: 7px 10px; line-height: 32px; }
+.owner-page-content .sub-pay-fields input[type="file"]::file-selector-button { margin-right: 12px; padding: 6px 14px; border: 0; border-radius: 8px; background: #e3f4e8; color: var(--forest); font-weight: 700; cursor: pointer; }
+@media (max-width: 760px) { .owner-page-content .sub-pay-fields { grid-template-columns: 1fr; } }
+
+.owner-page-content .sub-trial {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; padding: 16px 20px;
+  border: 1px solid #e1e8dd; border-left: 4px solid var(--gold); border-radius: 14px; background: linear-gradient(90deg, #fff8e4, #fff 60%);
+}
+.owner-page-content .sub-trial strong { display: block; color: var(--forest); font-size: 16px; }
+.owner-page-content .sub-trial span { color: #6a7a6f; font-size: 14px; }
+@media (max-width: 640px) { .owner-page-content .sub-trial { flex-direction: column; align-items: flex-start; } }
+
+.owner-page-content .sub-plan-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+@media (max-width: 1100px) { .owner-page-content .sub-plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .owner-page-content .sub-plan-grid { grid-template-columns: 1fr; } }
+.owner-page-content .sub-plan-card {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; min-width: 0; padding: 22px 20px 20px;
+  border: 1px solid #e1e8dd; border-radius: 16px; background: #fff; box-shadow: 0 6px 22px rgba(18, 67, 42, .05);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.owner-page-content .sub-plan-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--grad-green);
+  transform: scaleY(0); transform-origin: top; transition: transform .28s ease;
+}
+.owner-page-content .sub-plan-card:is(:hover, :active, :focus-within) { transform: translateY(-2px); border-color: #bcd8c3; box-shadow: 0 10px 22px rgba(18, 67, 42, .1); }
+.owner-page-content .sub-plan-card:is(:hover, :active, :focus-within)::before { transform: scaleY(1); }
+.owner-page-content .sub-plan-icon {
+  width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 16px; border-radius: 13px;
+  background: var(--grad-green); color: #fff; box-shadow: 0 6px 14px rgba(18, 67, 42, .2);
+}
+.owner-page-content .sub-plan-card h3 { margin: 0 0 6px; color: var(--forest); font-size: 26px; line-height: 1.1; }
+.owner-page-content .sub-plan-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: 16px; }
+.owner-page-content .sub-plan-price strong { color: var(--forest); font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 34px; line-height: 1; }
+.owner-page-content .sub-plan-price small { color: #6a7a6f; font-size: 14px; font-weight: 600; }
+.owner-page-content .sub-plan-list { display: grid; gap: 10px; margin: 0 0 20px; padding: 16px 0 0; border-top: 1px solid #edf2ea; list-style: none; }
+.owner-page-content .sub-plan-list li { display: flex; align-items: flex-start; gap: 9px; color: #2b3a30; font-size: 14px; line-height: 1.45; }
+.owner-page-content .sub-plan-list li svg { flex: none; margin-top: 3px; color: var(--leaf); }
+.owner-page-content .sub-plan-card .sub-plan-btn {
+  width: 100%; min-height: 46px; margin-top: auto; padding: 10px 14px; border: 1.5px solid transparent; background: var(--grad-green); color: #fff;
+  box-shadow: 0 6px 14px rgba(18, 67, 42, .2); line-height: 1.25; text-align: center; white-space: normal;
+}
+.owner-page-content .sub-plan-card .sub-plan-btn:hover:not(:disabled) { background: var(--grad-green); color: #fff; filter: brightness(1.1); box-shadow: 0 9px 18px rgba(18, 67, 42, .25); }
+.owner-page-content .sub-plan-card .sub-plan-btn:disabled { opacity: .5; box-shadow: none; transform: none; }
+
+/* ---------- 19. Rental Bookings filter chips: wrap on small screens so every button stays visible ---------- */
+@media (max-width: 650px) {
+  .owner-page-content .ob-chips { gap: 7px; }
+  .owner-page-content .ob-chips button { height: 36px; padding: 0 14px; font-size: 12.5px; }
+}
+
+/* ---------- 20. Subscription: current plan + payment history ---------- */
+.owner-page-content .sub-page { max-width: 1100px; margin: 0 auto; }
+.owner-page-content .sub-panel { margin-bottom: 20px; padding: 22px 24px; }
+.owner-page-content .sub-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.owner-page-content .sub-panel-head h2 { margin: 0; color: var(--forest); font-size: 24px; }
+.owner-page-content .sub-empty-note { margin: 0 0 14px; color: #6a7a6f; font-size: 14px; line-height: 1.5; }
+.owner-page-content .sub-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: #eceeed; color: #5f6a63;
+  font-size: 12px; font-weight: 800; text-transform: capitalize; white-space: nowrap;
+}
+.owner-page-content .sub-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.owner-page-content .sub-pill:is(.st-active, .st-paid, .st-verified, .st-approved) { background: #e1f3e6; color: #176b3a; }
+.owner-page-content .sub-pill:is(.st-pending, .st-unpaid, .st-pending_verification) { background: #fff3d4; color: #8a5a00; }
+.owner-page-content .sub-pill:is(.st-expired, .st-rejected, .st-failed, .st-cancelled) { background: #fde4e1; color: #a52a22; }
+.owner-page-content .sub-current-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.owner-page-content .sub-stat {
+  display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 16px; border: 1px solid #e1e8dd; border-radius: 14px; background: #fafcf8;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.owner-page-content .sub-stat:hover { transform: translateY(-2px); border-color: #bcd8c3; box-shadow: 0 8px 18px rgba(18, 67, 42, .08); }
+.owner-page-content .sub-stat-icon { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: var(--grad-green); color: #fff; }
+.owner-page-content .sub-stat > div { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.owner-page-content .sub-stat small { color: #64748b; font-size: 12px; font-weight: 600; }
+.owner-page-content .sub-stat strong { color: var(--forest); font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+.owner-page-content .sub-meter { display: block; height: 6px; margin-top: 6px; border-radius: 999px; background: #e3eae0; overflow: hidden; }
+.owner-page-content .sub-meter b { display: block; height: 100%; border-radius: 999px; background: var(--grad-green); }
+.owner-page-content .sub-cap { text-transform: capitalize; }
+.owner-page-content .sub-panel .um-table-wrapper { overflow-x: auto; margin: 0 -24px -22px; }
+.owner-page-content .sub-panel .um-empty { padding: 34px 16px; text-align: center; color: #7a897f; }
+@media (max-width: 1000px) { .owner-page-content .sub-current-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .owner-page-content .sub-panel { padding: 18px 16px; }
+  .owner-page-content .sub-current-grid { grid-template-columns: 1fr; gap: 10px; }
+  .owner-page-content .sub-panel .um-table-wrapper { margin: 0 -16px -18px; }
+}
+
+/* ---------- 21. Payment Settings ---------- */
+.owner-page-content .ps-page { max-width: 950px; margin: 0 auto; display: grid; gap: 16px; }
+.owner-page-content .ps-notice {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border: 1px solid #f0dfaa; border-left: 4px solid var(--gold);
+  border-radius: 14px; background: linear-gradient(90deg, #fff8e4, #fffdf5); color: #6b4e0a; font-size: 14px; line-height: 1.5;
+}
+.owner-page-content .ps-notice svg { flex: none; margin-top: 2px; color: #b07a0a; }
+.owner-page-content .ps-form { display: grid; gap: 16px; }
+.owner-page-content .ps-card {
+  position: relative; overflow: hidden; padding: 22px 24px; border: 1px solid #e1e8dd; border-radius: 16px; background: #fff; box-shadow: 0 2px 5px rgba(15, 45, 30, .035);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.owner-page-content .ps-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--grad-green);
+  transform: scaleY(0); transform-origin: top; transition: transform .28s ease;
+}
+.owner-page-content .ps-card:is(:hover, :focus-within) { border-color: #bcd8c3; box-shadow: 0 10px 22px rgba(18, 67, 42, .08); }
+.owner-page-content .ps-card:is(:hover, :focus-within)::before { transform: scaleY(1); }
+.owner-page-content .ps-card-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.owner-page-content .ps-icon { flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 13px; background: var(--grad-green); color: #fff; box-shadow: 0 6px 14px rgba(18, 67, 42, .2); }
+.owner-page-content .ps-card-head h2 { margin: 0; color: var(--forest); font-size: 24px; line-height: 1.1; }
+.owner-page-content .ps-card-head p { margin: 3px 0 0; color: #6a7a6f; font-size: 14px; }
+.owner-page-content .ps-grid { display: grid; gap: 16px; }
+.owner-page-content .ps-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.owner-page-content .ps-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.owner-page-content .ps-card label { display: flex; flex-direction: column; gap: 7px; color: #2f5a3c; font-size: 12px; font-weight: 700; min-width: 0; }
+.owner-page-content .ps-card :is(input:not([type="file"]), textarea) {
+  width: 100%; box-sizing: border-box; padding: 0 14px; border: 1.5px solid #d6e0d3; border-radius: 12px; background: #fff; color: #20372a; font: inherit; font-size: 14px; font-weight: 600;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.owner-page-content .ps-card input:not([type="file"]) { height: 48px; }
+.owner-page-content .ps-card textarea { min-height: 120px; padding: 12px 14px; resize: vertical; line-height: 1.5; }
+.owner-page-content .ps-card :is(input:not([type="file"]), textarea):focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+.owner-page-content .ps-card input::placeholder, .owner-page-content .ps-card textarea::placeholder { color: #9aa79e; font-weight: 400; }
+.owner-page-content .ps-qr-row { display: flex; align-items: stretch; gap: 16px; flex-wrap: wrap; margin-top: 18px; }
+.owner-page-content .ps-qr-upload { flex: 1 1 280px; justify-content: center; padding: 16px; border: 1.5px dashed #bcd8c3; border-radius: 14px; background: #fafcf8; }
+.owner-page-content .ps-qr-upload input[type="file"] { width: 100%; padding: 4px 0; font-size: 13px; color: #55635a; }
+.owner-page-content .ps-qr-upload input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 16px; border: 0; border-radius: 9px; background: #e3f4e8; color: var(--forest); font-weight: 700; cursor: pointer; }
+.owner-page-content .ps-qr-upload small { color: #6a7a6f; font-size: 12px; font-weight: 600; }
+.owner-page-content .ps-qr-preview { margin: 0; display: grid; justify-items: center; gap: 8px; padding: 12px; border: 1px solid #e1e8dd; border-radius: 14px; background: #fff; }
+.owner-page-content .ps-qr-preview img { width: 150px; height: 150px; object-fit: contain; border-radius: 8px; }
+.owner-page-content .ps-qr-preview figcaption { color: #6a7a6f; font-size: 12px; font-weight: 600; }
+.owner-page-content .ps-actions { display: flex; justify-content: flex-end; }
+.owner-page-content .ps-actions .um-refresh { min-height: 48px; padding: 0 28px; }
+@media (max-width: 760px) {
+  .owner-page-content .ps-grid-2, .owner-page-content .ps-grid-3 { grid-template-columns: 1fr; }
+  .owner-page-content .ps-card { padding: 18px 16px; }
+  .owner-page-content .ps-card-head h2 { font-size: 22px; }
+  .owner-page-content .ps-qr-preview { width: 100%; box-sizing: border-box; }
+  .owner-page-content .ps-actions .um-refresh { width: 100%; }
+}
+
+/* ---------- 22. Rental Bookings: status dropdown ---------- */
+.owner-page-content .ob-filter-bar { display: flex; align-items: center; gap: 12px; margin: 0 0 18px; }
+.owner-page-content .ob-search { position: relative; flex: 1 1 auto; min-width: 0; margin: 0; }
+.owner-page-content .ob-search svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #2e8b45; pointer-events: none; }
+.owner-page-content .ob-search input {
+  width: 100%; height: 48px; box-sizing: border-box; padding: 0 16px 0 44px; border: 1.5px solid #d6e0d3; border-radius: 12px; background: #fff;
+  color: #20372a; font: inherit; font-size: 14px; font-weight: 600; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.owner-page-content .ob-search input::placeholder { color: #9aa79e; font-weight: 400; }
+.owner-page-content .ob-search input:focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+.owner-page-content .ob-select {
+  flex: 0 0 220px; width: 220px; max-width: 100%; height: 48px; padding: 0 44px 0 16px; border: 1.5px solid #d6e0d3; border-radius: 12px; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232e8b45' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 16px center;
+  color: var(--forest); font: inherit; font-size: 14px; font-weight: 700; -webkit-appearance: none; appearance: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.owner-page-content .ob-select:focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+@media (max-width: 650px) { .owner-page-content .ob-filter-bar { flex-direction: column; align-items: stretch; gap: 10px; } .owner-page-content .ob-select { flex: none; width: 100%; } }

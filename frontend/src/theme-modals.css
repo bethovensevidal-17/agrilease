@@ -1,0 +1,58 @@
+/* AgriLease theme: modals (confirm/alert/prompt dialog, admin detail modals, subscription forms, owner review).
+   Imported after theme-phase3.css in main.jsx. To undo: remove that import line. */
+
+/* ---------- Shared backdrop and card look ---------- */
+.al-dialog-backdrop, .am-modal-backdrop, .um-modal-backdrop, .sub-modal-backdrop, .owner-modal-overlay {
+  background: rgba(10, 30, 20, .55); backdrop-filter: blur(4px);
+}
+.am-detail-modal, .um-user-modal, .sub-modal, .owner-review-modal {
+  border-radius: 20px; border-top: 5px solid var(--leaf); box-shadow: 0 28px 80px rgba(8, 25, 16, .32);
+  animation: al-dialog-in .18s ease-out;
+}
+.am-detail-modal h2, .um-modal-heading h2, .sub-modal h2 { color: var(--forest); font-size: 26px; }
+.um-modal-close { background: var(--grad-green); }
+.sub-primary-btn { background: var(--grad-green) !important; }
+
+/* Owner review: green header */
+.owner-review-modal { border-top: 0; }
+.owner-modal-header { border-bottom: 0; background: var(--grad-green); }
+.owner-modal-header h2 { color: #fff; }
+.owner-modal-header p { color: #d5e8da; }
+.owner-modal-close { color: #fff; }
+.owner-modal-actions button:not(.owner-modal-secondary):not(:disabled) { background: var(--grad-green); color: #fff; }
+
+/* ---------- Confirm / alert / prompt dialog ---------- */
+.al-dialog {
+  --ui-btn-height: 46px;
+  position: relative; overflow: hidden; width: min(100%, 420px); padding: 36px 30px 26px;
+  border-radius: 22px; text-align: center; box-shadow: 0 28px 80px rgba(8, 25, 16, .35);
+}
+.al-dialog::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--grad-green); }
+.al-dialog--danger::before { background: linear-gradient(135deg, #b3302b, #d9534f); }
+.al-dialog--alert::before { background: var(--grad-gold); }
+
+.al-dialog .al-dialog-mark {
+  width: 64px; height: 64px; margin: 4px auto 20px; border-radius: 50%; color: #fff;
+  background: var(--grad-green); box-shadow: 0 0 0 8px rgba(46, 139, 69, .12);
+}
+.al-dialog--danger .al-dialog-mark { background: linear-gradient(135deg, #b3302b, #d9534f); box-shadow: 0 0 0 8px rgba(217, 83, 79, .13); }
+.al-dialog--alert .al-dialog-mark { background: var(--grad-gold); color: #2a1d00; box-shadow: 0 0 0 8px rgba(224, 168, 46, .18); }
+
+.al-dialog h2 { margin: 0 0 8px; color: var(--forest); font-size: 28px; line-height: 1.15; }
+.al-dialog p { margin: 0 0 24px; color: #5d6a60; font-size: 15px; line-height: 1.55; }
+.al-dialog textarea { margin-bottom: 20px; border-radius: 12px; text-align: left; }
+
+.al-dialog .al-dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.al-dialog .al-dialog-actions button:only-child { grid-column: 1 / -1; }
+.al-dialog .al-dialog-cancel { background: #fff; color: var(--forest); border-color: #cdd8cf !important; }
+.al-dialog .al-dialog-cancel:hover { background: #f3f7f4; }
+.al-dialog .al-dialog-confirm { background: var(--grad-green); color: #fff; box-shadow: 0 8px 18px rgba(18, 67, 42, .25); }
+.al-dialog .al-dialog-confirm:hover { background: var(--grad-green); filter: brightness(1.1); }
+.al-dialog--danger .al-dialog-confirm { background: linear-gradient(135deg, #b3302b, #d9534f); box-shadow: 0 8px 18px rgba(179, 48, 43, .28); }
+.al-dialog--danger .al-dialog-confirm:hover { background: linear-gradient(135deg, #b3302b, #d9534f); }
+
+@media (max-width: 480px) {
+  .al-dialog { padding: 32px 20px 22px; }
+  .al-dialog .al-dialog-actions { grid-template-columns: 1fr; }
+  .al-dialog .al-dialog-cancel { order: 2; }
+}

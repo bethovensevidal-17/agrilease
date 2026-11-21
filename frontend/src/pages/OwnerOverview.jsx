@@ -6,7 +6,8 @@ import {
   ArcElement, Tooltip, Legend, Filler,
 } from 'chart.js';
 import { api, getUser } from '../api/client';
-import { RefreshCw, Plus, CalendarDays, Package, AlertCircle } from 'lucide-react';
+import { CalendarDays, Package, AlertCircle } from 'lucide-react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -20,10 +21,9 @@ export default function OwnerOverview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(async (quiet = false) => {
     try {
-      setLoading(true);
-      setError('');
+      if (!quiet) { setLoading(true); setError(''); }
       const [equipmentResult, bookingResult] = await Promise.all([
         api('/equipment/mine'),
         api('/owner/bookings'),
@@ -31,13 +31,14 @@ export default function OwnerOverview() {
       setItems(equipmentResult.data || []);
       setBookings(bookingResult.data || []);
     } catch (err) {
-      setError(err.message || 'Unable to load dashboard information.');
+      if (!quiet) setError(err.message || 'Unable to load dashboard information.');
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+  useAutoRefresh(() => loadDashboard(true));
 
   const counts = useMemo(() => ({
     pending: bookings.filter(x => x.status === 'pending').length,
@@ -61,11 +62,11 @@ export default function OwnerOverview() {
 
   const statusChart = {
     labels: ['Pending', 'Approved / Ongoing', 'Completed', 'Rejected / Cancelled'],
-    datasets: [{ data: [counts.pending, counts.approved, counts.completed, counts.rejected], backgroundColor: ['#e9b949', '#3c9b68', '#286a49', '#d97878'], borderWidth: 0 }],
+    datasets: [{ data: [counts.pending, counts.approved, counts.completed, counts.rejected], backgroundColor: ['#e0a82e', '#2e8b45', '#12432a', '#d9534f'], borderWidth: 0 }],
   };
   const lineChart = {
     labels: monthly.map(x => x.label),
-    datasets: [{ label: 'Rental bookings', data: monthly.map(x => x.value), borderColor: '#28764b', backgroundColor: 'rgba(40,118,75,.12)', fill: true, tension: .35, pointRadius: 3, pointHoverRadius: 5 }],
+    datasets: [{ label: 'Rental bookings', data: monthly.map(x => x.value), borderColor: '#2e8b45', backgroundColor: 'rgba(46,139,69,.14)', fill: true, tension: .35, pointRadius: 3, pointHoverRadius: 5 }],
   };
   const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf1ed' } }, x: { grid: { display: false } } } };
 
@@ -75,10 +76,13 @@ export default function OwnerOverview() {
   return (
     <div className="owner-page owner-dashboard">
       <section className="role-welcome-banner owner-welcome-banner">
-        <small>OWNER PORTAL</small>
-        <h2>Welcome back, {user?.full_name || 'Equipment Owner'}!</h2>
+        <small className="farmer-welcome-kicker">WELCOME TO AGRILEASE</small>
+        <h1>Good day, {user?.full_name || 'Equipment Owner'}!</h1>
         <p>Here is an overview of your equipment listings, rental requests, and business activity.</p>
+        <div className="farmer-welcome-actions"><Link to="/owner/equipment/add" className="farmer-primary-action">Add Equipment</Link><Link to="/owner/bookings" className="farmer-secondary-action">Rental Bookings</Link></div>
       </section>
+
+      <div className="farmer-section-heading"><div><h2>Business Overview</h2><p>A quick summary of your equipment listings and rental requests.</p></div>{loading && <span className="farmer-loading-label">Updating…</span>}</div>
 
       {error && <div className="owner-dashboard-error"><AlertCircle size={18}/><span>{error}</span></div>}
 

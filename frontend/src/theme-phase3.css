@@ -1,0 +1,53 @@
+/* AgriLease theme, Phase 3: colors, gradients and borders only. Imported after theme.css in main.jsx.
+   To undo: remove the `import './theme-phase3.css'` line in main.jsx. */
+
+/* ---------- Admin dashboard ---------- */
+.admin-welcome-banner { background: var(--grad-green); }
+.admin-reference-dashboard .admin-chart-card { border-top: 4px solid var(--leaf); }
+.admin-reference-dashboard .admin-chart-card:nth-child(2) { border-top-color: var(--gold); }
+
+/* ---------- Submit buttons: gradient (same selectors as the shared form polish in styles.css) ---------- */
+.um-panel button[type="submit"],
+.admin-page-content form button[type="submit"],
+.owner-page-content form button[type="submit"],
+.farmer-content form button[type="submit"],
+.booking-form-card button[type="submit"],
+.um-panel button[type="submit"]:hover,
+.admin-page-content form button[type="submit"]:hover,
+.owner-page-content form button[type="submit"]:hover,
+.farmer-content form button[type="submit"]:hover,
+.booking-form-card button[type="submit"]:hover {
+  background: var(--grad-green); border-color: transparent;
+}
+.um-panel button[type="submit"]:hover:not(:disabled),
+.admin-page-content form button[type="submit"]:hover:not(:disabled),
+.owner-page-content form button[type="submit"]:hover:not(:disabled),
+.farmer-content form button[type="submit"]:hover:not(:disabled),
+.booking-form-card button[type="submit"]:hover:not(:disabled) { filter: brightness(1.1); }
+
+/* ---------- Add Equipment (owner form) ---------- */
+.owner-welcome.owner-welcome--banner {
+  justify-content: flex-start; gap: 16px; padding: 22px 26px; border-radius: 16px; background: var(--grad-green);
+}
+.owner-welcome--banner .owner-welcome-icon {
+  flex: none; width: 50px; height: 50px; display: grid; place-items: center; border-radius: 14px;
+  background: var(--grad-gold); color: #2a1d00;
+}
+.owner-welcome.owner-welcome--banner h1 { margin-bottom: 4px; color: #fff; font-size: 30px; }
+.owner-welcome.owner-welcome--banner p { color: #d5e8da; }
+.owner-form-panel { border-top: 4px solid var(--leaf); border-radius: 16px; box-shadow: 0 8px 26px rgba(18, 67, 42, .07); }
+.owner-form-heading h2 { color: var(--forest); font-size: 24px; }
+.owner-form-note { border-left: 4px solid var(--gold); border-radius: 10px; background: linear-gradient(135deg, #fff9e9, #fdf1cf); }
+
+/* ---------- Booking page ---------- */
+.booking-equipment-card, .booking-form-card { border-color: var(--border); border-radius: 16px; }
+.booking-equipment-card { border-top: 4px solid var(--gold); }
+.booking-form-card { border-top: 4px solid var(--leaf); }
+.booking-equipment-card h1, .booking-form-card h2 { color: var(--forest); }
+.booking-form-card h3 { padding-left: 10px; border-left: 3px solid var(--gold); color: var(--forest); font-size: 20px; }
+.booking-image-placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg, #dcebe0, #f3ecd2); color: #5f7a68; font-size: 13px; font-weight: 600;
+}
+.booking-estimate { border: 1px solid #dfe9d2; background: linear-gradient(135deg, #eef7ea, #f7f1dc); }
+.booking-estimate strong { color: var(--forest); font-family: 'Barlow Condensed', sans-serif; font-size: 32px; }

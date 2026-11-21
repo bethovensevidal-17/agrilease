@@ -7,6 +7,7 @@ import {
   ArcElement, Tooltip, Legend, Filler,
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
+import '../logo.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -17,6 +18,22 @@ const primaryLinks = [
   { to: '/farmer/transactions', label: 'Transactions', icon: ReceiptText },
   { to: '/farmer/offline', label: 'Offline Access', icon: WifiOff },
 ];
+
+const FARMER_PAGE_TITLES = {
+  '/farmer': 'Dashboard',
+  '/farmer/equipment': 'Browse Equipment',
+  '/farmer/rentals': 'My Bookings',
+  '/farmer/transactions': 'Transactions',
+  '/farmer/messages': 'Messages',
+  '/farmer/offline': 'Offline Access',
+  '/farmer/notifications': 'Farmer Notifications',
+  '/farmer/profile': 'My Profile',
+};
+function farmerPageTitle(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/farmer';
+  if (/^\/farmer\/equipment\/[^/]+/.test(path)) return 'Equipment Details';
+  return FARMER_PAGE_TITLES[path] || 'Dashboard';
+}
 
 export default function FarmerDashboard() {
   const navigate = useNavigate();
@@ -44,7 +61,7 @@ export default function FarmerDashboard() {
     <div className="farmer-dashboard">
       {menuOpen && <button type="button" className="farmer-backdrop" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)} />}
       <aside className={`farmer-sidebar ${menuOpen ? 'open' : ''}`}>
-        <div className="farmer-brand-wrap"><div className="farmer-brand-mark">A</div><div><strong>AGRILEASE</strong><small>FARMER PORTAL</small></div></div>
+        <div className="farmer-brand-wrap"><div className="farmer-brand-mark has-logo"><img src="/logo-mark.png" alt="" /></div><div><strong>AGRILEASE</strong><small>FARMER PORTAL</small></div></div>
         <p className="farmer-sidebar-label">FARMER MENU</p>
         <nav className="farmer-nav" aria-label="Farmer navigation">
           {primaryLinks.map(({ to, label, end, icon: Icon }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => isActive ? 'farmer-nav-link active' : 'farmer-nav-link'}><Icon size={18} strokeWidth={1.8}/><span>{label}</span></NavLink>)}
@@ -54,7 +71,8 @@ export default function FarmerDashboard() {
       <main className="farmer-main">
         <header className="farmer-topbar portal-topbar">
           <button type="button" className="farmer-menu-button" onClick={() => setMenuOpen(open => !open)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>{menuOpen ? <X size={23}/> : <Menu size={23}/>}</button>
-          <div className="role-header-title"><small>AGRILEASE / FARMER PORTAL</small><strong>My Rental Dashboard</strong><span>Browse equipment and manage your rental activity.</span></div>
+          <h1 className="farmer-page-title">{farmerPageTitle(location.pathname)}</h1>
+          
           <div className="farmer-account"><button className="farmer-header-icon portal-header-icon" title="Messages" aria-label={`Messages${unreadMessages ? `, ${unreadMessages} unread` : ''}`} onClick={() => navigate('/farmer/messages')}><MessageCircle size={19}/>{unreadMessages > 0 && <span className="portal-header-count">{unreadMessages > 99 ? '99+' : unreadMessages}</span>}</button><button className="farmer-header-icon portal-header-icon" title="Notifications" aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`} onClick={() => navigate('/farmer/notifications')}><Bell size={19}/>{unreadNotifications > 0 && <span className="portal-header-count">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}</button><button className="farmer-profile-shortcut" onClick={() => navigate('/farmer/profile')} title="My Profile"><span className="farmer-avatar portal-avatar">{user?.full_name?.charAt(0)?.toUpperCase() || 'F'}</span><span className="farmer-account-copy"><strong>{user?.full_name || 'Farmer'}</strong><small>Farmer Account</small></span></button></div>
         </header>
         <section className="farmer-content"><Outlet /></section>
@@ -75,7 +93,7 @@ function loadLeaflet() {
       const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; link.dataset.agrileaseLeaflet = 'true'; document.head.appendChild(link);
     }
     const script = document.createElement('script'); script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; script.async = true;
-    script.onload = () => resolve(window.L); script.onerror = () => reject(new Error('Hindi ma-load ang map library. I-check ang internet connection.'));
+    script.onload = () => resolve(window.L); script.onerror = () => reject(new Error('Unable to load the map library. Please check your internet connection.'));
     document.body.appendChild(script);
   });
   return window.__agrileaseLeafletPromise;
@@ -150,9 +168,9 @@ export function FarmerOverview() {
     bookings.forEach(row => { const d = new Date(row.created_at || row.createdAt || row.start_at || row.start_date); const found = months.find(m => m.year === d.getFullYear() && m.month === d.getMonth()); if (found && !Number.isNaN(d.getTime())) found.value += 1; });
     return months;
   }, [bookings]);
-  const lineData = { labels: monthly.map(m => m.label), datasets: [{ label: 'Bookings', data: monthly.map(m => m.value), borderColor: '#176b3a', backgroundColor: 'rgba(23,107,58,.12)', fill: true, tension: .35, pointRadius: 4, pointHoverRadius: 6 }] };
+  const lineData = { labels: monthly.map(m => m.label), datasets: [{ label: 'Bookings', data: monthly.map(m => m.value), borderColor: '#2e8b45', backgroundColor: 'rgba(46,139,69,.14)', fill: true, tension: .35, pointRadius: 4, pointHoverRadius: 6 }] };
   const statusLabels = ['Pending', 'Approved', 'Ongoing', 'Completed', 'Rejected', 'Cancelled'];
-  const doughnutData = { labels: statusLabels, datasets: [{ data: [counts.pending, counts.approved, counts.ongoing, counts.completed, counts.rejected, counts.cancelled], backgroundColor: ['#e8a317', '#176b3a', '#2787c7', '#20a36a', '#dc4c4c', '#64748b'], borderWidth: 0, hoverOffset: 5 }] };
+  const doughnutData = { labels: statusLabels, datasets: [{ data: [counts.pending, counts.approved, counts.ongoing, counts.completed, counts.rejected, counts.cancelled], backgroundColor: ['#e0a82e', '#2e8b45', '#2787c7', '#12432a', '#d9534f', '#8a9a8f'], borderWidth: 0, hoverOffset: 5 }] };
   const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, boxWidth: 8 } } } };
   const recent = [...bookings].sort((a,b) => new Date(b.created_at || b.start_at || 0) - new Date(a.created_at || a.start_at || 0)).slice(0, 5);
 

@@ -100,34 +100,34 @@ export default function EquipmentBooking() {
   return <section className="booking-page">
     <Link className="booking-back-button" to={user?.role === 'farmer' ? '/farmer/equipment' : '/browse'}>Back to equipment</Link>
     <div className="booking-detail-grid">
-      <article className="booking-equipment-card">
-        {image ? <img className="booking-equipment-image" src={image} alt={equipment.equipment_name} /> : <div className="booking-image-placeholder">No equipment image</div>}
-        <div className="booking-equipment-info">
-        <h1>{equipment.equipment_name}</h1>
-        <p className="booking-muted">{equipment.category_name || 'Agricultural equipment'} · {equipment.brand_model || 'No brand/model specified'}</p>
-        <p className="booking-description">{equipment.description || 'No description provided.'}</p>
-        <dl className="booking-specs">
-          <div><dt>Condition</dt><dd>{equipment.condition_status || 'Not specified'}</dd></div>
-          <div><dt>Rate</dt><dd>{money.format(Number(equipment.rental_rate))} {rateType}</dd></div>
-          <div><dt>Available quantity</dt><dd>{equipment.available_quantity ?? 1}</dd></div>
-          <div>
-            <dt>Availability Status</dt>
-            <dd>
-              {equipment.availability_status === 'available'
-                ? 'Available'
-                : equipment.availability_status === 'unavailable'
-                  ? 'Unavailable'
-                  : equipment.availability_status || 'Not specified'}
-            </dd>
+      <article className="booking-equipment-card eq-detail-card">
+        <div className="eq-detail-media">
+          {image ? <img className="booking-equipment-image" src={image} alt={equipment.equipment_name} /> : <div className="booking-image-placeholder">No equipment image</div>}
+        </div>
+        <div className="booking-equipment-info eq-detail-info">
+          <div className="eq-detail-head">
+            <div>
+              <h1>{equipment.equipment_name}</h1>
+              <p className="booking-muted">{equipment.category_name || 'Agricultural equipment'} · {equipment.brand_model || 'No brand/model specified'}</p>
+            </div>
+            <span className={`eq-detail-status ${equipment.availability_status === 'available' ? 'is-available' : 'is-unavailable'}`}>
+              {equipment.availability_status === 'available' ? 'Available' : equipment.availability_status === 'unavailable' ? 'Unavailable' : String(equipment.availability_status || 'Not specified').replaceAll('_', ' ')}
+            </span>
           </div>
-          <div><dt>Location</dt><dd>{equipment.location || 'Not specified'}</dd></div>
-          <div><dt>Equipment owner</dt><dd>{equipment.owner_name || 'AgriLease owner'}</dd></div>
-        </dl>
+          <p className="booking-description eq-detail-description">{equipment.description || 'No description provided.'}</p>
+          <dl className="booking-specs eq-detail-grid">
+            <div><dt>Rate</dt><dd>{money.format(Number(equipment.rental_rate))} {rateType}</dd></div>
+            <div><dt>Available quantity</dt><dd>{equipment.available_quantity ?? 1}</dd></div>
+            <div><dt>Condition</dt><dd>{equipment.condition_status || 'Not specified'}</dd></div>
+            <div><dt>Location</dt><dd>{equipment.location || 'Not specified'}</dd></div>
+            <div><dt>Equipment owner</dt><dd>{equipment.owner_name || 'AgriLease owner'}</dd></div>
+            <div><dt>Category</dt><dd>{equipment.category_name || 'Agricultural equipment'}</dd></div>
+          </dl>
         </div>
       </article>
 
       <form className="booking-form-card" onSubmit={submit}>
-        <h2>Rental Booking Form</h2>
+        <div className="booking-form-heading"><h2>Rental Booking Form</h2><p>Choose your rental schedule and payment method, then submit your request.</p></div>
         <div className="booking-columns"><section className="booking-column"><h3>Rental Details</h3>
         <div className="booking-form-grid">
           <label>Start date<input type="date" name="start_date" min={new Date().toLocaleDateString('en-CA')} value={form.start_date} onChange={change} required /></label>
@@ -174,7 +174,7 @@ export default function EquipmentBooking() {
         {error && <p className="booking-error">{error}</p>}
         {message && <p className="booking-success">{message} <Link to="/farmer/rentals">View my bookings</Link></p>}
         {equipment.availability_status && equipment.availability_status !== 'available' && <p className="booking-error">This equipment is currently {String(equipment.availability_status).replaceAll('_', ' ')} and cannot be booked.</p>}
-        <button className="booking-submit" disabled={submitting || (equipment.availability_status && equipment.availability_status !== 'available')}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button>
+        <div className="booking-submit-row"><button className="booking-submit" disabled={submitting || (equipment.availability_status && equipment.availability_status !== 'available')}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button></div>
         {!getToken() && <p className="booking-muted">You must <Link to="/login">log in</Link> as a farmer to submit a booking.</p>}
       </form>
     </div>

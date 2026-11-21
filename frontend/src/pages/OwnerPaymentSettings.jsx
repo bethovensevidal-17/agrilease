@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { assetUrl } from '../api/config';
+import { Smartphone, Landmark, Wallet, Info } from 'lucide-react';
 
 const emptySettings = {
   gcash_number: '',
@@ -71,66 +72,60 @@ export default function OwnerPaymentSettings() {
     }
   }
 
-  if (loading) return <section className="am-page"><p>Loading payment settings...</p></section>;
-
-  const fieldStyle = { display: 'flex', flexDirection: 'column', gap: 7, fontSize: 13, color: '#47534a' };
-  const inputStyle = { width: '100%', minHeight: 42, padding: '10px 12px', border: '1px solid #dce3dc', borderRadius: 7, font: 'inherit', color: '#26332a', background: '#fff' };
+  if (loading) return <section className="ps-page"><p>Loading payment settings...</p></section>;
 
   return (
-    <section className="am-page" style={{ maxWidth: 950, margin: '0 auto' }}>
-      <div className="admin-page-heading">
-        <div>
-          <h1>Payment Settings</h1>
-          <p>Set the payment details Farmers should use when renting your equipment.</p>
-        </div>
-        <button className="um-refresh" type="button" onClick={loadSettings} disabled={busy}>Refresh</button>
-      </div>
-
+    <section className="ps-page">
       {error && <div className="um-message error">{error}</div>}
       {message && <div className="um-message success">{message}</div>}
 
-      <div className="am-warning">
-        Use only payment accounts owned or authorized by your business. These details will be used by Farmers for payments related to your equipment rentals. Do not enter passwords, PINs, or OTPs.
-      </div>
+      <div className="ps-notice"><Info size={18} /><span>Use only payment accounts owned or authorized by your business. These details will be used by Farmers for payments related to your equipment rentals. Do not enter passwords, PINs, or OTPs.</span></div>
 
-      <form className="um-panel" onSubmit={saveSettings} style={{ padding: 20, display: 'grid', gap: 20 }}>
-        <section style={{ display: 'grid', gap: 13 }}>
-          <div><h2 style={{ margin: 0 }}>GCash</h2><p className="am-note">Provide your GCash number, account name, and optional QR code.</p></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-            <label style={fieldStyle}>GCash Number<input style={inputStyle} name="gcash_number" value={form.gcash_number || ''} onChange={updateField} maxLength={30} placeholder="09XXXXXXXXX" /></label>
-            <label style={fieldStyle}>GCash Account Name<input style={inputStyle} name="gcash_account_name" value={form.gcash_account_name || ''} onChange={updateField} maxLength={150} placeholder="Account holder name" /></label>
+      <form className="ps-form" onSubmit={saveSettings}>
+        <section className="ps-card">
+          <header className="ps-card-head">
+            <span className="ps-icon"><Smartphone size={22} strokeWidth={1.8} /></span>
+            <div><h2>GCash</h2><p>Provide your GCash number, account name, and optional QR code.</p></div>
+          </header>
+          <div className="ps-grid ps-grid-2">
+            <label>GCash Number<input name="gcash_number" value={form.gcash_number || ''} onChange={updateField} maxLength={30} placeholder="09XXXXXXXXX" /></label>
+            <label>GCash Account Name<input name="gcash_account_name" value={form.gcash_account_name || ''} onChange={updateField} maxLength={150} placeholder="Account holder name" /></label>
           </div>
-          <label style={fieldStyle}>GCash QR Image (JPG, PNG, WEBP; max 5 MB)
-            <input id="owner-gcash-qr" style={inputStyle} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setQrFile(e.target.files?.[0] || null)} />
-          </label>
-          {form.gcash_qr_url && !qrFile && <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <img src={assetUrl(form.gcash_qr_url)} alt="Saved GCash QR code" style={{ width: 150, height: 150, objectFit: 'contain', border: '1px solid #e1e7e1', borderRadius: 8, padding: 6 }} />
-            <span className="am-note">Current GCash QR code</span>
-          </div>}
-          {qrFile && <p className="am-note">Selected: {qrFile.name}</p>}
-        </section>
-
-        <hr style={{ width: '100%', border: 0, borderTop: '1px solid #edf0ed' }} />
-
-        <section style={{ display: 'grid', gap: 13 }}>
-          <div><h2 style={{ margin: 0 }}>Bank Transfer</h2><p className="am-note">Enter the bank account where rental payments should be sent.</p></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-            <label style={fieldStyle}>Bank Name<input style={inputStyle} name="bank_name" value={form.bank_name || ''} onChange={updateField} maxLength={100} placeholder="Bank name" /></label>
-            <label style={fieldStyle}>Account Name<input style={inputStyle} name="bank_account_name" value={form.bank_account_name || ''} onChange={updateField} maxLength={150} placeholder="Account holder name" /></label>
-            <label style={fieldStyle}>Account Number<input style={inputStyle} name="bank_account_number" value={form.bank_account_number || ''} onChange={updateField} maxLength={50} placeholder="Bank account number" /></label>
+          <div className="ps-qr-row">
+            <label className="ps-qr-upload">GCash QR Image (JPG, PNG, WEBP; max 5 MB)
+              <input id="owner-gcash-qr" type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setQrFile(e.target.files?.[0] || null)} />
+              {qrFile && <small>Selected: {qrFile.name}</small>}
+            </label>
+            {form.gcash_qr_url && !qrFile && <figure className="ps-qr-preview">
+              <img src={assetUrl(form.gcash_qr_url)} alt="Saved GCash QR code" />
+              <figcaption>Current GCash QR code</figcaption>
+            </figure>}
           </div>
         </section>
 
-        <hr style={{ width: '100%', border: 0, borderTop: '1px solid #edf0ed' }} />
+        <section className="ps-card">
+          <header className="ps-card-head">
+            <span className="ps-icon"><Landmark size={22} strokeWidth={1.8} /></span>
+            <div><h2>Bank Transfer</h2><p>Enter the bank account where rental payments should be sent.</p></div>
+          </header>
+          <div className="ps-grid ps-grid-3">
+            <label>Bank Name<input name="bank_name" value={form.bank_name || ''} onChange={updateField} maxLength={100} placeholder="Bank name" /></label>
+            <label>Account Name<input name="bank_account_name" value={form.bank_account_name || ''} onChange={updateField} maxLength={150} placeholder="Account holder name" /></label>
+            <label>Account Number<input name="bank_account_number" value={form.bank_account_number || ''} onChange={updateField} maxLength={50} placeholder="Bank account number" /></label>
+          </div>
+        </section>
 
-        <section style={{ display: 'grid', gap: 10 }}>
-          <div><h2 style={{ margin: 0 }}>Other Payment Method</h2><p className="am-note">Add instructions for another payment method you accept.</p></div>
-          <label style={fieldStyle}>Payment Instructions
-            <textarea style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }} name="other_payment_instructions" value={form.other_payment_instructions || ''} onChange={updateField} maxLength={5000} placeholder="Enter payment instructions..." />
+        <section className="ps-card">
+          <header className="ps-card-head">
+            <span className="ps-icon"><Wallet size={22} strokeWidth={1.8} /></span>
+            <div><h2>Other Payment Method</h2><p>Add instructions for another payment method you accept.</p></div>
+          </header>
+          <label className="ps-field">Payment Instructions
+            <textarea name="other_payment_instructions" value={form.other_payment_instructions || ''} onChange={updateField} maxLength={5000} placeholder="Enter payment instructions..." />
           </label>
         </section>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <div className="ps-actions">
           <button className="um-refresh" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save Payment Settings'}</button>
         </div>
       </form>

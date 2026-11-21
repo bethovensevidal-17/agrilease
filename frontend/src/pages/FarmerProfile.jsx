@@ -42,7 +42,7 @@ export default function FarmerProfile() {
           <label style={field}>Barangay<input style={input} name="barangay" value={form.barangay || ''} onChange={change} maxLength={100}/></label>
         </div>
         <label style={field}>Complete Address<textarea style={{ ...input, minHeight: 90, resize: 'vertical' }} name="address" value={form.address || ''} onChange={change} maxLength={1000}/></label>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="um-refresh" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button></div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="um-refresh um-save-button" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button></div>
       </>}
     </form>
   </section>;

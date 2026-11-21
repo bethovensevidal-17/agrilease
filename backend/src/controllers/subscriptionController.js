@@ -90,10 +90,10 @@ async function requestPlan(req, res, next) {
   const conn = await db.getConnection();
   try {
     const planId = Number(req.body.plan_id);
-    if (!Number.isInteger(planId) || planId < 1) return res.status(400).json({ error: 'Pumili ng valid subscription plan.' });
+    if (!Number.isInteger(planId) || planId < 1) return res.status(400).json({ error: 'Select a valid subscription plan.' });
     await conn.beginTransaction();
     const [[plan]] = await conn.execute('SELECT * FROM subscription_plans WHERE id = ? AND is_active = 1 LIMIT 1', [planId]);
-    if (!plan) { await conn.rollback(); return res.status(404).json({ error: 'Hindi available ang subscription plan.' }); }
+    if (!plan) { await conn.rollback(); return res.status(404).json({ error: 'This subscription plan is not available.' }); }
     const [[owner]] = await conn.execute('SELECT trial_used FROM provider_profiles WHERE user_id = ? FOR UPDATE', [req.user.id]);
     if (!owner) { await conn.rollback(); return res.status(404).json({ error: 'Owner profile not found.' }); }
 
@@ -110,16 +110,16 @@ async function requestPlan(req, res, next) {
     if (pendingRequests.length) {
       await conn.rollback();
       return res.status(409).json({
-        error: 'May pending subscription request ka pa. Hintayin muna ang Admin verification bago magsumite ulit.'
+        error: 'You still have a pending subscription request. Please wait for Admin verification before submitting again.'
       });
     }
 
     const isTrial = Number(plan.price) === 0;
     if (isTrial) {
-      if (owner.trial_used) { await conn.rollback(); return res.status(409).json({ error: 'Nagagamit na ang iyong one-time free trial.' }); }
+      if (owner.trial_used) { await conn.rollback(); return res.status(409).json({ error: 'Your one-time free trial has already been used.' }); }
       const trialDays = Number(plan.duration_days) || 7;
       const [active] = await conn.execute("SELECT id FROM subscriptions WHERE owner_id = ? AND status = 'active' AND end_date >= NOW() LIMIT 1", [req.user.id]);
-      if (active.length) { await conn.rollback(); return res.status(409).json({ error: 'May active subscription ka na.' }); }
+      if (active.length) { await conn.rollback(); return res.status(409).json({ error: 'You already have an active subscription.' }); }
       await conn.execute(
         "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))",
         [req.user.id, planId, trialDays]
@@ -130,11 +130,11 @@ async function requestPlan(req, res, next) {
     }
 
     const method = String(req.body.payment_method || '').toLowerCase();
-    if (!['gcash', 'bank_transfer', 'other'].includes(method)) { await conn.rollback(); return res.status(400).json({ error: 'Pumili ng GCash, Bank Transfer, o Other para sa subscription payment.' }); }
+    if (!['gcash', 'bank_transfer', 'other'].includes(method)) { await conn.rollback(); return res.status(400).json({ error: 'Select GCash, Bank Transfer, or Other for the subscription payment.' }); }
     const reference = String(req.body.reference_number || '').trim();
     if (reference.length > 100) { await conn.rollback(); return res.status(400).json({ error: 'Payment reference is too long.' }); }
     const proof = req.file ? `payment-proofs/${req.file.filename}` : null;
-    if (!proof) { await conn.rollback(); return res.status(400).json({ error: 'Kailangan ang proof of payment.' }); }
+    if (!proof) { await conn.rollback(); return res.status(400).json({ error: 'Proof of payment is required.' }); }
 
     const [sub] = await conn.execute(
       "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'paid', 'pending', NULL, NULL)",
@@ -333,7 +333,7 @@ async function adminCreatePlan(req, res, next) {
     const { value, error } = cleanPlan(req.body || {});
     if (error) return res.status(400).json({ success: false, message: error });
     const [dupe] = await db.execute('SELECT id FROM subscription_plans WHERE LOWER(plan_name) = LOWER(?) LIMIT 1', [value.name]);
-    if (dupe.length) return res.status(409).json({ success: false, message: 'May plan na may ganitong pangalan.' });
+    if (dupe.length) return res.status(409).json({ success: false, message: 'A plan with this name already exists.' });
     const [result] = await db.execute(
       'INSERT INTO subscription_plans (plan_name, price, duration_days, equipment_limit, description, is_active) VALUES (?, ?, ?, ?, ?, ?)',
       [value.name, value.price, value.days, value.limit, value.description, value.isActive]
@@ -349,7 +349,7 @@ async function adminUpdatePlan(req, res, next) {
     const { value, error } = cleanPlan(req.body || {});
     if (error) return res.status(400).json({ success: false, message: error });
     const [dupe] = await db.execute('SELECT id FROM subscription_plans WHERE LOWER(plan_name) = LOWER(?) AND id <> ? LIMIT 1', [value.name, id]);
-    if (dupe.length) return res.status(409).json({ success: false, message: 'May ibang plan na may ganitong pangalan.' });
+    if (dupe.length) return res.status(409).json({ success: false, message: 'Another plan with this name already exists.' });
     const [result] = await db.execute(
       'UPDATE subscription_plans SET plan_name = ?, price = ?, duration_days = ?, equipment_limit = ?, description = ?, is_active = ? WHERE id = ?',
       [value.name, value.price, value.days, value.limit, value.description, value.isActive, id]
@@ -368,8 +368,8 @@ async function adminCreateSubscription(req, res, next) {
     const ownerId = Number(req.body.owner_id);
     const planId = Number(req.body.plan_id);
     const status = String(req.body.status || 'active');
-    if (!Number.isInteger(ownerId) || ownerId < 1) return res.status(400).json({ success: false, message: 'Pumili ng owner.' });
-    if (!Number.isInteger(planId) || planId < 1) return res.status(400).json({ success: false, message: 'Pumili ng plan.' });
+    if (!Number.isInteger(ownerId) || ownerId < 1) return res.status(400).json({ success: false, message: 'Select an owner.' });
+    if (!Number.isInteger(planId) || planId < 1) return res.status(400).json({ success: false, message: 'Select a plan.' });
     if (!['pending', 'active', 'expired', 'cancelled'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
     const [[owner]] = await db.execute("SELECT id, status FROM users WHERE id = ? AND role = 'owner' LIMIT 1", [ownerId]);
     if (!owner) return res.status(404).json({ success: false, message: 'Owner not found.' });

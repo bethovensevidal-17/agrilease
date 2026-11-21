@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { Tractor, ClipboardList, Hourglass, Check } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,10 +14,8 @@ import {
   Filler,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import StatCard from '../components/admin/StatCard';
-import ChartCard from '../components/admin/ChartCard';
 import Pagination from '../components/admin/Pagination';
-import { Activity, UserRound, Clock3 } from 'lucide-react';
+import { Activity, UserRound, Clock3, CalendarDays, Package } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Tooltip, Legend, Filler);
 
@@ -56,7 +54,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     load();
-    const timer = setInterval(load, 60000);
+    const timer = setInterval(load, 15000);
     return () => clearInterval(timer);
   }, [load]);
 
@@ -77,59 +75,47 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="admin-dashboard-page admin-reference-dashboard">
-      <div className="admin-reference-heading">
-        <div>
-          <div className="admin-breadcrumb">AGRILEASE / ADMINISTRATION</div>
-          <h1>Dashboard Overview</h1>
-          <p>Monitor your agricultural rental operations.</p>
-        </div>
-        <span className="admin-today">{new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-      </div>
-
-      <section className="admin-welcome-banner">
-        <small>ADMINISTRATION PORTAL</small>
-        <h2>Welcome back, AgriLease Admin!</h2>
-        <p>Here's an overview of your AgriLease rental operations and current system activities.</p>
+    <div className="owner-page owner-dashboard admin-dashboard-page">
+      <section className="role-welcome-banner owner-welcome-banner">
+        <small className="farmer-welcome-kicker">ADMINISTRATION PORTAL</small>
+        <h1>Welcome back, AgriLease Admin!</h1>
+        <p>Here is an overview of your AgriLease rental operations and current system activities.</p>
+        <div className="farmer-welcome-actions"><Link to="/admin/owners" className="farmer-primary-action">Owner Verification</Link><Link to="/admin/equipment" className="farmer-secondary-action">Equipment Management</Link></div>
       </section>
 
+      <div className="farmer-section-heading"><div><h2>System Overview</h2><p>A quick summary of equipment records and reservations.</p></div>{loading && !stats && <span className="farmer-loading-label">Updating…</span>}</div>
+
       {error && <div className="admin-error">{error}<button onClick={load}>Retry</button></div>}
-      {loading && !stats ? <div className="admin-loading">Loading dashboard statistics...</div> : (
-        <>
-          <h2 className="admin-section-heading">System Overview</h2>
-          <p className="admin-section-description">Current equipment and reservation statistics.</p>
-          <div className="admin-summary-grid admin-four-stats">
-            <StatCard title="Total Equipment" value={s.total_equipment} subtitle="Equipment records" icon={Tractor} />
-            <StatCard title="Total Reservations" value={s.total_rentals} subtitle="All booking requests" icon={ClipboardList} color="blue" />
-            <StatCard title="Pending Reservations" value={s.pending_rentals} subtitle="Awaiting a decision" icon={Hourglass} color="orange" />
-            <StatCard title="Approved Reservations" value={s.approved_rentals} subtitle="Approved requests" icon={Check} color="purple" />
-          </div>
 
-          <div className="admin-reference-chart-grid">
-            <ChartCard title="Booking Activity" subtitle="Bookings created over the last six months">
-              <div className="admin-reference-chart">{monthly.length ? <Bar data={bookingChart} options={{ ...chartOptions, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }} /> : <div className="admin-chart-empty">No booking activity data available yet.</div>}</div>
-            </ChartCard>
-            <ChartCard title="Booking Status" subtitle="Distribution of booking records">
-              <div className="admin-reference-chart admin-doughnut">{<Doughnut data={statusChart} options={{ ...chartOptions, cutout: '65%' }} />}</div>
-            </ChartCard>
-          </div>
+      <section className="owner-kpi-strip owner-kpi-cards admin-kpi-cards" aria-label="System summary">
+        <div><span>Total Equipment</span><strong>{stats ? Number(s.total_equipment || 0).toLocaleString() : '—'}</strong><small>Equipment records</small></div>
+        <div><span>Total Reservations</span><strong>{stats ? Number(s.total_rentals || 0).toLocaleString() : '—'}</strong><small>All booking requests</small></div>
+        <div><span>Pending Reservations</span><strong className="owner-kpi-warning">{stats ? Number(s.pending_rentals || 0).toLocaleString() : '—'}</strong><small>Awaiting a decision</small></div>
+        <div><span>Approved Reservations</span><strong>{stats ? Number(s.approved_rentals || 0).toLocaleString() : '—'}</strong><small>Approved requests</small></div>
+      </section>
 
-          <section className="admin-activity-panel" aria-labelledby="admin-recent-activity-title">
-            <div className="admin-activity-panel-heading">
-              <div><h2 id="admin-recent-activity-title">Recent System Activity</h2><p>Latest account registrations and system events.</p></div>
-              <Activity size={20} aria-hidden="true" />
-            </div>
-            {visibleActivity.length ? <div className="admin-activity-list">
-              {visibleActivity.map((item, index) => <article className="admin-activity-row" key={item.id ?? `${item.created_at}-${index}`}>
-                <span className="admin-activity-icon"><UserRound size={16}/></span>
-                <div className="admin-activity-copy"><strong>{item.actor_name || 'System'}</strong><span>{item.action || 'System event'}{item.actor_role ? ` · ${item.actor_role}` : ''}</span></div>
-                <time><Clock3 size={12}/> {item.created_at ? new Date(item.created_at).toLocaleString('en-PH') : '—'}</time>
-              </article>)}
-            </div> : <div className="admin-activity-empty">No activity records are available yet.</div>}
-            <Pagination totalItems={activity.length} itemsPerPage={activityPageSize} currentPage={activityPage} onPageChange={setActivityPage}/>
-          </section>
-        </>
-      )}
+      <section className="owner-dashboard-grid">
+        <article className="owner-dashboard-panel owner-chart-panel">
+          <div className="owner-panel-heading"><div><h2>Booking Activity</h2><p>Bookings created over the last six months</p></div><span className="owner-panel-icon"><CalendarDays size={18} /></span></div>
+          <div className="owner-chart-area">{loading && !stats ? <div className="owner-chart-empty">Loading chart…</div> : monthly.length ? <Bar data={bookingChart} options={{ ...chartOptions, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf1ed' } }, x: { grid: { display: false } } } }} /> : <div className="owner-chart-empty">No booking activity data available yet.</div>}</div>
+        </article>
+        <article className="owner-dashboard-panel owner-chart-panel">
+          <div className="owner-panel-heading"><div><h2>Booking Status</h2><p>Distribution of booking records</p></div><span className="owner-panel-icon"><Package size={18} /></span></div>
+          <div className="owner-doughnut-area">{loading && !stats ? <div className="owner-chart-empty">Loading chart…</div> : <Doughnut data={statusChart} options={{ ...chartOptions, cutout: '66%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 14 } } } }} />}</div>
+        </article>
+      </section>
+
+      <section className="owner-dashboard-panel owner-recent-panel" aria-labelledby="admin-recent-activity-title">
+        <div className="owner-panel-heading"><div><h2 id="admin-recent-activity-title">Recent System Activity</h2><p>Latest account registrations and system events</p></div><span className="owner-panel-icon"><Activity size={18} aria-hidden="true" /></span></div>
+        {visibleActivity.length ? <div className="admin-activity-list">
+          {visibleActivity.map((item, index) => <article className="admin-activity-row" key={item.id ?? `${item.created_at}-${index}`}>
+            <span className="admin-activity-icon"><UserRound size={16}/></span>
+            <div className="admin-activity-copy"><strong>{item.actor_name || 'System'}</strong><span>{item.action || 'System event'}{item.actor_role ? ` · ${item.actor_role}` : ''}</span></div>
+            <time><Clock3 size={12}/> {item.created_at ? new Date(item.created_at).toLocaleString('en-PH') : '—'}</time>
+          </article>)}
+        </div> : <div className="owner-empty-state"><Activity size={26}/><strong>No activity yet</strong><p>System events will appear here.</p></div>}
+        <Pagination totalItems={activity.length} itemsPerPage={activityPageSize} currentPage={activityPage} onPageChange={setActivityPage}/>
+      </section>
     </div>
   );
 }

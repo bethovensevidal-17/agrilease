@@ -46,7 +46,7 @@ export default function PendingSyncList({ kind, onSynced }) {
       <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
         {waiting.map(item => <li key={item.id}>{item.label || 'Saved action'} — {item.status === 'auth' ? 'sign in again to sync' : 'waiting for internet'}</li>)}
       </ul>
-      <small>Naka-save sa device na ito. Awtomatikong ipapadala kapag may internet na.</small>
+      <small>Saved on this device. It will be sent automatically once you are back online.</small>
     </div>}
     {failed.length > 0 && <div style={failedStyle} role="alert">
       <strong>{failed.length} item(s) were rejected by the server</strong>

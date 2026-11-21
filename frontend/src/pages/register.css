@@ -1,0 +1,19 @@
+/* Register page layout: wider card, centered like the login page, shorter so it fits on one screen.
+   Selectors are intentionally a bit more specific than styles.css so they win regardless of CSS load order. */
+form.auth-card.auth-card--register { max-width: 640px; }
+
+@media (min-width: 640px) {
+  main.auth-container.auth-container--register { align-items: center; padding-top: 28px; padding-bottom: 28px; }
+  form.auth-card.auth-card--register { padding: 24px 40px 28px; }
+}
+
+.auth-card--register .auth-logo { margin-bottom: 4px; }
+.auth-card--register .auth-heading { margin-bottom: 8px; }
+.auth-card--register .auth-fields { gap: 14px; margin-top: 6px; }
+.auth-card--register .auth-grid { gap: 14px 16px; }
+
+/* Password checklist: full width under the two password fields, two columns */
+.auth-card--register .pw-checklist { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; margin: -2px 0 0; }
+@media (max-width: 479px) {
+  .auth-card--register .pw-checklist { grid-template-columns: 1fr; }
+}

@@ -37,15 +37,15 @@ export default function BrowseEquipment() {
       <input
         className="search"
         type="search"
-        placeholder="Hanapin ang equipment..."
+        placeholder="Search equipment..."
         value={q}
         onChange={(e) => { setQ(e.target.value); setPage(1); }}
       />
 
       {error && <p className="error">{error}</p>}
-      {loading && <p className="muted">Naglo-load...</p>}
+      {loading && <p className="muted">Loading...</p>}
       {!loading && !error && result.data.length === 0 && (
-        <p className="muted">Walang nahanap na equipment.</p>
+        <p className="muted">No equipment found.</p>
       )}
 
       <div className="grid">

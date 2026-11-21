@@ -54,7 +54,7 @@ async function register(req, res) {
 
       return res.status(400).json({
         success: false,
-        message: 'Full name, email, password, at role ay required.'
+        message: 'Full name, email, password, and role are required.'
       });
     }
 

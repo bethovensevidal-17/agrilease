@@ -7,13 +7,13 @@ const db = require('../db');
 async function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Kailangan mag-login.' });
+  if (!token) return res.status(401).json({ error: 'Please log in.' });
 
   let payload;
   try {
     payload = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
-    return res.status(401).json({ error: 'Expired o hindi valid ang session.' });
+    return res.status(401).json({ error: 'Your session has expired or is invalid.' });
   }
 
   try {
@@ -23,7 +23,7 @@ async function requireAuth(req, res, next) {
         if (error.code !== 'ER_BAD_FIELD_ERROR') throw error;
         return db.execute('SELECT status, NULL AS suspension_reason FROM users WHERE id = ? LIMIT 1', [payload.id]);
       });
-    if (!rows.length) return res.status(401).json({ error: 'Hindi na umiiral ang account na ito.' });
+    if (!rows.length) return res.status(401).json({ error: 'This account no longer exists.' });
     if (rows[0].status === 'suspended') {
       const reason = rows[0].suspension_reason || 'Your account has been suspended.';
       return res.status(403).json({ success: false, suspended: true, error: reason, message: reason });
@@ -56,7 +56,7 @@ async function requireAuth(req, res, next) {
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Hindi ka pinapayagan sa gawaing ito.' });
+      return res.status(403).json({ error: 'You are not allowed to perform this action.' });
     }
     next();
   };

@@ -1,0 +1,228 @@
+/* AgriLease theme: Farmer portal polish (Phase 4).
+   Colors, spacing, borders and shadows only. Everything is scoped to the farmer portal,
+   so the owner and admin pages are not affected. Imported last in main.jsx.
+   To undo: remove the `import './theme-farmer.css'` line in main.jsx. */
+
+/* ---------- 1. Same width and alignment on every farmer page ---------- */
+.farmer-content > *:not([hidden]) {
+  width: 100%; max-width: 1360px; margin-left: auto; margin-right: auto; padding-left: 0; padding-right: 0; box-sizing: border-box;
+}
+
+/* ---------- 2. Header: stays on top while scrolling ---------- */
+/* The global `html, body { overflow-x: hidden }` rule turns body into a scroll container and stops
+   position: sticky from working. `clip` hides the sideways overflow without doing that. */
+html:has(.farmer-dashboard), body:has(.farmer-dashboard) { overflow-x: clip; }
+.farmer-topbar { position: sticky; top: 0; z-index: 1100; min-height: 68px; padding: 10px 28px; box-shadow: 0 1px 0 #e5e9e4, 0 10px 26px rgba(18, 67, 42, .045); }
+.farmer-topbar .farmer-account { margin-left: auto; }
+.farmer-header-icon { transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+.farmer-header-icon:hover { background: #eef7ef; border-color: #bcd8c3; transform: translateY(-1px); }
+@media (max-width: 760px) {
+  .farmer-topbar { position: sticky; z-index: 500; min-height: 62px; padding: 8px 14px; }
+}
+
+/* ---------- 3. Page titles live in the header now ---------- */
+.farmer-topbar .farmer-page-title {
+  margin: 0; color: var(--forest); font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 28px; font-weight: 700; line-height: 1.1; letter-spacing: .2px;
+}
+@media (max-width: 760px) { .farmer-topbar .farmer-page-title { font-size: 22px; } }
+.farmer-content :is(.admin-page-heading, .mb-heading, .messages-page > header, .offline-settings-header) h1,
+.farmer-content > h1,
+.farmer-content > section > h1 { display: none; }
+/* Short descriptions under the old titles are removed too; the buttons (Refresh, Mark All Read) stay on the right. */
+.farmer-content :is(.admin-page-heading, .mb-heading) p,
+.farmer-content .offline-intro,
+.farmer-content .offline-eyebrow { display: none; }
+.farmer-content :is(.admin-page-heading, .mb-heading):not(:has(button, a)) { display: none; }
+.farmer-content :is(.admin-page-heading, .mb-heading) { margin-bottom: 18px; }
+.farmer-content .messages-page > header { margin-bottom: 10px; }
+
+/* ---------- 4. Cards ---------- */
+.farmer-content :is(.um-panel, .mb-filters, .mb-table-wrap, .farmer-panel, .messages-shell, .farmer-stat-card, .offline-summary-card, .offline-feature-section, .offline-howto) {
+  border: 1px solid #e1e8dd; border-radius: 16px; background: #fff; box-shadow: 0 6px 22px rgba(18, 67, 42, .05);
+}
+.farmer-content :is(.um-panel, .mb-table-wrap, .farmer-recent-panel) { overflow: hidden; }
+.farmer-content .um-panel-heading { padding: 22px 28px; background: linear-gradient(180deg, #fbfdf9, #fff); }
+.farmer-content .um-panel-heading h2,
+.farmer-content .farmer-section-heading h2,
+.farmer-content .farmer-panel-heading h2,
+.farmer-content .offline-section-heading h2 { color: var(--forest); font-size: 24px; }
+.farmer-content .um-panel-heading p,
+.farmer-content .um-total { color: #6a7a6f; font-size: 14px; }
+.farmer-content .farmer-panel-heading > a { color: var(--leaf); font-weight: 800; }
+
+/* ---------- 5. Buttons: one primary, one secondary ---------- */
+.farmer-content :is(.mb-btn:not(.mb-btn-secondary):not(.mb-btn-danger), .am-button.approve, .um-save-button, .offline-save-button, .offline-queue-actions button, .messages-compose button) {
+  border: 1.5px solid transparent; background: var(--grad-green); color: #fff; box-shadow: 0 6px 14px rgba(18, 67, 42, .2);
+  transition: filter .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.farmer-content :is(.mb-btn:not(.mb-btn-secondary):not(.mb-btn-danger), .am-button.approve, .um-save-button, .offline-save-button, .offline-queue-actions button, .messages-compose button):hover:not(:disabled) {
+  background: var(--grad-green); filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 9px 18px rgba(18, 67, 42, .25);
+}
+.farmer-content :is(.mb-btn, .am-button, .um-save-button, .offline-save-button, .messages-compose button):disabled { opacity: .5; box-shadow: none; transform: none; }
+
+.farmer-content :is(.um-refresh:not(.um-save-button), .mb-btn-secondary, .am-button.neutral, .offline-back-link, .pager button) {
+  border: 1.5px solid #2e8b45; background: #fff; color: var(--forest); box-shadow: none;
+  transition: background .15s ease, transform .15s ease;
+}
+.farmer-content :is(.um-refresh:not(.um-save-button), .mb-btn-secondary, .am-button.neutral, .offline-back-link, .pager button):hover:not(:disabled) {
+  background: #eef7ef; color: var(--forest); transform: translateY(-1px);
+}
+
+/* ---------- 6. Search boxes, filters and form fields ---------- */
+.farmer-content :is(.mb-filter input, .mb-filter select, .tx-filters input, .tx-filters select, .search, .messages-compose input, .um-panel form input, .um-panel form select, .um-panel form textarea) {
+  border: 1.5px solid #d6e0d3; border-radius: 12px; background-color: #fff; font-size: 14px; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.farmer-content :is(.mb-filter input, .mb-filter select, .tx-filters input, .tx-filters select, .search, .messages-compose input, .um-panel form input, .um-panel form select, .um-panel form textarea):focus {
+  outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14);
+}
+.farmer-content :is(.mb-filter input, .mb-filter select, .tx-filters input, .tx-filters select) { height: 46px; }
+.farmer-content .mb-filters { padding: 18px 20px; }
+.farmer-content .mb-filter label, .farmer-content .mb-filter > span, .farmer-content .um-panel form label { color: #2f5a3c; font-size: 12px; font-weight: 700; }
+.farmer-content > section > .search {
+  max-width: 1360px; height: 52px; margin-bottom: 24px; padding: 0 16px 0 48px; font-size: 15px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232e8b45' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 16px center;
+}
+.farmer-content .um-panel form input, .farmer-content .um-panel form select { height: 48px; }
+.farmer-content .um-message { padding: 12px 16px; border-radius: 12px; font-size: 14px; }
+.farmer-content .mb-count { color: #5f6f65; font-size: 14px; }
+
+/* ---------- 7. Tables ---------- */
+@media (min-width: 801px) {
+  .farmer-content :is(.mb-table, .um-table, .farmer-recent-table) { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .farmer-content :is(.mb-table, .um-table, .farmer-recent-table) thead th {
+    padding: 14px 20px; border-bottom: 1px solid #dbe6d8; background: #eef5ec; color: #2f5a3c;
+    font-size: 11px; font-weight: 800; letter-spacing: .7px; text-align: left; text-transform: uppercase; white-space: nowrap;
+  }
+  .farmer-content :is(.mb-table, .um-table, .farmer-recent-table) tbody td {
+    padding: 16px 20px; border-top: 1px solid #edf2ea; color: #2b3a30; font-size: 14px; vertical-align: middle;
+  }
+  .farmer-content :is(.mb-table, .um-table, .farmer-recent-table) tbody tr:first-child td { border-top: 0; }
+  .farmer-content :is(.mb-table, .um-table, .farmer-recent-table) tbody tr { transition: background .12s ease; }
+  .farmer-content :is(.mb-table, .um-table, .farmer-recent-table) tbody tr:hover td { background: #f8fbf6; }
+}
+.farmer-content :is(.mb-table, .um-table) small, .farmer-content .mb-muted { color: #7a897f; }
+
+/* ---------- 8. Status pills: same look and colors everywhere ---------- */
+.farmer-content :is(.rental-status, .am-pill, .farmer-status-pill) {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px;
+  background: #eef1ec; color: #55635a; font-size: 12px; font-weight: 700; text-transform: capitalize;
+}
+.farmer-content :is(.rental-status, .am-pill, .farmer-status-pill)::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.farmer-content :is(.rental-status.pending, .farmer-status-pill.status-pending, .am-pill.pay-pending, .am-pill.pay-unpaid) { background: #fff3d4; color: #8a5a00; }
+.farmer-content :is(.rental-status.approved, .farmer-status-pill.status-approved, .am-pill.pay-paid, .am-pill.pay-verified) { background: #e1f3e6; color: #176b3a; }
+.farmer-content :is(.rental-status.completed, .farmer-status-pill.status-completed) { background: #d6e9dc; color: #12432a; }
+.farmer-content :is(.rental-status.ongoing, .farmer-status-pill.status-ongoing) { background: #e0eefa; color: #1d5f95; }
+.farmer-content :is(.rental-status.rejected, .farmer-status-pill.status-rejected, .am-pill.pay-failed, .am-pill.pay-rejected) { background: #fde4e1; color: #a52a22; }
+.farmer-content :is(.rental-status.cancelled, .farmer-status-pill.status-cancelled) { background: #eceeed; color: #5f6a63; }
+
+/* ---------- 9. Browse equipment cards ---------- */
+.farmer-content .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 24px; }
+.farmer-content .card {
+  border: 1px solid #e1e8dd; border-radius: 18px; box-shadow: 0 6px 20px rgba(18, 67, 42, .06);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.farmer-content .card:hover { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(18, 67, 42, .14); }
+.farmer-content .card-img { height: 190px; overflow: hidden; background: linear-gradient(135deg, #dcebe0, #f3ecd2); }
+.farmer-content .card-img img { transition: transform .35s ease; }
+.farmer-content .card:hover .card-img img { transform: scale(1.05); }
+.farmer-content .card-body { padding: 18px 18px 20px; }
+.farmer-content .card-body h3 { font-size: 26px; line-height: 1.1; }
+.farmer-content .card-body h3 a, .farmer-content .card-body h3 a:visited { color: var(--forest); text-decoration: none; }
+.farmer-content .card-body h3 a:hover { color: var(--leaf); }
+.farmer-content .card .price { color: var(--forest); font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-size: 30px; line-height: 1; }
+.farmer-content .card .price small { color: #5f6f65; font-family: 'Source Sans 3', Inter, sans-serif; font-size: 14px; font-weight: 600; }
+.farmer-content .card .equipment-view-link { margin-top: 14px; }
+
+/* ---------- 10. Messages ---------- */
+.farmer-content .messages-shell { border-radius: 18px; }
+.farmer-content .messages-contacts { border-right: 1px solid #e1e8dd; background: #f6faf4; }
+.farmer-content .messages-contacts h2 { color: var(--forest); font-size: 22px; }
+.farmer-content .messages-contacts button { border: 1px solid transparent; border-radius: 12px; transition: background .15s ease; }
+.farmer-content .messages-contacts button.active { border-color: #cfe3d3; background: #e6f2e8; }
+.farmer-content .messages-thread-head { padding: 18px 24px; background: #fff; }
+.farmer-content .messages-thread-head strong { color: var(--forest); font-size: 18px; }
+.farmer-content .messages-list { padding: 24px; background: linear-gradient(180deg, #f8fbf6, #f2f7f0); gap: 12px; }
+.farmer-content .message-bubble { padding: 12px 16px; border: 1px solid #e3eae0; border-radius: 18px 18px 18px 6px; background: #fff; box-shadow: 0 2px 8px rgba(18, 67, 42, .06); }
+.farmer-content .message-bubble.mine { border-color: transparent; border-radius: 18px 18px 6px 18px; background: var(--grad-green); color: #fff; }
+.farmer-content .messages-compose { padding: 16px 20px; background: #fff; }
+.farmer-content .messages-compose input { height: 46px; padding: 0 18px; border-radius: 999px; }
+.farmer-content .messages-compose button { height: 46px; padding: 0 26px; border-radius: 999px; }
+
+/* ---------- 11. Notifications ---------- */
+.farmer-content .am-notification { padding: 18px 28px; border-left: 4px solid transparent; transition: background .15s ease; }
+.farmer-content .am-notification.unread { border-left-color: var(--gold); background: linear-gradient(90deg, #fff8e4, #fff 45%); }
+.farmer-content .am-notification strong { color: var(--forest); font-size: 16px; }
+.farmer-content .am-notification.notification-clickable:hover { background: #f6faf4; }
+
+/* ---------- 12. Offline access ---------- */
+.farmer-content .offline-connection.is-online { background: #e3f4e8; color: #176b3a; }
+.farmer-content .offline-summary-grid { gap: 14px; }
+.farmer-content :is(.offline-summary-card, .farmer-stat-card) { display: grid; gap: 4px; min-height: 112px; padding: 17px 18px; border-radius: 13px; box-shadow: 0 2px 5px rgba(15, 45, 30, .035); align-content: start; }
+.farmer-content :is(.offline-summary-card, .farmer-stat-card) span { color: #64748b; font-size: 12px; font-weight: 600; }
+.farmer-content :is(.offline-summary-card, .farmer-stat-card) strong { margin: 6px 0 2px; color: var(--forest); font-size: 27px; line-height: 1.1; }
+.farmer-content :is(.offline-summary-card, .farmer-stat-card) small { color: #8492a6; font-size: 11px; }
+.farmer-content .farmer-stat-card .farmer-stat-pending { color: #d97706; }
+.farmer-content .offline-feature-section, .farmer-content .offline-howto, .farmer-content .offline-limit-note { padding: 18px 20px; }
+.farmer-content .offline-feature-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.farmer-content .offline-feature-card { align-content: start; gap: 4px 12px; padding: 14px 16px; border: 1px solid #e1e8dd; border-radius: 13px; background: #fafcf8; }
+.farmer-content .offline-feature-title { font-family: 'Source Sans 3', Inter, sans-serif; font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--forest); }
+.farmer-content .offline-feature-description { font-size: 12px; line-height: 1.45; }
+.farmer-content .offline-card-state { padding: 2px 10px; border-radius: 999px; background: #e3f4e8; color: #176b3a; font-size: 11px; font-weight: 800; justify-self: start; }
+@media (max-width: 900px) { .farmer-content .offline-feature-grid { grid-template-columns: 1fr; } }
+.offline-feature-icon {
+  width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: var(--grad-green); color: #fff;
+  box-shadow: 0 6px 14px rgba(18, 67, 42, .2);
+}
+.offline-feature-icon svg { width: 18px; height: 18px; }
+
+/* ---------- 13. Messages: avatars like Messenger ---------- */
+.msg-avatar {
+  flex: 0 0 auto; width: 40px; height: 40px; display: inline-grid; place-items: center; border-radius: 50%;
+  background: var(--grad-green); color: #fff; font-size: 14px; font-weight: 800; letter-spacing: .3px; line-height: 1; user-select: none;
+}
+.msg-avatar.role-owner { background: var(--grad-gold); color: #2a1d00; }
+.msg-avatar.role-admin { background: linear-gradient(135deg, #1b2a4a, #34508a); }
+.msg-avatar-space { flex: 0 0 auto; width: 30px; }
+.messages-contacts button { flex-direction: row; align-items: center; gap: 12px; text-align: left; }
+.msg-contact-copy, .msg-head-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.msg-contact-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.messages-thread-head { flex-direction: row; align-items: center; gap: 12px; }
+.msg-row { display: flex; align-items: flex-end; gap: 8px; align-self: flex-start; max-width: min(78%, 560px); }
+.msg-row.mine { align-self: flex-end; }
+.msg-row .message-bubble { max-width: 100%; align-self: auto; }
+.msg-row .msg-avatar { width: 30px; height: 30px; font-size: 11px; }
+
+/* ---------- 14. Summary cards (Dashboard + Offline Access): plain white, green edge slides in on hover/tap ---------- */
+.farmer-content :is(.farmer-stat-card, .offline-summary-card) {
+  position: relative; overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.farmer-content :is(.farmer-stat-card, .offline-summary-card)::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--grad-green);
+  transform: scaleY(0); transform-origin: top; transition: transform .28s ease;
+}
+.farmer-content :is(.farmer-stat-card, .offline-summary-card):is(:hover, :active, :focus-within) {
+  transform: translateY(-2px); border-color: #bcd8c3; box-shadow: 0 10px 22px rgba(18, 67, 42, .1);
+}
+.farmer-content :is(.farmer-stat-card, .offline-summary-card):is(:hover, :active, :focus-within)::before { transform: scaleY(1); }
+.farmer-content .offline-feature-card { transition: border-color .15s ease, box-shadow .15s ease; }
+.farmer-content .offline-feature-card:hover { border-color: #bcd8c3; box-shadow: 0 6px 16px rgba(18, 67, 42, .07); }
+
+/* ---------- 15. Mobile: Offline cards match the Dashboard cards (3 equal columns); Log Out sits at the bottom of the drawer ---------- */
+.farmer-content .offline-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+.farmer-content .farmer-stat-grid { align-items: stretch; }
+@media (max-width: 640px) {
+  .farmer-content :is(.offline-summary-grid, .farmer-stat-grid) { gap: 7px; }
+  /* Labels reserve two lines so the numbers and small text line up across all three cards */
+  .farmer-content :is(.farmer-stat-card, .offline-summary-card) { grid-template-rows: auto auto 1fr; }
+  .farmer-content :is(.farmer-stat-card, .offline-summary-card) span { line-height: 1.3; min-height: 2.6em; }
+  .farmer-content :is(.farmer-stat-card, .offline-summary-card) small { line-height: 1.35; }
+}
+.farmer-sidebar { display: flex; flex-direction: column; box-sizing: border-box; }
+.farmer-sidebar .farmer-nav { margin-bottom: 24px; }
+.farmer-sidebar .farmer-logout { margin-top: auto; margin-bottom: 4px; width: 100%; }
+@media (max-width: 760px) {
+  .farmer-sidebar { height: 100vh; height: 100dvh; overflow-y: auto; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+}

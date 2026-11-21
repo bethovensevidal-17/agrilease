@@ -1,8 +1,8 @@
 
 import { useEffect, useRef, useState } from 'react';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import {
   Search,
-  RefreshCw,
   FileText,
   X
 } from 'lucide-react';
@@ -45,10 +45,9 @@ export default function OwnerVerification() {
 
   const itemsPerPage = 8;
 
-  async function loadOwners(selectedStatus = status) {
+  async function loadOwners(selectedStatus = status, silent = false) {
     try {
-      setLoading(true);
-      setError('');
+      if (!silent) { setLoading(true); setError(''); }
 
       const params = new URLSearchParams();
 
@@ -64,8 +63,7 @@ export default function OwnerVerification() {
 
       setOwners((response.data || []).map(o => ({ ...o, verification_status: o.verification_status || 'pending' })));
     } catch (err) {
-      setError(err.message || 'Unable to load owner records.');
-      setOwners([]);
+      if (!silent) { setError(err.message || 'Unable to load owner records.'); setOwners([]); }
     } finally {
       setLoading(false);
     }
@@ -75,6 +73,8 @@ export default function OwnerVerification() {
     setCurrentPage(1);
     loadOwners(status);
   }, [status]);
+
+  useAutoRefresh(() => loadOwners(status, true));
 
   useEffect(() => {
     return () => {
@@ -215,25 +215,6 @@ export default function OwnerVerification() {
 
   return (
     <div className="um-page owner-verification-page">
-
-      <div className="admin-page-heading">
-        <div>
-          <h1>Owner Verification</h1>
-          <p>
-            Review owner applications and verify submitted documents.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="um-refresh"
-          onClick={() => loadOwners(status)}
-          disabled={loading}
-        >
-          <RefreshCw size={16} />
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
-      </div>
 
       {message && (
         <div className="um-message success">{message}</div>

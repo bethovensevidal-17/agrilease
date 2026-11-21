@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -16,6 +16,7 @@ import {
 
 import { api, getUser, clearAuth } from '../api/client';
 import '../admin.css';
+import '../logo.css';
 
 const navigation = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
@@ -27,7 +28,27 @@ const navigation = [
   { label: 'Offline Access', path: '/admin/offline', icon: WifiOff },
 ];
 
+const ADMIN_PAGE_TITLES = {
+  '/admin': 'Dashboard',
+  '/admin/users': 'User Management',
+  '/admin/owners': 'Owner Verification',
+  '/admin/equipment': 'Equipment Management',
+  '/admin/rentals': 'Rental Monitoring',
+  '/admin/booking-payments': 'Booking Payments',
+  '/admin/subscriptions': 'Subscription Management',
+  '/admin/reports': 'Reports',
+  '/admin/offline': 'Offline Access',
+  '/admin/notifications': 'Notifications',
+  '/admin/profile': 'My Profile',
+  '/admin/content': 'Website Content',
+};
+function adminPageTitle(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/admin';
+  return ADMIN_PAGE_TITLES[path] || 'Dashboard';
+}
+
 export default function AdminLayout() {
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const user = getUser();
@@ -46,8 +67,29 @@ export default function AdminLayout() {
     return () => window.clearInterval(timer);
   }, [loadHeaderIndicators]);
 
+  // Label every table cell with its column name so the tables can turn into stacked cards on phones.
+  useEffect(() => {
+    const root = document.querySelector('.admin-page-content');
+    if (!root) return undefined;
+    const labelCells = () => {
+      root.querySelectorAll('table').forEach(table => {
+        const heads = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+        if (!heads.length) return;
+        table.querySelectorAll('tbody tr').forEach(row => {
+          const cells = Array.from(row.children);
+          if (cells.length === 1 && cells[0].colSpan > 1) return;
+          cells.forEach((cell, index) => { if (heads[index] && cell.dataset.label !== heads[index]) cell.dataset.label = heads[index]; });
+        });
+      });
+    };
+    labelCells();
+    const observer = new MutationObserver(labelCells);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   async function logout() {
-    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?')) return;
+    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) return;
 
     clearAuth();
     navigate('/login', { replace: true });
@@ -58,23 +100,25 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="admin-shell">
+    <div className="owner-shell admin-shell">
       {menuOpen && (
         <button
-          className="admin-backdrop"
+          className="owner-backdrop"
           aria-label="Close navigation menu"
           onClick={closeMenu}
         />
       )}
 
-      <aside className={`admin-sidebar ${menuOpen ? 'open' : ''}`}>
+      <aside className={`owner-sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="admin-brand admin-reference-brand">
-          <span className="admin-brand-mark">A</span>
+          <span className="admin-brand-mark has-logo"><img src="/logo-mark.png" alt="" /></span>
           <span className="admin-brand-copy"><strong>AGRILEASE</strong><small>ADMIN PORTAL</small></span>
         </div>
 
 
-        <nav className="admin-navigation">
+        <div className="owner-nav-heading">MAIN MENU</div>
+
+        <nav className="owner-navigation">
           {navigation.map(({ label, path, icon: Icon, end }) => (
             <NavLink
               key={path}
@@ -82,7 +126,7 @@ export default function AdminLayout() {
               end={end}
               onClick={closeMenu}
               className={({ isActive }) =>
-                `admin-nav-link ${isActive ? 'active' : ''}`
+                `owner-nav-link ${isActive ? 'active' : ''}`
               }
             >
               <Icon size={19} strokeWidth={1.8} />
@@ -91,17 +135,17 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <button className="admin-logout" onClick={logout}>
+        <button className="owner-logout" onClick={logout}>
           <LogOut size={19} />
-          <span>Logout</span>
+          <span>Log Out</span>
         </button>
       </aside>
 
-      <div className="admin-main">
-        <header className="admin-topbar portal-topbar">
-          <div className="admin-topbar-left">
+      <div className="owner-main">
+        <header className="owner-topbar portal-topbar">
+          <div className="owner-topbar-left">
             <button
-              className="admin-menu-button"
+              className="owner-menu-button"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
@@ -109,37 +153,32 @@ export default function AdminLayout() {
               {menuOpen ? <X size={23} /> : <Menu size={23} />}
             </button>
 
-            <div className="role-header-title">
-              <small>AGRILEASE / ADMIN PORTAL</small>
-              <strong>Administration Portal</strong>
-              <span>Manage users, equipment, subscriptions and reports.</span>
-            </div>
+            <h1 className="owner-page-title">{adminPageTitle(location.pathname)}</h1>
           </div>
 
-          <div className="admin-topbar-right">
+          <div className="owner-account">
             <button
-              className="admin-icon-button admin-header-indicator portal-header-icon"
+              className="owner-header-icon portal-header-icon"
               title={`Notifications${unreadNotifications ? ` (${unreadNotifications} unread)` : ''}`}
               aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`}
               onClick={() => navigate('/admin/notifications')}
             >
-              <Bell size={20} />
+              <Bell size={19} />
               {unreadNotifications > 0 && <span className="portal-header-count">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}
             </button>
-
-            <button
-              className="admin-profile-button"
-              onClick={() => navigate('/admin/profile')}
-            >
-              <span className="admin-avatar portal-avatar">
+            <button className="admin-profile-link" onClick={() => navigate('/admin/profile')} aria-label="My profile">
+              <span className="owner-avatar portal-avatar">
                 {(user?.full_name || 'Admin').charAt(0).toUpperCase()}
               </span>
-              <span className="admin-profile-copy"><strong>{user?.full_name || 'Administrator'}</strong><small>Administrator</small></span>
+              <span className="owner-user-info">
+                <strong>{user?.full_name || 'Administrator'}</strong>
+                <small>Administrator</small>
+              </span>
             </button>
           </div>
         </header>
 
-        <main className="admin-page-content">
+        <main className="owner-page-content admin-page-content">
           <Outlet />
         </main>
       </div>

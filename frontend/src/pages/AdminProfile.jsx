@@ -38,7 +38,7 @@ export default function AdminProfile() {
 
   return (
     <div className="am-page">
-      <div className="admin-page-heading"><div><h1>Admin Profile</h1><p>View and update your administrator account details.</p></div></div>
+
       <section className="um-panel am-form-panel">
         <div className="um-panel-heading"><div><h2>Personal Information</h2><p>Your admin account information.</p></div></div>
         {loading ? <div className="am-empty">Loading profile...</div> : <form className="am-form" onSubmit={submit}>

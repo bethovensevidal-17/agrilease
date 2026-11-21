@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   ReceiptText,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { api, getUser, clearAuth } from '../api/client';
+import '../logo.css';
 
 const navigation = [
   { label: 'Dashboard', path: '/owner', icon: LayoutDashboard, end: true },
@@ -27,7 +28,26 @@ const navigation = [
   { label: 'Offline Access', path: '/owner/offline', icon: WifiOff },
 ];
 
+const OWNER_PAGE_TITLES = {
+  '/owner': 'Dashboard',
+  '/owner/equipment': 'My Equipment',
+  '/owner/equipment/add': 'Add Equipment',
+  '/owner/bookings': 'Rental Bookings',
+  '/owner/transactions': 'Transactions',
+  '/owner/subscription': 'Subscription Plans',
+  '/owner/payment-settings': 'Payment Settings',
+  '/owner/messages': 'Messages',
+  '/owner/offline': 'Offline Access',
+  '/owner/notifications': 'Notifications',
+};
+function ownerPageTitle(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/owner';
+  if (/^\/owner\/equipment\/[^/]+\/edit$/.test(path)) return 'Edit Equipment';
+  return OWNER_PAGE_TITLES[path] || 'Dashboard';
+}
+
 export default function OwnerLayout() {
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -52,7 +72,7 @@ export default function OwnerLayout() {
   }, [loadIndicators]);
 
   async function logout() {
-    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?')) return;
+    if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?', { title: 'Logout', confirmText: 'Logout' })) return;
 
     clearAuth();
     navigate('/login', { replace: true });
@@ -73,7 +93,7 @@ export default function OwnerLayout() {
       )}
 
       <aside className={`owner-sidebar ${menuOpen ? 'open' : ''}`}>
-        <div className="admin-brand admin-reference-brand"><span className="admin-brand-mark">A</span><span className="admin-brand-copy"><strong>AGRILEASE</strong><small>OWNER PORTAL</small></span></div>
+        <div className="admin-brand admin-reference-brand"><span className="admin-brand-mark has-logo"><img src="/logo-mark.png" alt="" /></span><span className="admin-brand-copy"><strong>AGRILEASE</strong><small>OWNER PORTAL</small></span></div>
 
         <div className="owner-nav-heading">MAIN MENU</div>
 
@@ -96,7 +116,7 @@ export default function OwnerLayout() {
 
         <button className="owner-logout" onClick={logout}>
           <LogOut size={19} />
-          <span>Logout</span>
+          <span>Log Out</span>
         </button>
       </aside>
 
@@ -111,11 +131,7 @@ export default function OwnerLayout() {
               {menuOpen ? <X size={23} /> : <Menu size={23} />}
             </button>
 
-            <div className="role-header-title">
-              <small>AGRILEASE / OWNER PORTAL</small>
-              <strong>Dashboard Overview</strong>
-              <span>Monitor your equipment listings and rental operations.</span>
-            </div>
+            <h1 className="owner-page-title">{ownerPageTitle(location.pathname)}</h1>
           </div>
 
           <div className="owner-account">

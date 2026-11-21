@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { assetUrl } from '../api/config';
+import { Tractor } from 'lucide-react';
 import { getUser } from '../api/client';
 const peso = new Intl.NumberFormat('en-PH', {
   style: 'currency',
@@ -32,7 +33,7 @@ export default function EquipmentCard({ item }) {
             }}
           />
         ) : (
-          <span>No image</span>
+          <span className="card-noimg"><Tractor size={34} strokeWidth={1.6} />No photo yet</span>
         )}
       </div>
 

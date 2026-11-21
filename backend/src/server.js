@@ -15,7 +15,7 @@ process.on('uncaughtException', err => console.error('[uncaughtException]', err)
     console.log('MySQL connected.');
     await ensureSchema();
   } catch (err) {
-    console.error('Hindi makakonekta sa MySQL. I-check ang .env at kung naka-Start All ang Laragon.', err.message);
+    console.error('Unable to connect to MySQL. Check your .env file and make sure Laragon is started (Start All).', err.message);
   }
   // http server ang ginagamit (hindi app.listen) para masalo rin ang WebSocket sa parehong port.
   const server = app.listen(port, () => console.log(`AGRILEASE API running at http://localhost:${port} (WebSocket: /ws)`));

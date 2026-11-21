@@ -20,7 +20,19 @@ html:has(.admin-shell), body:has(.admin-shell) { overflow-x: clip; }
 }
 .admin-shell .admin-topbar .portal-header-icon { transition: background .15s ease, border-color .15s ease, transform .15s ease; }
 .admin-shell .admin-topbar .portal-header-icon:hover { background: #eef7ef; border-color: #bcd8c3; transform: translateY(-1px); }
-.admin-shell .admin-topbar .admin-profile-copy strong { color: var(--forest); }
+/* Same account block as the owner header: round icon buttons, light-green avatar, name + role */
+.admin-shell .admin-topbar .admin-topbar-right { gap: 14px; }
+.admin-shell .admin-topbar .admin-icon-button { width: 40px; height: 40px; border: 1px solid #e5e9e4; border-radius: 9px; background: #fff; color: #254a2a; }
+.admin-shell .admin-topbar .admin-profile-button { gap: 10px; padding: 0; }
+.admin-shell .admin-topbar .portal-avatar { background: #e1eee5; color: #24583b; }
+.admin-shell .admin-topbar .admin-profile-copy { display: block; }
+.admin-shell .admin-topbar .admin-profile-copy strong, .admin-shell .admin-topbar .admin-profile-copy small { display: block; }
+.admin-shell .admin-topbar .admin-profile-copy strong { color: var(--text, #1f2937); font-size: 13px; }
+.admin-shell .admin-topbar .admin-profile-copy small { margin-top: 3px; color: var(--muted, #6b7280); font-size: 11px; }
+@media (max-width: 760px) {
+  .admin-shell .admin-topbar .admin-topbar-right { gap: 7px; }
+  .admin-shell .admin-topbar .admin-profile-copy { display: none; }
+}
 @media (max-width: 767px) {
   .admin-shell .admin-topbar.portal-topbar { z-index: 30; min-height: 62px; padding: 8px 14px; }
   .admin-shell .admin-topbar .admin-page-title { font-size: 22px; }
@@ -213,4 +225,16 @@ html:has(.admin-shell), body:has(.admin-shell) { overflow-x: clip; }
 .admin-sidebar .admin-logout:hover { background: rgba(255, 255, 255, .1); }
 @media (max-width: 767px) {
   .admin-sidebar { height: 100vh; height: 100dvh; overflow-y: auto; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ---------- 14. Search and dropdown filters sit side by side (wrap only on small screens) ---------- */
+.admin-page-content .um-toolbar { flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 22px; }
+.admin-page-content .um-toolbar .um-search { flex: 1 1 280px; min-width: 0; }
+.admin-page-content .um-toolbar select { flex: 0 1 210px; min-width: 150px; max-width: none; }
+.admin-page-content .am-subscription-search .am-report-search:not(select) { flex: 1 1 280px; min-width: 0; }
+.admin-page-content .am-subscription-search select { flex: 0 1 210px; max-width: none; }
+@media (max-width: 650px) {
+  .admin-page-content .um-toolbar { padding: 14px 16px; }
+  .admin-page-content .um-toolbar .um-search, .admin-page-content .um-toolbar select { flex: 1 1 100%; width: 100%; }
+  .admin-page-content .am-subscription-search .am-report-search, .admin-page-content .am-subscription-search select { flex: 1 1 100%; }
 }

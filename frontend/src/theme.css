@@ -1,0 +1,38 @@
+/* AgriLease theme layer: colors, gradients, type only. Imported LAST in main.jsx.
+   No layout/logic changes, so offline sync, push, chat and routes are untouched.
+   To undo: remove the `import './theme.css'` line in main.jsx. */
+:root {
+  --forest: #12432a; --leaf: #2e8b45; --lime: #8cc152; --gold: #e0a82e; --navy: #1b2a4a;
+  --grad-green: linear-gradient(135deg, #12432a 0%, #1f6b3b 55%, #2e8b45 100%);
+  --grad-side: linear-gradient(180deg, #12432a 0%, #0d3220 100%);
+  --grad-gold: linear-gradient(135deg, #f0c04a, #d9962a);
+  --green-700: #1f6b3b; --green-600: #2e8b45; --green-dark: #12432a;
+  --bg: #f5f6ef; --border: #e1e6dc;
+  --admin-green: #12432a; --admin-green-light: #2e8b45; --admin-bg: #f5f6ef; --admin-border: #e1e6dc;
+}
+body { font-family: 'Source Sans 3', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); }
+h1, h2, h3 { font-family: 'Barlow Condensed', 'Arial Narrow', Inter, sans-serif; letter-spacing: .2px; }
+
+/* Sidebars (farmer, owner, admin) */
+.sidebar, .owner-sidebar, .admin-sidebar { background: var(--grad-side); }
+.topbar { background: var(--grad-green); }
+.sidebar a.active, .owner-nav-link:hover, .owner-nav-link.active, .admin-nav-link.active {
+  background: rgba(255, 255, 255, .14); box-shadow: inset 3px 0 0 var(--gold); color: #fff;
+}
+.admin-brand-mark { background: var(--grad-gold); border-color: transparent; color: #2a1d00; }
+
+/* Primary buttons */
+.btn-primary, .booking-submit, .mb-btn.primary, .equipment-view-link {
+  background: var(--grad-green); border-color: transparent; color: #fff;
+}
+.btn-primary:hover, .booking-submit:hover, .equipment-view-link:hover { filter: brightness(1.08); }
+
+/* Equipment cards */
+.card { border-radius: 16px; border-color: var(--border); transition: box-shadow .2s ease; }
+.card:hover { box-shadow: 0 10px 28px rgba(18, 67, 42, .12); }
+.card-img { background: linear-gradient(135deg, #dcebe0, #f3ecd2); }
+.card-img img { width: 100%; height: 100%; object-fit: cover; }
+.card .price { color: var(--leaf); font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; }
+
+/* Dashboard accents (additive: only touches background of existing stat cards if present) */
+.owner-topbar, .admin-topbar { border-bottom-color: var(--border); }

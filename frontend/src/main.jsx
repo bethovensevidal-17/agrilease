@@ -5,6 +5,7 @@ import App from './App.jsx';
 import GlobalDialogHost from './components/GlobalDialogHost.jsx';
 import './styles.css';
 import './ui-consistency.css';
+import './theme.css';
 import { requestSync } from './offline/sync';
 import { resyncPushSubscription } from './utils/push';
 

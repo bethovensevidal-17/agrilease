@@ -4,40 +4,6 @@
    Imported after theme-owner.css in main.jsx.
    To undo: remove the `import './theme-admin.css'` line in main.jsx. */
 
-/* ---------- 1. Same width and alignment on every admin page ---------- */
-.admin-page-content > *:not([hidden]) {
-  width: 100%; max-width: 1360px !important; margin-left: auto !important; margin-right: auto !important; box-sizing: border-box;
-}
-.admin-page-content { padding: 24px 28px 44px; }
-@media (max-width: 760px) { .admin-page-content { padding: 16px 14px 32px; } }
-
-/* ---------- 2. Header: stays on top while scrolling, title lives here ---------- */
-html:has(.admin-shell), body:has(.admin-shell) { overflow-x: clip; }
-.admin-shell .admin-topbar.portal-topbar { position: sticky; top: 0; z-index: 100; min-height: 94px; padding: 14px 28px; box-shadow: 0 1px 0 #e5e9e4, 0 10px 26px rgba(18, 67, 42, .045); }
-.admin-shell .admin-topbar .admin-page-title {
-  margin: 0; color: var(--forest); font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  font-size: 28px; font-weight: 700; line-height: 1.1; letter-spacing: .2px;
-}
-.admin-shell .admin-topbar .portal-header-icon { transition: background .15s ease, border-color .15s ease, transform .15s ease; }
-.admin-shell .admin-topbar .portal-header-icon:hover { background: #eef7ef; border-color: #bcd8c3; transform: translateY(-1px); }
-/* Same account block as the owner header: round icon buttons, light-green avatar, name + role */
-.admin-shell .admin-topbar .admin-topbar-right { gap: 14px; }
-.admin-shell .admin-topbar .admin-icon-button { width: 40px; height: 40px; border: 1px solid #e5e9e4; border-radius: 9px; background: #fff; color: #254a2a; }
-.admin-shell .admin-topbar .admin-profile-button { gap: 10px; padding: 0; }
-.admin-shell .admin-topbar .portal-avatar { background: #e1eee5; color: #24583b; }
-.admin-shell .admin-topbar .admin-profile-copy { display: block; }
-.admin-shell .admin-topbar .admin-profile-copy strong, .admin-shell .admin-topbar .admin-profile-copy small { display: block; }
-.admin-shell .admin-topbar .admin-profile-copy strong { color: var(--text, #1f2937); font-size: 13px; }
-.admin-shell .admin-topbar .admin-profile-copy small { margin-top: 3px; color: var(--muted, #6b7280); font-size: 11px; }
-@media (max-width: 760px) {
-  .admin-shell .admin-topbar .admin-topbar-right { gap: 7px; }
-  .admin-shell .admin-topbar .admin-profile-copy { display: none; }
-}
-@media (max-width: 767px) {
-  .admin-shell .admin-topbar.portal-topbar { z-index: 30; min-height: 62px; padding: 8px 14px; }
-  .admin-shell .admin-topbar .admin-page-title { font-size: 22px; }
-}
-
 /* ---------- 3. Old page titles and descriptions are gone; only action buttons stay ---------- */
 .admin-page-content :is(.admin-page-heading, .abp-head) h1,
 .admin-page-content > h1,
@@ -159,28 +125,6 @@ html:has(.admin-shell), body:has(.admin-shell) { overflow-x: clip; }
   .admin-page-content :is(.um-summary-card, .am-stat, .admin-stat-card, .offline-summary-card) small { line-height: 1.35; }
 }
 
-/* ---------- 9. Dashboard ---------- */
-.admin-page-content .admin-reference-dashboard { max-width: 1360px; }
-.admin-page-content .admin-welcome-banner { margin-bottom: 26px; padding: 27px 30px; border-radius: 16px; background: var(--grad-green); box-shadow: 0 10px 26px rgba(18, 67, 42, .16); }
-.admin-page-content .admin-welcome-banner h2 { margin: 10px 0 8px; font-size: 32px; line-height: 1.1; }
-.admin-page-content .admin-welcome-banner p { max-width: 640px; font-size: 14px; }
-.admin-page-content .admin-welcome-banner .farmer-welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-.admin-page-content .admin-reference-dashboard .admin-section-heading { margin: 0 0 14px; font-size: 28px; }
-.admin-page-content .admin-reference-chart-grid { gap: 16px; margin-bottom: 0; }
-.admin-page-content .admin-reference-dashboard .admin-activity-panel { margin-top: 20px; padding: 22px 24px; }
-.admin-page-content .admin-activity-panel-heading { color: var(--leaf); }
-.admin-page-content .admin-activity-row { padding: 14px 4px; border-bottom: 1px solid #edf2ea; transition: background .12s ease; }
-.admin-page-content .admin-activity-row:hover { background: #f8fbf6; }
-.admin-page-content .admin-activity-icon { background: #e3f4e8; color: var(--leaf); }
-.admin-page-content .admin-activity-copy strong { color: var(--forest); font-size: 14px; }
-.admin-page-content .admin-activity-copy span { font-size: 13px; }
-.admin-page-content .admin-error { border-radius: 12px; }
-@media (max-width: 760px) {
-  .admin-page-content .admin-welcome-banner { padding: 22px 20px; }
-  .admin-page-content .admin-welcome-banner h2 { font-size: 24px; }
-  .admin-page-content .admin-reference-dashboard .admin-section-heading { font-size: 24px; }
-}
-
 /* ---------- 10. Notifications ---------- */
 .admin-page-content .am-notification { padding: 18px 28px; border-left: 4px solid transparent; transition: background .15s ease; }
 .admin-page-content .am-notification.unread { border-left-color: var(--gold); background: linear-gradient(90deg, #fff8e4, #fff 45%); }
@@ -214,19 +158,6 @@ html:has(.admin-shell), body:has(.admin-shell) { overflow-x: clip; }
 .admin-page-content .offline-card-state { padding: 2px 10px; border-radius: 999px; background: #e3f4e8; color: #176b3a; font-size: 11px; font-weight: 800; justify-self: start; }
 @media (max-width: 900px) { .admin-page-content .offline-feature-grid { grid-template-columns: 1fr; } }
 
-/* ---------- 13. Sidebar: Log Out sits at the bottom of the drawer, not stuck to the menu ---------- */
-.admin-sidebar { display: flex; flex-direction: column; box-sizing: border-box; }
-.admin-sidebar .admin-nav-heading { margin: 4px 6px 10px; color: #8fc6a2; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
-.admin-sidebar .admin-navigation { margin-bottom: 24px; }
-.admin-sidebar .admin-logout {
-  margin-top: auto; margin-bottom: 4px; width: 100%; justify-content: flex-start; min-height: 45px; padding: 11px 13px;
-  border: 1px solid #b5cbb7; border-radius: 8px; background: transparent; color: #fff; font-size: 13px; font-weight: 600;
-}
-.admin-sidebar .admin-logout:hover { background: rgba(255, 255, 255, .1); }
-@media (max-width: 767px) {
-  .admin-sidebar { height: 100vh; height: 100dvh; overflow-y: auto; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
-}
-
 /* ---------- 14. Search and dropdown filters sit side by side (wrap only on small screens) ---------- */
 .admin-page-content .um-toolbar { flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 22px; }
 .admin-page-content .um-toolbar .um-search { flex: 1 1 280px; min-width: 0; }
@@ -241,9 +172,10 @@ html:has(.admin-shell), body:has(.admin-shell) { overflow-x: clip; }
 
 /* ---------- 15. Mobile: everything fits the phone screen ---------- */
 .admin-page-content :is(input, select, textarea) { max-width: 100%; }
-.admin-shell .admin-topbar .admin-topbar-left { min-width: 0; flex: 1 1 auto; }
-.admin-shell .admin-topbar .admin-page-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.admin-shell .admin-topbar .admin-topbar-right { flex: 0 0 auto; }
+.admin-shell .owner-topbar-left { min-width: 0; flex: 1 1 auto; }
+.admin-shell .owner-topbar .owner-page-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-shell .owner-account { flex: 0 0 auto; }
+.admin-shell .admin-profile-link { display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 
 @media (max-width: 800px) {
   /* tables become stacked cards: one card per row, each line shows the column name and its value */
@@ -286,16 +218,21 @@ html:has(.admin-shell), body:has(.admin-shell) { overflow-x: clip; }
   .am-detail-grid, .um-detail-grid { grid-template-columns: 1fr; }
   .am-modal-backdrop, .um-modal-backdrop { padding: 8px; }
 }
-@media (max-width: 767px) {
-  .admin-shell .admin-topbar .admin-page-title { font-size: 21px; }
-  .admin-page-content .admin-chart-card { padding: 16px; }
-  .admin-page-content .admin-reference-chart { height: 240px; }
-  .admin-page-content .admin-reference-dashboard .admin-activity-panel { padding: 16px; }
-  .admin-page-content .admin-welcome-banner .farmer-welcome-actions > a { flex: 1 1 100%; text-align: center; }
-}
 @media (max-width: 480px) {
   /* keep two equal columns on phones (older rules forced one column) */
   body .admin-page-content :is(.um-summary, .am-stats, .admin-summary-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
   body .admin-page-content .offline-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-  .admin-shell .admin-topbar .admin-page-title { font-size: 19px; }
 }
+
+/* ---------- 16. Dashboard: four summary cards instead of three ---------- */
+.admin-page-content .owner-kpi-strip.admin-kpi-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1050px) { .admin-page-content .owner-kpi-strip.admin-kpi-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .admin-page-content .owner-kpi-strip.admin-kpi-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+.admin-page-content .admin-activity-list { margin-top: 4px; }
+
+.admin-page-content .admin-activity-row { padding: 14px 4px; border-bottom: 1px solid #edf2ea; transition: background .12s ease; }
+.admin-page-content .admin-activity-row:hover { background: #f8fbf6; }
+.admin-page-content .admin-activity-icon { background: #e3f4e8; color: var(--leaf); }
+.admin-page-content .admin-activity-copy strong { color: var(--forest); font-size: 14px; }
+.admin-page-content .admin-activity-copy span { font-size: 13px; }
+.admin-page-content .admin-error { border-radius: 12px; }

@@ -100,25 +100,25 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="admin-shell">
+    <div className="owner-shell admin-shell">
       {menuOpen && (
         <button
-          className="admin-backdrop"
+          className="owner-backdrop"
           aria-label="Close navigation menu"
           onClick={closeMenu}
         />
       )}
 
-      <aside className={`admin-sidebar ${menuOpen ? 'open' : ''}`}>
+      <aside className={`owner-sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="admin-brand admin-reference-brand">
           <span className="admin-brand-mark has-logo"><img src="/logo-mark.png" alt="" /></span>
           <span className="admin-brand-copy"><strong>AGRILEASE</strong><small>ADMIN PORTAL</small></span>
         </div>
 
 
-        <div className="admin-nav-heading">MAIN MENU</div>
+        <div className="owner-nav-heading">MAIN MENU</div>
 
-        <nav className="admin-navigation">
+        <nav className="owner-navigation">
           {navigation.map(({ label, path, icon: Icon, end }) => (
             <NavLink
               key={path}
@@ -126,7 +126,7 @@ export default function AdminLayout() {
               end={end}
               onClick={closeMenu}
               className={({ isActive }) =>
-                `admin-nav-link ${isActive ? 'active' : ''}`
+                `owner-nav-link ${isActive ? 'active' : ''}`
               }
             >
               <Icon size={19} strokeWidth={1.8} />
@@ -135,17 +135,17 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <button className="admin-logout" onClick={logout}>
+        <button className="owner-logout" onClick={logout}>
           <LogOut size={19} />
           <span>Log Out</span>
         </button>
       </aside>
 
-      <div className="admin-main">
-        <header className="admin-topbar portal-topbar">
-          <div className="admin-topbar-left">
+      <div className="owner-main">
+        <header className="owner-topbar portal-topbar">
+          <div className="owner-topbar-left">
             <button
-              className="admin-menu-button"
+              className="owner-menu-button"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
@@ -153,33 +153,32 @@ export default function AdminLayout() {
               {menuOpen ? <X size={23} /> : <Menu size={23} />}
             </button>
 
-            <h1 className="admin-page-title">{adminPageTitle(location.pathname)}</h1>
+            <h1 className="owner-page-title">{adminPageTitle(location.pathname)}</h1>
           </div>
 
-          <div className="admin-topbar-right">
+          <div className="owner-account">
             <button
-              className="admin-icon-button admin-header-indicator portal-header-icon"
+              className="owner-header-icon portal-header-icon"
               title={`Notifications${unreadNotifications ? ` (${unreadNotifications} unread)` : ''}`}
               aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`}
               onClick={() => navigate('/admin/notifications')}
             >
-              <Bell size={20} />
+              <Bell size={19} />
               {unreadNotifications > 0 && <span className="portal-header-count">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}
             </button>
-
-            <button
-              className="admin-profile-button"
-              onClick={() => navigate('/admin/profile')}
-            >
-              <span className="admin-avatar portal-avatar">
+            <button className="admin-profile-link" onClick={() => navigate('/admin/profile')} aria-label="My profile">
+              <span className="owner-avatar portal-avatar">
                 {(user?.full_name || 'Admin').charAt(0).toUpperCase()}
               </span>
-              <span className="admin-profile-copy"><strong>{user?.full_name || 'Administrator'}</strong><small>Administrator</small></span>
+              <span className="owner-user-info">
+                <strong>{user?.full_name || 'Administrator'}</strong>
+                <small>Administrator</small>
+              </span>
             </button>
           </div>
         </header>
 
-        <main className="admin-page-content">
+        <main className="owner-page-content admin-page-content">
           <Outlet />
         </main>
       </div>

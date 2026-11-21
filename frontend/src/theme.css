@@ -63,3 +63,8 @@ h1, h2, h3 { font-family: 'Barlow Condensed', 'Arial Narrow', Inter, sans-serif;
 /* Equipment card placeholder when there is no photo */
 .card-img { height: 170px; }
 .card-noimg { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #5f7a68; font-size: 13px; font-weight: 600; }
+
+/* Login and register: show the photo without the green overlay */
+.auth-container {
+  background: url('/images/login-bg.jpg') center / cover no-repeat, #1f6b3b;
+}

@@ -83,7 +83,6 @@ export default function OwnerPaymentSettings() {
           <h1>Payment Settings</h1>
           <p>Set the payment details Farmers should use when renting your equipment.</p>
         </div>
-        <button className="um-refresh" type="button" onClick={loadSettings} disabled={busy}>Refresh</button>
       </div>
 
       {error && <div className="um-message error">{error}</div>}

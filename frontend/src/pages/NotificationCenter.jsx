@@ -77,7 +77,6 @@ export default function NotificationCenter({ title = 'Notifications', role = 'fa
       <div className="admin-page-heading">
         <div><h1>{title}</h1><p>Booking, payment, and account updates for your AgriLease account.</p></div>
         <div className="am-actions">
-          {role !== 'farmer' && <button className="um-refresh" onClick={() => load(true)} disabled={loading}>Refresh</button>}
           <button className="am-button approve" onClick={markAllRead} disabled={busy || unread === 0}>Mark All Read</button>
         </div>
       </div>

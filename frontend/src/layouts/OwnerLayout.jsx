@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   ReceiptText,
@@ -28,7 +28,26 @@ const navigation = [
   { label: 'Offline Access', path: '/owner/offline', icon: WifiOff },
 ];
 
+const OWNER_PAGE_TITLES = {
+  '/owner': 'Dashboard',
+  '/owner/equipment': 'My Equipment',
+  '/owner/equipment/add': 'Add Equipment',
+  '/owner/bookings': 'Rental Bookings',
+  '/owner/transactions': 'Transactions',
+  '/owner/subscription': 'Subscription Plans',
+  '/owner/payment-settings': 'Payment Settings',
+  '/owner/messages': 'Messages',
+  '/owner/offline': 'Offline Access',
+  '/owner/notifications': 'Notifications',
+};
+function ownerPageTitle(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/owner';
+  if (/^\/owner\/equipment\/[^/]+\/edit$/.test(path)) return 'Edit Equipment';
+  return OWNER_PAGE_TITLES[path] || 'Dashboard';
+}
+
 export default function OwnerLayout() {
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -97,7 +116,7 @@ export default function OwnerLayout() {
 
         <button className="owner-logout" onClick={logout}>
           <LogOut size={19} />
-          <span>Logout</span>
+          <span>Log Out</span>
         </button>
       </aside>
 
@@ -112,11 +131,7 @@ export default function OwnerLayout() {
               {menuOpen ? <X size={23} /> : <Menu size={23} />}
             </button>
 
-            <div className="role-header-title">
-              <small>AGRILEASE / OWNER PORTAL</small>
-              <strong>Dashboard Overview</strong>
-              <span>Monitor your equipment listings and rental operations.</span>
-            </div>
+            <h1 className="owner-page-title">{ownerPageTitle(location.pathname)}</h1>
           </div>
 
           <div className="owner-account">

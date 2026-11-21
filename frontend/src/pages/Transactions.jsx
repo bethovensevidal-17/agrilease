@@ -66,7 +66,6 @@ export default function Transactions({ role = 'farmer' }) {
           <h1>Rental Transactions</h1>
           <p>{role === 'owner' ? 'Monitor payments and transaction records for your equipment rentals.' : 'View your rental payment records, payment methods, and payment history.'}</p>
         </div>
-        {role !== 'farmer' && <button className="um-refresh" type="button" onClick={() => load()} disabled={loading}>{loading ? 'Loading...' : 'Refresh'}</button>}
       </div>
 
       {error && <div className="um-message error" role="alert">{error}</div>}

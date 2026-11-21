@@ -11,6 +11,7 @@ import {
 
 import { api } from '../api/client';
 import { assetUrl } from '../api/config';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 import PendingSyncList from '../components/PendingSyncList.jsx';
 
 export default function OwnerEquipmentManagement() {
@@ -21,10 +22,9 @@ export default function OwnerEquipmentManagement() {
   const [error, setError] = useState('');
   const [showArchived, setShowArchived] = useState(false);
 
-  async function loadEquipment() {
+  async function loadEquipment(quiet = false) {
     try {
-      setLoading(true);
-      setError('');
+      if (!quiet) { setLoading(true); setError(''); }
 
       const result = await api(
         showArchived
@@ -34,10 +34,9 @@ export default function OwnerEquipmentManagement() {
 
       setItems(result.data || []);
     } catch (err) {
-      setError(err.message || 'Unable to load your equipment.');
-      setItems([]);
+      if (!quiet) { setError(err.message || 'Unable to load your equipment.'); setItems([]); }
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }
 
@@ -84,6 +83,7 @@ export default function OwnerEquipmentManagement() {
   useEffect(() => {
     loadEquipment();
   }, [showArchived]);
+  useAutoRefresh(() => loadEquipment(true));
 
   const groupedEquipment = items.reduce((groups, item) => {
     const category = item.category_name || 'Uncategorized';
@@ -113,15 +113,6 @@ export default function OwnerEquipmentManagement() {
         </div>
 
         <div className="owner-equipment-actions">
-          <button
-            className="owner-refresh"
-            onClick={loadEquipment}
-            disabled={loading}
-          >
-            <RefreshCw size={16} />
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
-
           {!showArchived && (
             <button
               className="owner-add-button"
@@ -155,31 +146,25 @@ export default function OwnerEquipmentManagement() {
 
       <div className="owner-equipment-summary">
         <span>
-          {showArchived ? 'Archived Listings' : 'Total Listings'}:{' '}
+          <small>{showArchived ? 'Archived Listings' : 'Total Listings'}</small>
           <strong>{items.length}</strong>
         </span>
 
         {!showArchived && (
           <>
             <span>
-              Pending:{' '}
-              <strong>
-                {items.filter(item => item.approval_status === 'pending').length}
-              </strong>
+              <small>Pending</small>
+              <strong>{items.filter(item => item.approval_status === 'pending').length}</strong>
             </span>
 
             <span>
-              Approved:{' '}
-              <strong>
-                {items.filter(item => item.approval_status === 'approved').length}
-              </strong>
+              <small>Approved</small>
+              <strong>{items.filter(item => item.approval_status === 'approved').length}</strong>
             </span>
 
             <span>
-              Rejected:{' '}
-              <strong>
-                {items.filter(item => item.approval_status === 'rejected').length}
-              </strong>
+              <small>Rejected</small>
+              <strong>{items.filter(item => item.approval_status === 'rejected').length}</strong>
             </span>
           </>
         )}

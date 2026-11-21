@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, getAuthenticatedFile } from '../api/client';
-import { Check, X, RefreshCw, CalendarDays, Clock, UserRound, CreditCard, FileImage } from 'lucide-react';
+import { Check, X, CalendarDays, Package, UserRound, CreditCard, FileImage } from 'lucide-react';
 import Pagination from '../components/admin/Pagination';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
 const money = v => new Intl.NumberFormat('en-PH',{style:'currency',currency:'PHP'}).format(Number(v||0));
-const dt = v => v ? new Date(String(v).replace(' ','T')).toLocaleString() : '—';
+const dt = v => v ? new Date(String(v).replace(' ','T')).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+const label = v => String(v || '—').replace(/_/g, ' ');
 export default function OwnerBookings(){
  const [rows,setRows]=useState([]),[status,setStatus]=useState('all'),[loading,setLoading]=useState(true),[busy,setBusy]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[page,setPage]=useState(1);
  const pageSize=8;
  const visibleRows=rows.slice((page-1)*pageSize,page*pageSize);
- const load=useCallback(async()=>{setLoading(true);setError('');try{const r=await api('/owner/bookings'+(status!=='all'?`?status=${status}`:''));setRows(r.data||[])}catch(e){setError(e.message)}finally{setLoading(false)}},[status]);
+ const load=useCallback(async(quiet=false)=>{if(!quiet){setLoading(true);setError('')}try{const r=await api('/owner/bookings'+(status!=='all'?`?status=${status}`:''));setRows(r.data||[])}catch(e){if(!quiet)setError(e.message)}finally{if(!quiet)setLoading(false)}},[status]);
  useEffect(()=>{setPage(1);load()},[load]);
+ useAutoRefresh(()=>load(true));
  async function update(id,next){if(!await window.agrileaseDialog.confirm(`Are you sure you want to ${next} this booking?`))return;setBusy(id);setError('');setNotice('');try{const r=await api(`/owner/bookings/${id}/status`,{method:'PATCH',body:{status:next}});setNotice(r.message||`Booking ${next}.`);await load()}catch(e){setError(e.message)}finally{setBusy(null)}}
  async function proof(id){try{const blob=await getAuthenticatedFile(`/owner/bookings/${id}/proof`);const url=URL.createObjectURL(blob);window.open(url,'_blank','noopener');setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){setError(e.message)}}
- return <section className="ob-page"><div className="ob-head"><div><small>OWNER PORTAL</small><h1>Booking Requests</h1><p>Review farmer requests and approve or reject pending rentals.</p></div><button onClick={load}><RefreshCw size={16}/> Refresh</button></div>
- {error&&<div className="ob-alert err">{error}</div>}{notice&&<div className="ob-alert ok">{notice}</div>}
- <div className="ob-filter"><label>Booking status <select value={status} onChange={e=>setStatus(e.target.value)}><option value="all">All bookings</option>{['pending','approved','ongoing','completed','rejected','cancelled'].map(x=><option key={x}>{x}</option>)}</select></label><span>{rows.length} record(s)</span></div>
- {loading?<div className="ob-empty">Loading booking requests…</div>:!rows.length?<div className="ob-empty">No booking requests found.</div>:<div className="ob-list">{visibleRows.map(r=><article className="ob-card" key={r.id}><header><div><small>Booking #{r.id}</small><h2>{r.equipment_name||'Equipment'}</h2><p>{r.brand_model||''}</p></div><span className={'ob-status '+r.status}>{r.status}</span></header>
- <div className="ob-grid"><div><UserRound/><span><b>Farmer</b>{r.farmer_name||`User #${r.farmer_id}`}</span></div><div><CalendarDays/><span><b>Rental period</b>{dt(r.start_date)} – {dt(r.end_date)}</span></div><div><Clock/><span><b>Quantity / Farm area</b>{r.rental_quantity||1} unit(s){r.farm_area?` · ${r.farm_area} ha`:''}</span></div><div><CreditCard/><span><b>Total amount</b>{money(r.total_amount)}</span></div></div>
- <div className="ob-payment"><span><b>Payment:</b> {(r.payment_method||'—').replace('_',' ')} · <b>Status:</b> {r.payment_status||'—'}</span>{r.payment_reference&&<small>Ref: {r.payment_reference}</small>}{r.payment_proof&&<button onClick={()=>proof(r.id)}><FileImage size={15}/> View proof</button>}</div>
+ return <section className="ob-page"> {error&&<div className="ob-alert err">{error}</div>}{notice&&<div className="ob-alert ok">{notice}</div>}
+ <div className="ob-chips" role="tablist" aria-label="Filter bookings by status">{['all','pending','approved','ongoing','completed','rejected','cancelled'].map(x=><button type="button" role="tab" aria-selected={status===x} key={x} className={status===x?'active':''} onClick={()=>setStatus(x)}>{x==='all'?'All':x}</button>)}</div>
+ {loading?<div className="ob-empty">Loading booking requests…</div>:!rows.length?<div className="ob-empty">No booking requests found.</div>:<div className="ob-list">{visibleRows.map(r=><article className="ob-card" key={r.id}><header><div><small>Booking #{r.id}</small><h2>{r.equipment_name||'Equipment'}</h2><p>{r.brand_model||''}</p></div><span className={'ob-status '+r.status}>{label(r.status)}</span></header>
+ <div className="ob-grid"><div><UserRound/><span><b>Farmer</b>{r.farmer_name||`User #${r.farmer_id}`}</span></div><div><CalendarDays/><span><b>Rental period</b>{dt(r.start_date)} – {dt(r.end_date)}</span></div><div><Package/><span><b>Quantity</b>{r.rental_quantity||1} {Number(r.rental_quantity||1)===1?'unit':'units'}{r.farm_area?` · ${r.farm_area} ha`:''}</span></div><div><CreditCard/><span><b>Total amount</b>{money(r.total_amount)}</span></div></div>
+ <div className="ob-payment"><b>Payment</b><span className="ob-method">{label(r.payment_method)}</span><span className={`am-pill pay-${String(r.payment_status||'').toLowerCase()}`}>{label(r.payment_status)}</span>{r.payment_reference&&<small>Ref: {r.payment_reference}</small>}{r.payment_proof&&<button onClick={()=>proof(r.id)}><FileImage size={15}/> View proof</button>}</div>
  {r.status==='pending'&&<footer><button disabled={busy===r.id} className="approve" onClick={()=>update(r.id,'approved')}><Check size={16}/> Approve</button><button disabled={busy===r.id} className="reject" onClick={()=>update(r.id,'rejected')}><X size={16}/> Reject</button></footer>}</article>)}</div>}
  {!loading && <Pagination totalItems={rows.length} itemsPerPage={pageSize} currentPage={page} onPageChange={setPage}/>}
  <style>{css}</style></section>;

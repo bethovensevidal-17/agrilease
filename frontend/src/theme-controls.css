@@ -1,0 +1,205 @@
+/* ===================================================================
+   Shared search bars and dropdown filters (farmer, owner and admin)
+   Same look as Owner > Rental Bookings: white, rounded, green icon,
+   green glow when selected.
+   =================================================================== */
+
+/* Search boxes */
+body .admin-page-content input[type="search"],
+body .owner-page-content input[type="search"],
+body .farmer-content input[type="search"],
+body .admin-page-content .search,
+body .owner-page-content .search,
+body .farmer-content .search,
+body .admin-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .owner-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .farmer-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .admin-page-content .tx-filters input:not([type="date"]),
+body .owner-page-content .tx-filters input:not([type="date"]),
+body .farmer-content .tx-filters input:not([type="date"]) {
+  height: 48px; min-height: 48px; box-sizing: border-box; padding: 0 16px 0 44px; border: 1.5px solid #d6e0d3; border-radius: 12px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%232e8b45' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") no-repeat left 16px center; color: #20372a; font: inherit; font-size: 14px; font-weight: 600; box-shadow: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+/* Other text and date fields that sit in a filter bar */
+body .admin-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .owner-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .farmer-content .am-report-search:not(select)[placeholder^="Filter"],
+body .admin-page-content .mb-filter input[type="date"],
+body .owner-page-content .mb-filter input[type="date"],
+body .farmer-content .mb-filter input[type="date"],
+body .admin-page-content .am-filter-date input,
+body .owner-page-content .am-filter-date input,
+body .farmer-content .am-filter-date input,
+body .admin-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .owner-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .farmer-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]) {
+  height: 48px; min-height: 48px; box-sizing: border-box; padding: 0 16px; border: 1.5px solid #d6e0d3; border-radius: 12px; background: #fff;
+  color: #20372a; font: inherit; font-size: 14px; font-weight: 600; box-shadow: none; transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+/* Dropdowns */
+body .admin-page-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .owner-page-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .farmer-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .admin-page-content select.am-report-search,
+body .owner-page-content select.am-report-search,
+body .farmer-content select.am-report-search {
+  -webkit-appearance: none; appearance: none; height: 48px; min-height: 48px; box-sizing: border-box; padding: 0 44px 0 16px; border: 1.5px solid #d6e0d3; border-radius: 12px; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232e8b45' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 16px center; color: var(--forest, #12432a); font: inherit; font-size: 14px; font-weight: 700; box-shadow: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+/* Hover and focus: same green glow everywhere */
+body .admin-page-content input[type="search"],
+body .owner-page-content input[type="search"],
+body .farmer-content input[type="search"],
+body .admin-page-content .search,
+body .owner-page-content .search,
+body .farmer-content .search,
+body .admin-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .owner-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .farmer-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .admin-page-content .tx-filters input:not([type="date"]),
+body .owner-page-content .tx-filters input:not([type="date"]),
+body .farmer-content .tx-filters input:not([type="date"]),
+body .admin-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .owner-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .farmer-content .am-report-search:not(select)[placeholder^="Filter"],
+body .admin-page-content .mb-filter input[type="date"],
+body .owner-page-content .mb-filter input[type="date"],
+body .farmer-content .mb-filter input[type="date"],
+body .admin-page-content .am-filter-date input,
+body .owner-page-content .am-filter-date input,
+body .farmer-content .am-filter-date input,
+body .admin-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .owner-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .farmer-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .admin-page-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .owner-page-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .farmer-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .admin-page-content select.am-report-search,
+body .owner-page-content select.am-report-search,
+body .farmer-content select.am-report-search:hover { border-color: #bcd8c3; }
+body .admin-page-content input[type="search"],
+body .owner-page-content input[type="search"],
+body .farmer-content input[type="search"],
+body .admin-page-content .search,
+body .owner-page-content .search,
+body .farmer-content .search,
+body .admin-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .owner-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .farmer-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .admin-page-content .tx-filters input:not([type="date"]),
+body .owner-page-content .tx-filters input:not([type="date"]),
+body .farmer-content .tx-filters input:not([type="date"]),
+body .admin-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .owner-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .farmer-content .am-report-search:not(select)[placeholder^="Filter"],
+body .admin-page-content .mb-filter input[type="date"],
+body .owner-page-content .mb-filter input[type="date"],
+body .farmer-content .mb-filter input[type="date"],
+body .admin-page-content .am-filter-date input,
+body .owner-page-content .am-filter-date input,
+body .farmer-content .am-filter-date input,
+body .admin-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .owner-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .farmer-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .admin-page-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .owner-page-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .farmer-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
+body .admin-page-content select.am-report-search,
+body .owner-page-content select.am-report-search,
+body .farmer-content select.am-report-search:focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+body .admin-page-content input[type="search"],
+body .owner-page-content input[type="search"],
+body .farmer-content input[type="search"],
+body .admin-page-content .search,
+body .owner-page-content .search,
+body .farmer-content .search,
+body .admin-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .owner-page-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .farmer-content .am-report-search:not(select):not([placeholder^="Filter"]),
+body .admin-page-content .tx-filters input:not([type="date"]),
+body .owner-page-content .tx-filters input:not([type="date"]),
+body .farmer-content .tx-filters input:not([type="date"]),
+body .admin-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .owner-page-content .am-report-search:not(select)[placeholder^="Filter"],
+body .farmer-content .am-report-search:not(select)[placeholder^="Filter"],
+body .admin-page-content .mb-filter input[type="date"],
+body .owner-page-content .mb-filter input[type="date"],
+body .farmer-content .mb-filter input[type="date"],
+body .admin-page-content .am-filter-date input,
+body .owner-page-content .am-filter-date input,
+body .farmer-content .am-filter-date input,
+body .admin-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .owner-page-content .um-toolbar > input:not([type="checkbox"]):not([type="search"]),
+body .farmer-content .um-toolbar > input:not([type="checkbox"]):not([type="search"])::placeholder { color: #9aa79e; font-weight: 400; }
+
+/* Search boxes made of an icon + input (user lists, equipment, rentals, owner verification) */
+body .admin-page-content .um-search,
+body .owner-page-content .um-search,
+body .farmer-content .um-search {
+  display: flex; align-items: center; gap: 12px; height: 48px; min-height: 48px; box-sizing: border-box; padding: 0 16px; border: 1.5px solid #d6e0d3; border-radius: 12px;
+  background: #fff; color: #2e8b45; transition: border-color .15s ease, box-shadow .15s ease;
+}
+body .admin-page-content .um-search:hover,
+body .owner-page-content .um-search:hover,
+body .farmer-content .um-search:hover { border-color: #bcd8c3; }
+body .admin-page-content .um-search:focus-within,
+body .owner-page-content .um-search:focus-within,
+body .farmer-content .um-search:focus-within { border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+body .admin-page-content .um-search input,
+body .owner-page-content .um-search input,
+body .farmer-content .um-search input {
+  height: 100%; padding: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important;
+  color: #20372a; font: inherit; font-size: 14px; font-weight: 600;
+}
+body .admin-page-content .um-search input::placeholder,
+body .owner-page-content .um-search input::placeholder,
+body .farmer-content .um-search input::placeholder { color: #9aa79e; font-weight: 400; }
+body .admin-page-content .um-search svg,
+body .owner-page-content .um-search svg,
+body .farmer-content .um-search svg { flex: none; width: 18px; height: 18px; color: #2e8b45; }
+
+/* Admin > Booking Payments: search + dropdown + count in one row */
+body .admin-page-content .abp-filter,
+body .owner-page-content .abp-filter,
+body .farmer-content .abp-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 18px; }
+body .admin-page-content .abp-filter .abp-search,
+body .owner-page-content .abp-filter .abp-search,
+body .farmer-content .abp-filter .abp-search { position: relative; display: block; flex: 1 1 280px; min-width: 0; margin: 0; }
+body .admin-page-content .abp-filter .abp-search svg,
+body .owner-page-content .abp-filter .abp-search svg,
+body .farmer-content .abp-filter .abp-search svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #2e8b45; pointer-events: none; }
+body .admin-page-content .abp-filter .abp-search input,
+body .owner-page-content .abp-filter .abp-search input,
+body .farmer-content .abp-filter .abp-search input {
+  width: 100%; height: 48px; box-sizing: border-box; padding: 0 16px 0 44px; border: 1.5px solid #d6e0d3; border-radius: 12px; background: #fff;
+  color: #20372a; font: inherit; font-size: 14px; font-weight: 600; transition: border-color .15s ease, box-shadow .15s ease;
+}
+body .admin-page-content .abp-filter .abp-search input:hover,
+body .owner-page-content .abp-filter .abp-search input:hover,
+body .farmer-content .abp-filter .abp-search input:hover { border-color: #bcd8c3; }
+body .admin-page-content .abp-filter .abp-search input:focus,
+body .owner-page-content .abp-filter .abp-search input:focus,
+body .farmer-content .abp-filter .abp-search input:focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
+body .admin-page-content .abp-filter .abp-search input::placeholder,
+body .owner-page-content .abp-filter .abp-search input::placeholder,
+body .farmer-content .abp-filter .abp-search input::placeholder { color: #9aa79e; font-weight: 400; }
+body .admin-page-content .abp-filter select,
+body .owner-page-content .abp-filter select,
+body .farmer-content .abp-filter select { flex: 0 0 220px; width: 220px; }
+body .admin-page-content .abp-filter > span,
+body .owner-page-content .abp-filter > span,
+body .farmer-content .abp-filter > span { margin-left: auto; color: #64748b; font-size: 13px; font-weight: 600; }
+
+@media (max-width: 650px) {
+  body .admin-page-content .abp-filter select,
+body .owner-page-content .abp-filter select,
+body .farmer-content .abp-filter select { flex: 1 1 100%; width: 100%; }
+  body .admin-page-content .abp-filter > span,
+body .owner-page-content .abp-filter > span,
+body .farmer-content .abp-filter > span { margin-left: 0; }
+}

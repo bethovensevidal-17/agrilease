@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 
@@ -80,7 +81,7 @@ export default function RentalMonitoring() {
           <span className="um-total">{filtered.length} records</span>
         </div>
         <div className="um-toolbar">
-          <div className="um-search"><span aria-hidden="true">⌕</span>
+          <div className="um-search"><Search size={18} />
             <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search farmer, owner, equipment, or ID..." /></div>
           <input value={owner} onChange={e => { setOwner(e.target.value); setPage(1); }} placeholder="Filter by owner name or ID" aria-label="Filter by equipment owner" />

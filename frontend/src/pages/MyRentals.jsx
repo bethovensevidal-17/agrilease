@@ -132,12 +132,10 @@ export default function MyRentals() {
 
       <div className="mb-filters">
         <label className="mb-filter mb-filter-search">
-          <span>Search</span>
-          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search equipment, booking number, or reference..." />
+          <input aria-label="Search rentals" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search equipment, booking number, or reference..." />
         </label>
         <label className="mb-filter">
-          <span>Status</span>
-          <select value={status} onChange={e => setStatus(e.target.value)}>
+          <select aria-label="Filter by status" value={status} onChange={e => setStatus(e.target.value)}>
             <option value="all">All Statuses</option>
             {STATUSES.map(item => <option key={item} value={item}>{pretty(item)}</option>)}
           </select>

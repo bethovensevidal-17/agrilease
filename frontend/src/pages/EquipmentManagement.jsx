@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 import { assetUrl } from '../api/config';
@@ -71,7 +72,7 @@ export default function EquipmentManagement() {
     <section className="um-panel">
       <div className="um-panel-heading"><div><h2>Equipment Listings</h2><p>Review listing details and control approval status.</p></div><span className="um-total">{filtered.length} records</span></div>
       <div className="um-toolbar">
-        <div className="um-search"><span aria-hidden="true">⌕</span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search equipment, owner, model, or location..." /></div>
+        <div className="um-search"><Search size={18} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search equipment, owner, model, or location..." /></div>
         <select value={status} onChange={e => setStatus(e.target.value)} aria-label="Approval status"><option value="">All Approval Statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select>
         <select value={category} onChange={e => setCategory(e.target.value)} aria-label="Category"><option value="">All Categories</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
         <select value={availability} onChange={e => setAvailability(e.target.value)} aria-label="Availability"><option value="">All Availability</option><option value="available">Available</option><option value="unavailable">Unavailable</option><option value="rented">Rented</option><option value="maintenance">Maintenance</option></select>

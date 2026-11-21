@@ -51,7 +51,7 @@ body .farmer-content select.am-report-search {
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-/* Hover and focus: same green glow everywhere */
+/* Focus only (tap or click): green border + glow. Hover does nothing. */
 body .admin-page-content input[type="search"],
 body .owner-page-content input[type="search"],
 body .farmer-content input[type="search"],
@@ -81,7 +81,6 @@ body .owner-page-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-fi
 body .farmer-content :is(.um-toolbar, .tx-filters, .mb-filter, .am-report-filter-controls, .am-subscription-search, .abp-filter, .ob-filter-bar) select,
 body .admin-page-content select.am-report-search,
 body .owner-page-content select.am-report-search,
-body .farmer-content select.am-report-search:hover { border-color: #bcd8c3; }
 body .admin-page-content input[type="search"],
 body .owner-page-content input[type="search"],
 body .farmer-content input[type="search"],
@@ -144,9 +143,6 @@ body .farmer-content .um-search {
   display: flex; align-items: center; gap: 12px; height: 48px; min-height: 48px; box-sizing: border-box; padding: 0 16px; border: 1.5px solid #d6e0d3; border-radius: 12px;
   background: #fff; color: #2e8b45; transition: border-color .15s ease, box-shadow .15s ease;
 }
-body .admin-page-content .um-search:hover,
-body .owner-page-content .um-search:hover,
-body .farmer-content .um-search:hover { border-color: #bcd8c3; }
 body .admin-page-content .um-search:focus-within,
 body .owner-page-content .um-search:focus-within,
 body .farmer-content .um-search:focus-within { border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
@@ -179,9 +175,6 @@ body .farmer-content .abp-filter .abp-search input {
   width: 100%; height: 48px; box-sizing: border-box; padding: 0 16px 0 44px; border: 1.5px solid #d6e0d3; border-radius: 12px; background: #fff;
   color: #20372a; font: inherit; font-size: 14px; font-weight: 600; transition: border-color .15s ease, box-shadow .15s ease;
 }
-body .admin-page-content .abp-filter .abp-search input:hover,
-body .owner-page-content .abp-filter .abp-search input:hover,
-body .farmer-content .abp-filter .abp-search input:hover { border-color: #bcd8c3; }
 body .admin-page-content .abp-filter .abp-search input:focus,
 body .owner-page-content .abp-filter .abp-search input:focus,
 body .farmer-content .abp-filter .abp-search input:focus { outline: none; border-color: #2e8b45; box-shadow: 0 0 0 4px rgba(46, 139, 69, .14); }
@@ -203,3 +196,16 @@ body .farmer-content .abp-filter select { flex: 1 1 100%; width: 100%; }
 body .owner-page-content .abp-filter > span,
 body .farmer-content .abp-filter > span { margin-left: 0; }
 }
+
+/* Standalone filter bars: no white box around them (transactions, my rentals) */
+body .admin-page-content :is(.tx-filter-panel, .mb-filters),
+body .owner-page-content :is(.tx-filter-panel, .mb-filters),
+body .farmer-content :is(.tx-filter-panel, .mb-filters) {
+  padding: 0 !important; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; margin: 0 0 18px;
+}
+body .admin-page-content :is(.tx-filter-panel, .mb-filters):hover,
+body .owner-page-content :is(.tx-filter-panel, .mb-filters):hover,
+body .farmer-content :is(.tx-filter-panel, .mb-filters):hover { transform: none; box-shadow: none; border: 0; background: transparent; }
+body .admin-page-content .mb-filters .mb-filter > span,
+body .owner-page-content .mb-filters .mb-filter > span,
+body .farmer-content .mb-filters .mb-filter > span { color: #2f5a3c; font-size: 12px; font-weight: 700; }

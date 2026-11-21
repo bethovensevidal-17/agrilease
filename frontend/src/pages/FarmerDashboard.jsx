@@ -23,9 +23,9 @@ const FARMER_PAGE_TITLES = {
   '/farmer': 'Dashboard',
   '/farmer/equipment': 'Browse Equipment',
   '/farmer/rentals': 'My Bookings',
-  '/farmer/transactions': 'Rental Transactions',
+  '/farmer/transactions': 'Transactions',
   '/farmer/messages': 'Messages',
-  '/farmer/offline': 'Farmer Offline Access',
+  '/farmer/offline': 'Offline Access',
   '/farmer/notifications': 'Farmer Notifications',
   '/farmer/profile': 'My Profile',
 };

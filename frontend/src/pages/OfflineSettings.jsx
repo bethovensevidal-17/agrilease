@@ -10,7 +10,7 @@ import './offline-settings.css';
 
 const ROLE_GUIDANCE = {
   farmer: {
-    title: 'Farmer Offline Access',
+    title: 'Offline Access',
     intro: 'You can open AgriLease using your previously signed-in session. Data you open while online is saved on this device automatically.',
     available: ['Previously loaded equipment and public pages', 'Previously synchronized rentals, transactions, and profile information', 'Create a Cash booking request and keep it pending on this device'],
     limits: ['An offline booking is not official and the equipment is not reserved until the server validates and saves it.', 'GCash at Bank Transfer submissions require internet.', 'The first login is not available while offline.'],

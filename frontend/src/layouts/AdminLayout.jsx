@@ -67,6 +67,27 @@ export default function AdminLayout() {
     return () => window.clearInterval(timer);
   }, [loadHeaderIndicators]);
 
+  // Label every table cell with its column name so the tables can turn into stacked cards on phones.
+  useEffect(() => {
+    const root = document.querySelector('.admin-page-content');
+    if (!root) return undefined;
+    const labelCells = () => {
+      root.querySelectorAll('table').forEach(table => {
+        const heads = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+        if (!heads.length) return;
+        table.querySelectorAll('tbody tr').forEach(row => {
+          const cells = Array.from(row.children);
+          if (cells.length === 1 && cells[0].colSpan > 1) return;
+          cells.forEach((cell, index) => { if (heads[index] && cell.dataset.label !== heads[index]) cell.dataset.label = heads[index]; });
+        });
+      });
+    };
+    labelCells();
+    const observer = new MutationObserver(labelCells);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   async function logout() {
     if (!await window.agrileaseDialog.confirm('Are you sure you want to logout?')) return;
 

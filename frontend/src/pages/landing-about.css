@@ -1,0 +1,15 @@
+/* Landing page: About section with the carabao photo (added in Phase 3) */
+.lp-about { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 48px; align-items: center; }
+.lp-about .lp-photo { min-height: 460px; border-radius: 24px; box-shadow: 0 18px 40px rgba(18, 67, 42, .18); }
+.lp-about .lp-photo img { object-position: 50% 68%; }
+.lp-about-text h2 { margin: 0; color: #12432a; font-size: clamp(32px, 4vw, 46px); }
+.lp-about-text > p { max-width: 56ch; margin: 10px 0 26px; color: #5f6f65; line-height: 1.6; }
+.lp-about-list { display: grid; gap: 18px; margin: 0; padding: 0; list-style: none; }
+.lp-about-list li { display: flex; align-items: flex-start; gap: 16px; }
+.lp-about-list .lp-ic { flex: none; margin-bottom: 0; }
+.lp-about-list h3 { margin: 0 0 3px; color: #12432a; font-size: 24px; }
+.lp-about-list p { margin: 0; color: #5f6f65; font-size: 15px; line-height: 1.5; }
+@media (max-width: 820px) {
+  .lp-about { grid-template-columns: 1fr; gap: 28px; }
+  .lp-about .lp-photo { min-height: 300px; }
+}

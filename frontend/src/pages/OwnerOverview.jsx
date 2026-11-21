@@ -61,11 +61,11 @@ export default function OwnerOverview() {
 
   const statusChart = {
     labels: ['Pending', 'Approved / Ongoing', 'Completed', 'Rejected / Cancelled'],
-    datasets: [{ data: [counts.pending, counts.approved, counts.completed, counts.rejected], backgroundColor: ['#e9b949', '#3c9b68', '#286a49', '#d97878'], borderWidth: 0 }],
+    datasets: [{ data: [counts.pending, counts.approved, counts.completed, counts.rejected], backgroundColor: ['#e0a82e', '#2e8b45', '#12432a', '#d9534f'], borderWidth: 0 }],
   };
   const lineChart = {
     labels: monthly.map(x => x.label),
-    datasets: [{ label: 'Rental bookings', data: monthly.map(x => x.value), borderColor: '#28764b', backgroundColor: 'rgba(40,118,75,.12)', fill: true, tension: .35, pointRadius: 3, pointHoverRadius: 5 }],
+    datasets: [{ label: 'Rental bookings', data: monthly.map(x => x.value), borderColor: '#2e8b45', backgroundColor: 'rgba(46,139,69,.14)', fill: true, tension: .35, pointRadius: 3, pointHoverRadius: 5 }],
   };
   const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf1ed' } }, x: { grid: { display: false } } } };
 

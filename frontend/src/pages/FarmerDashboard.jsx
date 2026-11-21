@@ -151,9 +151,9 @@ export function FarmerOverview() {
     bookings.forEach(row => { const d = new Date(row.created_at || row.createdAt || row.start_at || row.start_date); const found = months.find(m => m.year === d.getFullYear() && m.month === d.getMonth()); if (found && !Number.isNaN(d.getTime())) found.value += 1; });
     return months;
   }, [bookings]);
-  const lineData = { labels: monthly.map(m => m.label), datasets: [{ label: 'Bookings', data: monthly.map(m => m.value), borderColor: '#176b3a', backgroundColor: 'rgba(23,107,58,.12)', fill: true, tension: .35, pointRadius: 4, pointHoverRadius: 6 }] };
+  const lineData = { labels: monthly.map(m => m.label), datasets: [{ label: 'Bookings', data: monthly.map(m => m.value), borderColor: '#2e8b45', backgroundColor: 'rgba(46,139,69,.14)', fill: true, tension: .35, pointRadius: 4, pointHoverRadius: 6 }] };
   const statusLabels = ['Pending', 'Approved', 'Ongoing', 'Completed', 'Rejected', 'Cancelled'];
-  const doughnutData = { labels: statusLabels, datasets: [{ data: [counts.pending, counts.approved, counts.ongoing, counts.completed, counts.rejected, counts.cancelled], backgroundColor: ['#e8a317', '#176b3a', '#2787c7', '#20a36a', '#dc4c4c', '#64748b'], borderWidth: 0, hoverOffset: 5 }] };
+  const doughnutData = { labels: statusLabels, datasets: [{ data: [counts.pending, counts.approved, counts.ongoing, counts.completed, counts.rejected, counts.cancelled], backgroundColor: ['#e0a82e', '#2e8b45', '#2787c7', '#12432a', '#d9534f', '#8a9a8f'], borderWidth: 0, hoverOffset: 5 }] };
   const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, boxWidth: 8 } } } };
   const recent = [...bookings].sort((a,b) => new Date(b.created_at || b.start_at || 0) - new Date(a.created_at || a.start_at || 0)).slice(0, 5);
 

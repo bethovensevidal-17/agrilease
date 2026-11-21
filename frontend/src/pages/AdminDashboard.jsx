@@ -65,14 +65,15 @@ export default function AdminDashboard() {
   const visibleActivity = activity.slice(activityStart, activityStart + activityPageSize);
   const bookingChart = {
     labels: monthly.map(row => row.month),
-    datasets: [{ label: 'Reservations', data: monthly.map(row => Number(row.rentals || 0)), backgroundColor: '#176b3a', borderRadius: 6 }],
+    datasets: [{ label: 'Reservations', data: monthly.map(row => Number(row.rentals || 0)), backgroundColor: '#2e8b45', hoverBackgroundColor: '#12432a', borderRadius: 8 }],
   };
   const statusChart = {
     labels: ['Pending', 'Approved', 'Completed', 'Rejected', 'Cancelled'],
     datasets: [{
       data: [s.pending_rentals || 0, s.approved_rentals || 0, s.completed_rentals || 0, s.rejected_rentals || 0, s.cancelled_rentals || 0].map(Number),
-      backgroundColor: ['#e8a317', '#176b3a', '#2787c7', '#dc4c4c', '#64748b'],
+      backgroundColor: ['#e0a82e', '#2e8b45', '#1b2a4a', '#d9534f', '#8a9a8f'],
       borderWidth: 0,
+      hoverOffset: 6,
     }],
   };
 

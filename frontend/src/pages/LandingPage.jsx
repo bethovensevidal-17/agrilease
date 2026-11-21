@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Tractor, Wheat, Droplets, Search, CalendarCheck, BadgeCheck, ShieldCheck, WifiOff, Wallet } from 'lucide-react';
 import './landing-page.css';
+import './landing-about.css';
 import '../logo.css';
 
 // Photo slots: put your own photos in frontend/public/images/ using these file names.
@@ -65,7 +66,29 @@ export default function LandingPage() {
       </div>
 
       <main>
-        <section className="lp-sec" id="about">
+        <section className="lp-sec lp-about" id="about">
+          <Photo src="/images/about.jpg" alt="Farmers with a carabao and cart in a rice field" />
+          <div className="lp-about-text">
+            <h2>Built for farmers in Oriental Mindoro</h2>
+            <p>AGRILEASE connects farmers who need machinery with owners who have it available. Browse equipment, request your dates, and track every rental in one place.</p>
+            <ul className="lp-about-list">
+              <li>
+                <span className="lp-ic"><ShieldCheck className="lu" /></span>
+                <div><h3>Verified owners</h3><p>Owners submit a business permit and a valid ID, and an admin approves each listing before it appears.</p></div>
+              </li>
+              <li>
+                <span className="lp-ic"><Wallet className="lu" /></span>
+                <div><h3>Clear pricing</h3><p>See the rate per hour, day, or hectare before you send a request.</p></div>
+              </li>
+              <li>
+                <span className="lp-ic"><WifiOff className="lu" /></span>
+                <div><h3>Works offline</h3><p>Requests and listings made without internet are saved on your device and sent when you reconnect.</p></div>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section className="lp-sec" style={{ paddingTop: 0 }}>
           <h2>What do you need on your field?</h2>
           <p>AGRILEASE helps farmers find and request the machinery they need for their farming activities.</p>
           <div className="lp-cats">

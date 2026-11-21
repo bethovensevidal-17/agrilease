@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Tractor } from 'lucide-react';
 import { api, getToken } from '../api/client';
 import { isNetworkFailure, newRequestId, queueOfflineEquipment } from '../offline/sync';
 import { compressImage } from '../utils/imageCompress';
@@ -193,7 +194,8 @@ export default function OwnerAddEquipment() {
 
   return (
     <div className="owner-page">
-      <div className="owner-welcome">
+      <div className="owner-welcome owner-welcome--banner">
+        <span className="owner-welcome-icon"><Tractor size={26} strokeWidth={1.8} /></span>
         <div>
           <h1>Add Equipment</h1>
           <p>

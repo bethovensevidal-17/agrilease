@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Tractor } from 'lucide-react';
 import { api, getToken, getUser } from '../api/client';
 import { isNetworkFailure, newRequestId, queueOfflineBooking } from '../offline/sync';
 import '../styles/booking.css';
@@ -101,7 +102,7 @@ export default function EquipmentBooking() {
     <Link className="booking-back-button" to={user?.role === 'farmer' ? '/farmer/equipment' : '/browse'}>Back to equipment</Link>
     <div className="booking-detail-grid">
       <article className="booking-equipment-card">
-        {image ? <img className="booking-equipment-image" src={image} alt={equipment.equipment_name} /> : <div className="booking-image-placeholder">No equipment image</div>}
+        {image ? <img className="booking-equipment-image" src={image} alt={equipment.equipment_name} /> : <div className="booking-image-placeholder"><Tractor size={38} strokeWidth={1.6} /><span>No equipment image</span></div>}
         <div className="booking-equipment-info">
         <h1>{equipment.equipment_name}</h1>
         <p className="booking-muted">{equipment.category_name || 'Agricultural equipment'} · {equipment.brand_model || 'No brand/model specified'}</p>

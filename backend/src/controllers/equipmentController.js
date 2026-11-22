@@ -1,5 +1,6 @@
 
 const db = require('../db');
+const { notifyUser, notifyAdmins } = require('../services/notifications');
 const { coverageCondition, checkListingAllowance } = require('../services/subscriptionAccess');
 
 const RATE_TYPES = ['hour', 'day', 'hectare'];
@@ -244,6 +245,8 @@ async function update(req, res) {
 
   const b = req.body;
 
+  const resubmit = rows[0].approval_status === 'rejected';
+
   // Keep the existing image if no new image is uploaded.
   const imagePath = req.file
     ? `equipment/${req.file.filename}`
@@ -261,7 +264,9 @@ async function update(req, res) {
             rate_type = ?,
             condition_status = ?,
             location = ?,
-            availability_status = ?
+            availability_status = ?,
+            approval_status = ?,
+            rejection_reason = ?
       WHERE id = ? AND owner_id = ?`,
     [
       Number(b.category_id),
@@ -275,12 +280,30 @@ async function update(req, res) {
       b.condition_status,
       b.location,
       b.availability === 'unavailable' ? 'unavailable' : 'available',
+      // Kapag na-reject at in-edit ng owner, babalik sa pending para ma-review ulit ng admin.
+      resubmit ? 'pending' : rows[0].approval_status,
+      resubmit ? null : (rows[0].rejection_reason ?? null),
       req.params.id,
       req.user.id
     ]
   );
 
-  res.json({ success: true, message: 'Equipment updated.' });
+  if (resubmit) {
+    try {
+      await notifyAdmins(
+        'Equipment resubmitted',
+        `"${String(b.name).trim()}" was edited after being rejected and is waiting for review.`,
+        '/admin/equipment'
+      );
+    } catch (error) {
+      console.error('Resubmit notification failed:', error.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: resubmit ? 'Equipment updated and sent for review again.' : 'Equipment updated.'
+  });
 }
 
 // OWNER: Archive equipment
@@ -376,25 +399,59 @@ async function listAdmin(req, res) {
   res.json({ data: rows });
 }
 
-// ADMIN: Approve or reject
+// ADMIN: Approve or reject (kasama ang pag-take down ng approved listing)
 async function setApproval(req, res) {
   const status = req.body.approval_status;
+  const reason = String(req.body.reason || '').trim().slice(0, 255);
 
   if (!['approved', 'rejected'].includes(status)) {
     return res.status(400).json({
       error: 'Only approved or rejected is allowed.'
     });
   }
+  if (status === 'rejected' && reason.length < 3) {
+    return res.status(400).json({
+      error: 'Enter a reason so the owner knows why the listing was rejected.'
+    });
+  }
 
-  const [result] = await db.query(
-    'UPDATE equipment SET approval_status = ? WHERE id = ?',
-    [status, req.params.id]
+  const [[item]] = await db.query(
+    'SELECT id, owner_id, equipment_name, approval_status FROM equipment WHERE id = ?',
+    [req.params.id]
   );
-
-  if (!result.affectedRows) {
+  if (!item) {
     return res.status(404).json({
       error: 'Equipment not found.'
     });
+  }
+  if (item.approval_status === status) {
+    return res.json({ success: true, approval_status: status, unchanged: true });
+  }
+
+  await db.query(
+    'UPDATE equipment SET approval_status = ?, rejection_reason = ? WHERE id = ?',
+    [status, status === 'rejected' ? reason : null, item.id]
+  );
+
+  // Dapat alam ng owner kung ano ang nangyari sa listing niya.
+  try {
+    if (status === 'approved') {
+      await notifyUser(
+        item.owner_id,
+        item.approval_status === 'rejected' ? 'Equipment re-approved' : 'Equipment approved',
+        `Your listing "${item.equipment_name}" is approved and now visible to farmers.`,
+        '/owner/equipment'
+      );
+    } else {
+      await notifyUser(
+        item.owner_id,
+        item.approval_status === 'approved' ? 'Equipment taken down' : 'Equipment rejected',
+        `Your listing "${item.equipment_name}" was ${item.approval_status === 'approved' ? 'taken down' : 'rejected'}. Reason: ${reason}. You can edit it and it will be sent for review again.`,
+        '/owner/equipment'
+      );
+    }
+  } catch (error) {
+    console.error('Equipment approval notification failed:', error.message);
   }
 
   res.json({

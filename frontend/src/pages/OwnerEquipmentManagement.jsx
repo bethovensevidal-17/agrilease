@@ -13,6 +13,7 @@ import { api } from '../api/client';
 import { assetUrl } from '../api/config';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
 import PendingSyncList from '../components/PendingSyncList.jsx';
+import './equipment-actions.css';
 
 export default function OwnerEquipmentManagement() {
   const navigate = useNavigate();
@@ -285,6 +286,9 @@ export default function OwnerEquipmentManagement() {
                               ? 'Needs Attention'
                               : 'Waiting for Review'}
                         </span>
+                        {item.approval_status === 'rejected' && item.rejection_reason && (
+                          <small className="owner-reject-reason">Reason: {item.rejection_reason}. Edit the listing to send it for review again.</small>
+                        )}
 
                         <div className="owner-card-actions">
                           <button

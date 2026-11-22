@@ -37,6 +37,8 @@ const REQUIRED_COLUMNS = [
   { table: 'subscriptions', column: 'reminder_1d_sent_at', ddl: 'DATETIME NULL' },
   { table: 'subscriptions', column: 'admin_note', ddl: 'VARCHAR(255) NULL' },
   { table: 'subscription_payments', column: 'rejection_reason', ddl: 'VARCHAR(255) NULL' },
+  // Equipment: dahilan ng pag-reject o pag-take down ng admin
+  { table: 'equipment', column: 'rejection_reason', ddl: 'VARCHAR(255) NULL' },
 ];
 
 // Mga index na kailangan ng code. May optional na `backfill` na tumatakbo bago gawin ang index.

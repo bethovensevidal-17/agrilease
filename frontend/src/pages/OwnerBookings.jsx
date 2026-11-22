@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, getAuthenticatedFile } from '../api/client';
-import { Check, X, CalendarDays, Package, UserRound, CreditCard, FileImage, Search } from 'lucide-react';
+import { Check, X, CalendarDays, Package, UserRound, CreditCard, FileImage, Search, Play } from 'lucide-react';
 import Pagination from '../components/admin/Pagination';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { paymentState, canConfirmCash, canReviewOnline } from '../utils/paymentState.js';
@@ -17,7 +17,7 @@ export default function OwnerBookings(){
  useEffect(()=>{setPage(1);load()},[load]);
  useEffect(()=>{setPage(1)},[term]);
  useAutoRefresh(()=>load(true));
- async function update(id,next){if(!await window.agrileaseDialog.confirm(`Are you sure you want to ${next} this booking?`))return;setBusy(id);setError('');setNotice('');try{const r=await api(`/owner/bookings/${id}/status`,{method:'PATCH',body:{status:next}});setNotice(r.message||`Booking ${next}.`);await load()}catch(e){setError(e.message)}finally{setBusy(null)}}
+ async function update(id,next){const ask=next==='ongoing'?'Start this rental? Confirm that the equipment was handed over to the farmer.':next==='completed'?'Mark this rental as completed? Confirm that the equipment was returned.':`Are you sure you want to ${next} this booking?`;if(!await window.agrileaseDialog.confirm(ask))return;setBusy(id);setError('');setNotice('');try{const r=await api(`/owner/bookings/${id}/status`,{method:'PATCH',body:{status:next}});setNotice(r.message||`Booking ${next}.`);await load()}catch(e){setError(e.message)}finally{setBusy(null)}}
  async function markCash(r){if(!await window.agrileaseDialog.confirm(`Confirm that you received ${money(r.total_amount)} in cash from ${r.farmer_name||'the farmer'}? This cannot be undone.`))return;setBusy(r.id);setError('');setNotice('');try{const res=await api(`/owner/bookings/${r.id}/payment`,{method:'PATCH',body:{action:'cash_received'}});setNotice(res.message||'Cash payment marked as received.');await load()}catch(e){setError(e.message)}finally{setBusy(null)}}
  async function reviewPayment(r,action){const verify=action==='verify';if(!await window.agrileaseDialog.confirm(verify?`Verify the ${label(r.payment_method)} payment of ${money(r.total_amount)} from ${r.farmer_name||'the farmer'}? Make sure the money arrived in your account.`:`Reject this payment proof from ${r.farmer_name||'the farmer'}? The farmer will be notified.`))return;setBusy(r.id);setError('');setNotice('');try{const res=await api(`/owner/bookings/${r.id}/payment`,{method:'PATCH',body:{action}});setNotice(res.message||(verify?'Payment verified.':'Payment proof rejected.'));await load()}catch(e){setError(e.message)}finally{setBusy(null)}}
  async function proof(id){try{const blob=await getAuthenticatedFile(`/owner/bookings/${id}/proof`);const url=URL.createObjectURL(blob);window.open(url,'_blank','noopener');setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(e){setError(e.message)}}
@@ -28,6 +28,8 @@ export default function OwnerBookings(){
  <div className="ob-payment"><b>Payment</b><span className="ob-method">{label(r.payment_method)}</span><span className={`am-pill pay-${paymentState(r,'owner').cls}`}>{paymentState(r,'owner').text}</span>{r.payment_reference&&<small>Ref: {r.payment_reference}</small>}{r.payment_proof&&<button onClick={()=>proof(r.id)}><FileImage size={15}/> View proof</button>}</div>
  {canConfirmCash(r)&&<footer><button disabled={busy===r.id} className="approve" onClick={()=>markCash(r)}><Check size={16}/> Mark cash received</button></footer>}
  {canReviewOnline(r)&&<footer><button disabled={busy===r.id} className="approve" onClick={()=>reviewPayment(r,'verify')}><Check size={16}/> Verify payment</button><button disabled={busy===r.id} className="reject" onClick={()=>reviewPayment(r,'reject')}><X size={16}/> Reject proof</button></footer>}
+ {r.status==='approved'&&<footer><button disabled={busy===r.id} className="approve" onClick={()=>update(r.id,'ongoing')}><Play size={16}/> Start rental</button></footer>}
+ {r.status==='ongoing'&&<footer>{String(r.payment_status||'').toLowerCase()==='verified'?<button disabled={busy===r.id} className="approve" onClick={()=>update(r.id,'completed')}><Check size={16}/> Mark completed</button>:<small>Confirm the payment first before marking this rental completed.</small>}</footer>}
  {r.status==='pending'&&<footer><button disabled={busy===r.id} className="approve" onClick={()=>update(r.id,'approved')}><Check size={16}/> Approve</button><button disabled={busy===r.id} className="reject" onClick={()=>update(r.id,'rejected')}><X size={16}/> Reject</button></footer>}</article>)}</div>}
  {!loading && <Pagination totalItems={filtered.length} itemsPerPage={pageSize} currentPage={page} onPageChange={setPage}/>}
  <style>{css}</style></section>;

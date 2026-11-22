@@ -230,11 +230,50 @@ async function cancel(req, res) {
   } catch (error) { console.error('Cancel booking:', error); publicError(res, 500, 'Unable to cancel the booking.'); }
 }
 
+// Owner moves an approved booking forward: approved -> ongoing -> completed.
+// Ongoing = na-hand over na ang equipment sa farmer. Completed = naibalik na, at kailangang bayad na (verified).
+async function progressBooking(req, res, nextStatus) {
+  const requiredStatus = nextStatus === 'ongoing' ? 'approved' : 'ongoing';
+  try {
+    const [rows] = await db.query(
+      `SELECT r.id, r.status, r.farmer_id, e.owner_id,
+              (SELECT p.payment_status FROM booking_payments p WHERE p.booking_id = r.id ORDER BY p.id DESC LIMIT 1) AS payment_status
+       FROM rental_requests r JOIN equipment e ON e.id = r.equipment_id
+       WHERE r.id = ?`, [req.params.id]);
+    if (!rows.length || Number(rows[0].owner_id) !== Number(req.user.id)) {
+      return publicError(res, 404, 'Booking not found.');
+    }
+    const booking = rows[0];
+    if (booking.status !== requiredStatus) {
+      return publicError(res, 409, nextStatus === 'ongoing'
+        ? 'Only an approved booking can be started.'
+        : 'Only an ongoing rental can be marked completed.');
+    }
+    if (nextStatus === 'completed' && booking.payment_status !== 'verified') {
+      return publicError(res, 409, 'Confirm the payment first before marking this rental completed.');
+    }
+    const [result] = await db.query(
+      'UPDATE rental_requests SET status = ? WHERE id = ? AND status = ?',
+      [nextStatus, booking.id, requiredStatus]);
+    if (!result.affectedRows) return publicError(res, 409, 'This booking was already updated.');
+    const text = nextStatus === 'ongoing'
+      ? { title: 'Rental started', body: `Your rental #${booking.id} has started. The equipment was handed over by the owner.` }
+      : { title: 'Rental completed', body: `Your rental #${booking.id} is completed. Thank you for renting!` };
+    try { await notifyUser(booking.farmer_id, text.title, text.body, '/farmer/rentals'); } catch (notificationError) { console.error('Progress notification failed:', notificationError); }
+    return res.json({ success: true, message: nextStatus === 'ongoing' ? 'Rental started.' : 'Rental marked as completed.' });
+  } catch (error) {
+    console.error('Progress booking:', error);
+    return publicError(res, 500, 'Unable to update the booking status.');
+  }
+}
+
 async function updateStatus(req, res) {
   const nextStatus = String(req.body.status || '').toLowerCase();
 
+  if (['ongoing', 'completed'].includes(nextStatus)) return progressBooking(req, res, nextStatus);
+
   if (!['approved', 'rejected'].includes(nextStatus)) {
-    return publicError(res, 400, 'Owner may only approve or reject a pending booking.');
+    return publicError(res, 400, 'Owner may only approve, reject, start or complete a booking.');
   }
 
   let connection;

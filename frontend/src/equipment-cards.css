@@ -1,0 +1,177 @@
+/* =====================================================================
+   Equipment cards — mas maliit, apat sa isang linya, at buo ang larawan.
+   Sakop: Owner → My Equipment, Farmer → Browse, at public Browse (/browse).
+   Naka-load ito PANGHULI sa main.jsx para ito ang masunod sa theme-owner
+   at theme-farmer.
+   - Hanggang 4 na card sa isang linya (auto-fill: bumababa sa 3, 2, 1
+     kapag sumisikip ang screen, hindi na kailangan ng maraming breakpoint).
+   - object-fit: contain, kaya hindi na putol ang larawan.
+   ===================================================================== */
+
+:root {
+  --eq-gap: 16px;
+  --eq-min: 240px; /* pinakamaliit na lapad ng card bago bumaba sa mas kaunting column */
+  --eq-img-h: 170px;
+  --eq-img-ratio: 4 / 3; /* hugis ng frame ng larawan, pareho sa lahat ng card */
+  --eq-img-bg: #f1f5f0;
+}
+
+/* ---------- Grid: 4 sa isang linya ---------- */
+.grid,
+.farmer-content .grid,
+.owner-page-content .owner-equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(max(var(--eq-min), calc((100% - 3 * var(--eq-gap)) / 4 - 1px)), 1fr)
+  );
+  gap: var(--eq-gap);
+  align-items: stretch;
+}
+
+/* =====================================================================
+   OWNER — My Equipment
+   ===================================================================== */
+.owner-page-content .owner-equipment-card {
+  padding: 0 0 14px;
+  border-radius: 14px;
+  min-width: 0;
+}
+.owner-page-content .owner-equipment-card > :not(.owner-equipment-image) {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+.owner-page-content .owner-equipment-card:hover { transform: translateY(-2px); }
+
+.owner-page-content .owner-equipment-image {
+  height: var(--eq-img-h);
+  margin: 0 0 12px;
+  border-radius: 0;
+  background: var(--eq-img-bg);
+}
+/* contain = kita ang buong larawan, walang putol */
+.owner-page-content .owner-equipment-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: none;
+}
+.owner-page-content .owner-equipment-card:hover .owner-equipment-image img { transform: none; }
+.owner-page-content .owner-equipment-image .owner-status {
+  top: 8px;
+  right: 8px;
+  padding: 4px 9px;
+  font-size: 10.5px;
+}
+
+.owner-page-content .owner-equipment-card h3 {
+  margin: 0 0 3px;
+  font-size: 15.5px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.owner-page-content .owner-equipment-model { margin: 0 0 6px; font-size: 12.5px; }
+.owner-page-content .owner-equipment-location { margin: 6px 0; font-size: 12px; }
+.owner-page-content .owner-equipment-details {
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 0;
+}
+.owner-page-content .owner-equipment-details span { margin-bottom: 3px; font-size: 10.5px; }
+.owner-page-content .owner-equipment-details strong { font-size: 12.5px; }
+.owner-page-content .owner-equipment-card-footer {
+  margin-top: 10px;
+  gap: 8px;
+}
+.owner-page-content .owner-card-actions { gap: 6px; }
+.owner-page-content :is(.owner-edit-button, .owner-archive-button, .owner-restore-button) {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* =====================================================================
+   FARMER + PUBLIC — Browse Equipment
+   ===================================================================== */
+.card,
+.farmer-content .card {
+  border-radius: 14px;
+  min-width: 0;
+}
+.farmer-content .card:hover { transform: translateY(-3px); }
+
+.card-img,
+.farmer-content .card-img {
+  height: var(--eq-img-h);
+  background: var(--eq-img-bg);
+}
+/* contain = kita ang buong larawan, walang putol */
+.card-img img,
+.farmer-content .card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: none;
+}
+.farmer-content .card:hover .card-img img { transform: none; }
+
+.card-body,
+.farmer-content .card-body {
+  padding: 12px 14px 14px;
+  gap: 2px;
+}
+.card-body h3,
+.farmer-content .card-body h3 {
+  margin: 0 0 2px;
+  font-size: 18px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.card-body p,
+.farmer-content .card-body p { font-size: 13px; }
+.farmer-content .card .price {
+  margin-top: 4px !important;
+  font-size: 24px;
+}
+.farmer-content .card .price small { font-size: 12.5px; }
+.farmer-content .card .equipment-view-link { margin-top: 10px; }
+
+/* =====================================================================
+   Larawan: PANTAY ang frame ng lahat ng card (iisang 4:3), sakop ang
+   buong lapad (gilid hanggang gilid), walang puti at walang blur.
+   Ang karaniwang litrato (4:3 o malapit dito) ay halos buo; kaunting
+   gilid lang ang natatabas kapag iba ang hugis.
+   Palitan ang --eq-img-ratio kung gusto mo ng ibang hugis (hal. 3 / 2).
+   ===================================================================== */
+.owner-page-content .owner-equipment-image,
+.card-img,
+.farmer-content .card-img {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--eq-img-ratio);
+  overflow: hidden;
+  background: var(--eq-img-bg);
+}
+.owner-page-content .owner-equipment-image img,
+.card-img img,
+.farmer-content .card-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  object-fit: cover;
+  object-position: center;
+}
+.owner-page-content .owner-equipment-image .owner-status { position: absolute; z-index: 2; }
+
+/* Pantay na ilalim ng card kahit magkakaiba ang taas ng litrato */
+.owner-page-content .owner-equipment-card { display: flex; flex-direction: column; }
+.owner-page-content .owner-equipment-card-footer { margin-top: auto; padding-top: 10px; }
+.owner-page-content .owner-equipment-details { margin-bottom: 0; }
+.card-body .equipment-view-link,
+.farmer-content .card .equipment-view-link { margin-top: auto; }
+.card-body > p:last-of-type { margin-bottom: 10px; }

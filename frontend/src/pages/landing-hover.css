@@ -1,0 +1,47 @@
+/* Landing page: hover and focus effects.
+   Transitions are only added when the visitor has not asked for reduced motion,
+   and hover moves are only used on devices that really hover (not touch screens). */
+
+/* Colors and underlines are safe for everybody. */
+.lp-nav .lp-link, .lp-footer a.lp-link { position: relative; transition: color .2s ease; }
+.lp-nav .lp-link::after, .lp-footer a.lp-link::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 2px; border-radius: 2px;
+  background: #f0c04a; transform: scaleX(0); transform-origin: left; transition: transform .25s ease;
+}
+.lp-trust span { transition: color .2s ease; }
+
+@media (hover: hover) {
+  .lp-nav .lp-link:hover, .lp-footer a.lp-link:hover { color: #fff; }
+  .lp-nav .lp-link:hover::after, .lp-footer a.lp-link:hover::after { transform: scaleX(1); }
+  .lp-trust span:hover { color: #fff; }
+  .lp-gold:hover { filter: brightness(1.07); box-shadow: 0 8px 20px rgba(217, 150, 42, .45); }
+  .lp-ghost:hover { background: rgba(255, 255, 255, .24); border-color: #fff; }
+  .lp-step:hover { background: #f3f8f1; }
+  .lp-about-list li:hover h3 { color: #1f6b3b; }
+}
+
+/* Keyboard users get the same underline and button feedback as mouse users. */
+.lp-nav .lp-link:focus-visible::after, .lp-footer a.lp-link:focus-visible::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-btn { transition: transform .2s ease, box-shadow .2s ease, filter .2s ease, background .2s ease, border-color .2s ease; }
+  .lp-logo { transition: transform .2s ease; }
+  .lp-photo img { transition: transform .6s ease; }
+  .lp-cat { transition: transform .3s ease, box-shadow .3s ease; }
+  .lp-cat::after { transition: background .3s ease; }
+  .lp-ic { transition: transform .25s ease; }
+  .lp-step, .lp-about-list h3 { transition: background .25s ease, color .25s ease; }
+  .lp-about-list li { transition: transform .25s ease; }
+
+  @media (hover: hover) {
+    .lp-btn:hover { transform: translateY(-2px); }
+    .lp-btn:active { transform: translateY(0); filter: brightness(.96); }
+    .lp-logo:hover { transform: scale(1.04); }
+    .lp-hero .lp-photo:hover img, .lp-about .lp-photo:hover img { transform: scale(1.04); }
+    .lp-cat:hover { transform: translateY(-6px); box-shadow: 0 18px 36px rgba(18, 67, 42, .28); }
+    .lp-cat:hover .lp-photo img { transform: scale(1.08); }
+    .lp-cat:hover::after { background: linear-gradient(180deg, transparent 15%, rgba(8, 30, 18, .92)); }
+    .lp-step:hover .lp-ic, .lp-about-list li:hover .lp-ic { transform: scale(1.1) rotate(-5deg); }
+    .lp-about-list li:hover { transform: translateX(5px); }
+  }
+}

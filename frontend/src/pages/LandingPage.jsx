@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Tractor, Wheat, Droplets, Search, CalendarCheck, BadgeCheck, ShieldCheck, WifiOff, Wallet } from 'lucide-react';
 import './landing-page.css';
 import './landing-about.css';
+import './landing-hover.css';
 import '../logo.css';
 
 // Photo slots: put your own photos in frontend/public/images/ using these file names.

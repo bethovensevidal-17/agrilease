@@ -6,6 +6,8 @@ const {
   login
 } = require('../controllers/authController');
 
+const { requireAuth } = require('../middleware/auth');
+
 const {
   ownerDocumentUpload
 } = require('../middleware/ownerDocuments');
@@ -26,5 +28,8 @@ router.post('/register', (req, res, next) => {
 
 // POST /api/auth/login
 router.post('/login', login);
+
+// POST /api/auth/logout (recorded in the Activity Log by requireAuth)
+router.post('/logout', requireAuth, (_req, res) => res.json({ success: true, message: 'Logged out.' }));
 
 module.exports = router;

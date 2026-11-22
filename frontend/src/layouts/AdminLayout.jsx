@@ -12,6 +12,7 @@ import {
   WifiOff,
   X,
   LogOut,
+  ScrollText,
 } from 'lucide-react';
 
 import { api, getUser, clearAuth } from '../api/client';
@@ -26,6 +27,7 @@ const navigation = [
   { label: 'Subscription Management', path: '/admin/subscriptions', icon: CreditCard },
   { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
   { label: 'Offline Access', path: '/admin/offline', icon: WifiOff },
+  { label: 'Activity Log', path: '/admin/activity', icon: ScrollText },
 ];
 
 const ADMIN_PAGE_TITLES = {
@@ -38,6 +40,7 @@ const ADMIN_PAGE_TITLES = {
   '/admin/offline': 'Offline Access',
   '/admin/notifications': 'Notifications',
   '/admin/profile': 'My Profile',
+  '/admin/activity': 'Activity Log',
   '/admin/content': 'Website Content',
 };
 function adminPageTitle(pathname) {

@@ -47,6 +47,21 @@ export function clearAuth() {
   setUser(null);
 }
 
+// Tells the server about the logout (so it appears in the Activity Log), then clears the session.
+// Never blocks the user: if the server cannot be reached the session is still cleared.
+export async function signOut() {
+  const token = getToken();
+  if (token && navigator.onLine) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 2500);
+    try {
+      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, signal: controller.signal });
+    } catch { /* continue logging out locally */ }
+    window.clearTimeout(timer);
+  }
+  clearAuth();
+}
+
 function getSnapshotKey(path) {
   const user = getUser();
   const identity = user ? `${user.role || 'user'}:${user.id ?? user.email ?? 'unknown'}` : 'public';

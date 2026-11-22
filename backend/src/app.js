@@ -29,6 +29,7 @@ app.use('/api/rentals', require('./routes/rental'));
 app.use('/api/owner/bookings', require('./routes/ownerBookings'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/activity', require('./routes/activity'));
 app.use('/api/content', require('./routes/content'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));

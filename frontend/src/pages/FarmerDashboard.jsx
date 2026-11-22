@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Tractor, ClipboardList, ReceiptText, MessageCircle, Bell, UserRound, LogOut, MapPin, RefreshCw, Menu, X, WifiOff } from 'lucide-react';
+import { LayoutDashboard, Tractor, ClipboardList, ReceiptText, MessageCircle, Bell, UserRound, LogOut, MapPin, RefreshCw, Menu, X, WifiOff, ScrollText } from 'lucide-react';
 import { getUser, clearAuth, api } from '../api/client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -17,6 +17,7 @@ const primaryLinks = [
   { to: '/farmer/rentals', label: 'My Bookings', icon: ClipboardList },
   { to: '/farmer/transactions', label: 'Transactions', icon: ReceiptText },
   { to: '/farmer/offline', label: 'Offline Access', icon: WifiOff },
+  { to: '/farmer/activity', label: 'Activity Log', icon: ScrollText },
 ];
 
 const FARMER_PAGE_TITLES = {
@@ -28,6 +29,7 @@ const FARMER_PAGE_TITLES = {
   '/farmer/offline': 'Offline Access',
   '/farmer/notifications': 'Farmer Notifications',
   '/farmer/profile': 'My Profile',
+  '/farmer/activity': 'Activity Log',
 };
 function farmerPageTitle(pathname) {
   const path = pathname.replace(/\/+$/, '') || '/farmer';

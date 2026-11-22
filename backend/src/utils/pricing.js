@@ -1,9 +1,11 @@
 const HOUR_MS = 60 * 60 * 1000;
+const MIN_DAY_HOURS = 24; // per-day rate: minimum charge is one full day
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
 /**
  * Database rate types are `hour`, `day`, and `hectare`.
- * Hourly rentals are prorated by the exact rental duration; daily rentals are prorated by hour;
+ * Hourly rentals are prorated by the exact rental duration. Daily rentals have a minimum charge of 1 day (24 hours)
+ * and are prorated by hour only for the time beyond that;
  * hectare rentals use farm area and do not depend on the selected time duration.
  */
 function calculateRentalTotal({ rate, rateType, start, end, quantity = 1, farmArea = null }) {
@@ -22,7 +24,7 @@ function calculateRentalTotal({ rate, rateType, start, end, quantity = 1, farmAr
     if (!Number.isFinite(durationMs) || durationMs <= 0) throw new Error('Rental duration must be greater than zero.');
     const hours = durationMs / HOUR_MS;
     if (rateType === 'hour') subtotal = unitRate * hours * units;
-    else if (rateType === 'day') subtotal = (unitRate / 24) * durationMs / HOUR_MS * units;
+    else if (rateType === 'day') subtotal = (unitRate / 24) * Math.max(hours, MIN_DAY_HOURS) * units;
     else throw new Error('Unsupported rental rate type.');
   }
   return roundMoney(subtotal);

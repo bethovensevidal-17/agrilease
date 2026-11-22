@@ -6,6 +6,16 @@ import '../styles/booking.css';
 import { assetUrl } from '../api/config';
 
 const money = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+const EMPTY_FORM = { start_date: '', start_time: '', end_date: '', end_time: '', quantity: '1', farm_area: '', payment_method: 'cash', payment_reference: '' };
+
+// Same rule as the server: does the owner have the payment details for this method?
+function ownerDetailsComplete(method, p) {
+  if (!p) return false;
+  if (method === 'gcash') return Boolean(p.gcash_number && p.gcash_account_name);
+  if (method === 'bank_transfer') return Boolean(p.bank_name && p.bank_account_name && p.bank_account_number);
+  if (method === 'other') return Boolean(p.other_payment_instructions);
+  return true;
+}
 
 export default function EquipmentBooking() {
   const { id } = useParams();
@@ -19,7 +29,8 @@ export default function EquipmentBooking() {
   const [ownerPayment, setOwnerPayment] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentLoadError, setPaymentLoadError] = useState('');
-  const [form, setForm] = useState({ start_date: '', start_time: '', end_date: '', end_time: '', quantity: '1', farm_area: '', payment_method: 'cash', payment_reference: '' });
+  const [fileKey, setFileKey] = useState(0);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
     api(`/equipment/${id}`).then(setEquipment).catch(e => setError(e.message)).finally(() => setLoading(false));
@@ -53,13 +64,29 @@ export default function EquipmentBooking() {
     const hours = (end - start) / 3600000;
     if (!(hours > 0)) return null;
     if (equipment.rate_type === 'hour') return rate * hours * quantity;
-    return rate * hours / 24 * quantity;
+    // Per-day rate: minimum charge is 1 day (24 hours), prorated by hour beyond that. Same as the server.
+    return rate * Math.max(hours, 24) / 24 * quantity;
   }, [equipment, form]);
 
-  function change(e) { setForm(prev => ({ ...prev, [e.target.name]: e.target.value })); }
+  // Clear message for a wrong schedule, instead of a vague "Complete rental details".
+  const scheduleError = useMemo(() => {
+    if (!form.start_date || !form.start_time || !form.end_date || !form.end_time) return '';
+    const start = new Date(`${form.start_date}T${form.start_time}`);
+    const end = new Date(`${form.end_date}T${form.end_time}`);
+    if (start < new Date()) return 'A rental cannot start in the past.';
+    if (!(end > start)) return 'The end date/time must be later than the start date/time.';
+    return '';
+  }, [form.start_date, form.start_time, form.end_date, form.end_time]);
+
+  // Online payment needs the owner's payment details; block submit until they are known and complete.
+  const needsOwnerDetails = form.payment_method !== 'cash' && Boolean(getToken()) && user?.role === 'farmer';
+  const ownerDetailsOk = !needsOwnerDetails || (!paymentLoading && !paymentLoadError && ownerDetailsComplete(form.payment_method, ownerPayment));
+
+  function change(e) { setMessage(''); setForm(prev => ({ ...prev, [e.target.name]: e.target.value })); }
 
   async function submit(e) {
     e.preventDefault(); setError(''); setMessage('');
+    if (scheduleError) { setError(scheduleError); return; }
     if (!getToken() || user?.role !== 'farmer') { setError('Mag-login gamit ang Farmer account para makapag-submit ng booking.'); return; }
     if (!await window.agrileaseDialog.confirm('Submit this booking request? The owner will review it after you submit.', { title: 'Submit booking', confirmText: 'Submit' })) return;
     const payload = { equipment_id: Number(id), start_date: form.start_date, start_time: form.start_time, end_date: form.end_date, end_time: form.end_time, quantity: Number(form.quantity), payment_method: form.payment_method };
@@ -87,7 +114,8 @@ export default function EquipmentBooking() {
           } else throw requestError;
         }
       }
-      setForm(prev => ({ ...prev, payment_reference: '' })); setProof(null);
+      // Reset the form so the same request cannot be sent twice by clicking Submit again.
+      setForm(EMPTY_FORM); setProof(null); setFileKey(k => k + 1);
     } catch (err) { setError(err.message); }
     finally { setSubmitting(false); }
   }
@@ -117,7 +145,7 @@ export default function EquipmentBooking() {
           <p className="booking-description eq-detail-description">{equipment.description || 'No description provided.'}</p>
           <dl className="booking-specs eq-detail-grid">
             <div><dt>Rate</dt><dd>{money.format(Number(equipment.rental_rate))} {rateType}</dd></div>
-            <div><dt>Available quantity</dt><dd>{equipment.available_quantity ?? 1}</dd></div>
+            <div><dt>Total units</dt><dd>{equipment.available_quantity ?? 1}</dd></div>
             <div><dt>Condition</dt><dd>{equipment.condition_status || 'Not specified'}</dd></div>
             <div><dt>Location</dt><dd>{equipment.location || 'Not specified'}</dd></div>
             <div><dt>Equipment owner</dt><dd>{equipment.owner_name || 'AgriLease owner'}</dd></div>
@@ -140,8 +168,10 @@ export default function EquipmentBooking() {
         <div className="booking-estimate">
           <span>Estimated total (preview only)</span>
           <strong>{estimate == null ? 'Complete rental details' : money.format(estimate)}</strong>
+          {equipment.rate_type === 'day' && <small>Per-day rate: minimum charge is 1 day (24 hours).</small>}
           <small>Final amount is calculated and validated by the server.</small>
         </div>
+        {scheduleError && <p className="booking-error">{scheduleError}</p>}
         </section><section className="booking-column"><h3>Payment Details</h3>
         <label>Payment method<select name="payment_method" value={form.payment_method} onChange={change} required>
           <option value="cash">Cash</option><option value="gcash">GCash</option><option value="bank_transfer">Bank Transfer</option><option value="other">Other</option>
@@ -168,13 +198,13 @@ export default function EquipmentBooking() {
             </>}
           </div>}
           <label>Payment reference number<input name="payment_reference" value={form.payment_reference} onChange={change} required maxLength="100" /></label>
-          <label>Proof of payment (JPG, PNG, WEBP; max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setProof(e.target.files?.[0] || null)} required /></label>
+          <label>Proof of payment (JPG, PNG, WEBP; max 5 MB)<input key={fileKey} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setProof(e.target.files?.[0] || null)} required /></label>
         </div>}
         </section></div>
         {error && <p className="booking-error">{error}</p>}
         {message && <p className="booking-success">{message} <Link to="/farmer/rentals">View my bookings</Link></p>}
         {equipment.availability_status && equipment.availability_status !== 'available' && <p className="booking-error">This equipment is currently {String(equipment.availability_status).replaceAll('_', ' ')} and cannot be booked.</p>}
-        <div className="booking-submit-row"><button className="booking-submit" disabled={submitting || (equipment.availability_status && equipment.availability_status !== 'available')}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button></div>
+        <div className="booking-submit-row"><button className="booking-submit" disabled={submitting || Boolean(scheduleError) || !ownerDetailsOk || (equipment.availability_status && equipment.availability_status !== 'available')}>{submitting ? 'Submitting...' : 'Submit Booking Request'}</button></div>
         {!getToken() && <p className="booking-muted">You must <Link to="/login">log in</Link> as a farmer to submit a booking.</p>}
       </form>
     </div>

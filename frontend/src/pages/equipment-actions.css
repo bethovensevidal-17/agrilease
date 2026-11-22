@@ -1,0 +1,9 @@
+/* Admin Equipment Management: pantay at compact ang mga action button */
+.admin-page-content .am-action-cell { min-width: 250px; }
+.admin-page-content .am-actions.am-actions-equal { flex-wrap: nowrap; gap: 8px; }
+.admin-page-content .am-actions.am-actions-equal .am-button {
+  flex: 1 1 0; min-width: 72px; min-height: 38px; padding: 0 12px; font-size: 13px; text-align: center; white-space: nowrap;
+}
+.am-reject-note { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; background: #fbeaea; color: #a12b2b; font-size: 14px; line-height: 1.5; }
+.owner-reject-reason { display: block; margin-top: 6px; color: #a12b2b; font-size: 13px; line-height: 1.4; }
+@media (max-width: 800px) { .admin-page-content .am-actions.am-actions-equal { flex-wrap: wrap; } .admin-page-content .am-action-cell { min-width: 0; } }

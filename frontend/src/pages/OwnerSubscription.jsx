@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { BadgeCheck, CalendarCheck, CalendarDays, Check, ShieldCheck, Layers, Activity, CalendarClock, Package } from 'lucide-react';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
+import './subscription-review.css';
 
 const PLAN_ICONS = [CalendarDays, CalendarCheck, ShieldCheck, BadgeCheck];
 const cap = v => String(v || '—').replace(/_/g, ' ');
@@ -12,6 +13,8 @@ export default function OwnerSubscription() {
   const [plans, setPlans] = useState([]);
   const [current, setCurrent] = useState(null);
   const [equipmentCount, setEquipmentCount] = useState(0);
+  const [pending, setPending] = useState(null);
+  const [grace, setGrace] = useState(null);
   const [payments, setPayments] = useState([]);
   const [method, setMethod] = useState('gcash');
   const [reference, setReference] = useState('');
@@ -31,6 +34,8 @@ export default function OwnerSubscription() {
       setPlans(planResult.data || []);
       setCurrent(mine.subscription || null);
       setEquipmentCount(Number(mine.equipment_count || 0));
+      setPending(mine.pending_subscription || null);
+      setGrace(mine.grace || null);
       setPayments(paymentResult.data || []);
     } catch (err) {
       if (!quiet) setError(err.message || 'Unable to load subscriptions.');
@@ -42,7 +47,7 @@ export default function OwnerSubscription() {
 
   async function choosePlan(plan) {
     setError(''); setMessage('');
-    if (busy) return;
+    if (busy || pending) return;
     if (Number(plan.price) === 0) {
       if (!await window.agrileaseDialog.confirm(`Activate your one-time ${plan.duration_days}-day Free Trial${plan.equipment_limit ? ` with up to ${plan.equipment_limit} equipment listings` : ''}?`)) return;
       setBusy(true);
@@ -70,12 +75,22 @@ export default function OwnerSubscription() {
     finally { setBusy(false); }
   }
 
+  const isActive = current && String(current.status).toLowerCase() === 'active';
+  const daysLeft = isActive && current.end_date
+    ? Math.ceil((new Date(String(current.end_date).replace(' ', 'T')).getTime() - Date.now()) / 86400000)
+    : null;
+  const expiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
+  const fmtShort = v => v ? new Date(v).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
   const paidPlans = plans.filter(plan => Number(plan.price) !== 0).sort((a, b) => Number(a.duration_days) - Number(b.duration_days));
   const trialPlan = plans.find(plan => Number(plan.price) === 0);
 
   return <section className="am-page sub-page">
     {error && <div className="um-message error">{error}</div>}
     {message && <div className="um-message success">{message}</div>}
+    {pending && <div className="sub-banner info"><strong>Payment submitted, waiting for verification</strong>Your {pending.plan_name} request is being checked by the administrator. Your plan starts automatically once it is verified, and you will get a notification. You cannot submit another request until then.</div>}
+    {expiringSoon && <div className="sub-banner warn"><strong>Your plan expires {daysLeft === 0 ? 'today' : `in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`}</strong>Renew now to avoid interruption. If you renew early, your remaining days are kept and the new plan continues after it.</div>}
+    {!isActive && grace?.in_grace && <div className="sub-banner warn"><strong>Your plan has expired</strong>Your listings stay visible until {fmtShort(grace.grace_ends_at)}. Renew before then so farmers can still book your equipment.</div>}
+    {!isActive && grace?.listings_hidden && <div className="sub-banner danger"><strong>Your listings are hidden</strong>Your plan expired on {fmtShort(grace.last_end)}, so farmers cannot see or book your equipment. Renew a plan to show them again.</div>}
     <div className="um-panel sub-panel">
       <div className="sub-panel-head"><h2>Current Subscription</h2>{current && <span className={`sub-pill st-${String(current.status || '').toLowerCase()}`}>{cap(current.status)}</span>}</div>
       {current ? (() => { const limit = current.equipment_limit; const pct = limit == null || Number(limit) === 0 ? 0 : Math.min(100, Math.round(equipmentCount / Number(limit) * 100)); return <div className="sub-current-grid">
@@ -98,6 +113,7 @@ export default function OwnerSubscription() {
               <th>Reference</th>
               <th>Status</th>
               <th>Payment Date</th>
+              <th>Note</th>
             </tr>
           </thead>
 
@@ -115,11 +131,12 @@ export default function OwnerSubscription() {
                       ? new Date(payment.payment_date).toLocaleDateString('en-PH')
                       : '—'}
                   </td>
+                  <td>{payment.rejection_reason || '—'}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="um-empty">
+                <td colSpan="7" className="um-empty">
                   No subscription payment records found.
                 </td>
               </tr>
@@ -137,7 +154,7 @@ export default function OwnerSubscription() {
         <label>Proof of payment (JPG/PNG/WEBP, max 5MB) <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setProof(e.target.files?.[0] || null)} /></label>
       </div>
     </div>
-    {!current && trialPlan && <div className="sub-trial"><div><strong>{trialPlan.plan_name}</strong><span>{trialPlan.description || `One-time ${trialPlan.duration_days}-day trial.`}</span></div><button type="button" className="um-refresh" disabled={busy} onClick={()=>choosePlan(trialPlan)}>{busy ? 'Please wait...' : 'Start Free Trial'}</button></div>}
+    {!current && trialPlan && <div className="sub-trial"><div><strong>{trialPlan.plan_name}</strong><span>{trialPlan.description || `One-time ${trialPlan.duration_days}-day trial.`}</span></div><button type="button" className="um-refresh" disabled={busy || Boolean(pending)} onClick={()=>choosePlan(trialPlan)}>{busy ? 'Please wait...' : 'Start Free Trial'}</button></div>}
     <div className="sub-plan-grid">
       {paidPlans.map((plan, index) => { const Icon = PLAN_ICONS[index % PLAN_ICONS.length]; return <article className="sub-plan-card" key={plan.id}>
         <span className="sub-plan-icon"><Icon size={22} strokeWidth={1.8} /></span>
@@ -147,7 +164,7 @@ export default function OwnerSubscription() {
           <li><Check size={15} strokeWidth={2.4} />{plan.equipment_limit == null ? 'Unlimited equipment listings' : `Up to ${plan.equipment_limit} equipment listings`}</li>
           {plan.description && <li><Check size={15} strokeWidth={2.4} />{plan.description}</li>}
         </ul>
-        <button type="button" className="um-refresh sub-plan-btn" disabled={busy} onClick={()=>choosePlan(plan)}>{busy ? 'Please wait...' : 'Submit Payment & Request Plan'}</button>
+        <button type="button" className="um-refresh sub-plan-btn" disabled={busy || Boolean(pending)} onClick={()=>choosePlan(plan)}>{busy ? 'Please wait...' : pending ? 'Waiting for verification' : isActive ? 'Submit Payment & Renew' : 'Submit Payment & Request Plan'}</button>
       </article>; })}
     </div>
   </section>;

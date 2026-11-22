@@ -4,6 +4,7 @@ import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 import { assetUrl } from '../api/config';
+import './equipment-actions.css';
 
 const PAGE_SIZE = 8;
 const money = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
@@ -23,6 +24,9 @@ export default function EquipmentManagement() {
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState('');
 
   async function load(silent = false) {
     try {
@@ -49,16 +53,28 @@ export default function EquipmentManagement() {
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const count = value => items.filter(item => item.approval_status === value).length;
 
-  async function setApproval(item, approval_status) {
-    const action = approval_status === 'approved' ? 'approve' : 'reject';
-    if (!await window.agrileaseDialog.confirm(`Are you sure you want to ${action} "${item.name || item.equipment_name}"?`)) return;
+  async function setApproval(item, approval_status, reason) {
+    const label = item.name || item.equipment_name;
+    // Ang pag-reject ay may sariling modal na humihingi ng reason, kaya hindi na ito dumadaan sa confirm.
+    if (approval_status === 'approved' && !await window.agrileaseDialog.confirm(`Approve "${label}"? It will become visible to farmers.`)) return;
     try {
       setBusyId(item.id); setError(''); setMessage('');
-      await api(`/equipment/${item.id}/approval`, { method: 'PATCH', body: { approval_status } });
-      setMessage(`Equipment ${action}d successfully.`); await load();
-      if (selected?.id === item.id) setSelected({ ...selected, approval_status });
-    } catch (err) { setError(err.message || `Unable to ${action} equipment.`); }
+      await api(`/equipment/${item.id}/approval`, { method: 'PATCH', body: { approval_status, reason } });
+      setMessage(approval_status === 'approved' ? `"${label}" approved. The owner was notified.` : `"${label}" rejected. The owner was notified with your reason.`);
+      await load();
+      if (selected?.id === item.id) setSelected({ ...selected, approval_status, rejection_reason: approval_status === 'rejected' ? reason : null });
+      return true;
+    } catch (err) { setError(err.message || 'Unable to update equipment.'); return false; }
     finally { setBusyId(null); }
+  }
+
+  function askReject(item) { setRejectReason(''); setRejectError(''); setRejectTarget(item); }
+
+  async function confirmReject(event) {
+    event.preventDefault();
+    if (rejectReason.trim().length < 3) { setRejectError('Enter a reason (at least 3 characters). The owner will see it.'); return; }
+    const ok = await setApproval(rejectTarget, 'rejected', rejectReason.trim());
+    if (ok) setRejectTarget(null);
   }
 
   return <div className="am-page">
@@ -84,7 +100,7 @@ export default function EquipmentManagement() {
         <tbody>{loading ? <tr><td colSpan="8" className="um-empty">Loading equipment...</td></tr> : shown.length === 0 ? <tr><td colSpan="8" className="um-empty">{archive === 'archived' ? 'No archived equipment listings. Listings archived by owners will appear here.' : 'No equipment listings found.'}</td></tr> : shown.map(item => <tr key={item.id}>
           <td><strong>{item.name || item.equipment_name || 'Unnamed equipment'}</strong><small className="am-subtext">{item.brand_model || `ID #${item.id}`}</small></td><td>{item.owner_name || '—'}</td><td>{item.category_name || '—'}</td><td>{money(item.rate ?? item.rental_rate)} / {item.rate_type || '—'}</td><td>{item.location || '—'}</td>
           <td><span className={`am-pill ${item.availability || item.availability_status || ''}`}>{pretty(item.availability || item.availability_status)}</span></td><td><span className={`am-pill ${item.approval_status || ''}`}>{pretty(item.approval_status)}</span></td>
-          <td><div className="am-actions"><button className="am-button neutral" onClick={() => setSelected(item)}>View</button>{archive !== 'archived' && item.approval_status !== 'approved' && <button disabled={busyId === item.id} className="am-button approve" onClick={() => setApproval(item, 'approved')}>Approve</button>}{archive !== 'archived' && item.approval_status !== 'rejected' && <button disabled={busyId === item.id} className="am-button reject" onClick={() => setApproval(item, 'rejected')}>Reject</button>}</div></td>
+          <td className="am-action-cell"><div className="am-actions am-actions-equal"><button className="am-button neutral" onClick={() => setSelected(item)}>View</button>{archive !== 'archived' && item.approval_status !== 'approved' && <button disabled={busyId === item.id} className="am-button approve" onClick={() => setApproval(item, 'approved')}>{item.approval_status === 'rejected' ? 'Re-approve' : 'Approve'}</button>}{archive !== 'archived' && item.approval_status !== 'rejected' && <button disabled={busyId === item.id} className="am-button reject" onClick={() => askReject(item)}>{item.approval_status === 'approved' ? 'Take down' : 'Reject'}</button>}</div></td>
         </tr>)}</tbody></table></div>
       {!loading && <Pagination totalItems={filtered.length} itemsPerPage={PAGE_SIZE} currentPage={page} onPageChange={setPage} />}
     </section>
@@ -93,7 +109,23 @@ export default function EquipmentManagement() {
       <div className="um-panel-heading"><div><h2 id="equipment-detail-title">Equipment Details</h2><p>Listing reference #{selected.id}</p></div><button className="am-button neutral" onClick={() => setSelected(null)}>Close</button></div>
       {selected.image_path && <img className="am-equipment-preview" src={assetUrl(`/uploads/${String(selected.image_path).replace(/^\//, '')}`)} alt={selected.equipment_name || 'Equipment'} />}
       <div className="am-detail-grid">{[['Equipment Name', selected.equipment_name || selected.name],['Brand / Model', selected.brand_model],['Owner', selected.owner_name],['Category', selected.category_name],['Rental Rate', `${money(selected.rental_rate ?? selected.rate)} / ${selected.rate_type || ''}`],['Quantity', selected.quantity ?? selected.available_quantity],['Condition', pretty(selected.condition_status)],['Availability', pretty(selected.availability_status || selected.availability)],['Location', selected.location],['Approval Status', pretty(selected.approval_status)],['Description', selected.description],['Submitted', selected.created_at ? new Date(selected.created_at).toLocaleString('en-PH') : '—']].map(([label, value]) => <div key={label}><small>{label}</small><strong>{value || '—'}</strong></div>)}</div>
-      {selected.approval_status !== 'approved' && <div className="am-actions modal-actions"><button className="am-button approve" disabled={busyId === selected.id} onClick={() => setApproval(selected, 'approved')}>Approve Listing</button>{selected.approval_status !== 'rejected' && <button className="am-button reject" disabled={busyId === selected.id} onClick={() => setApproval(selected, 'rejected')}>Reject Listing</button>}</div>}
+      {selected.approval_status === 'rejected' && selected.rejection_reason && <p className="am-reject-note"><strong>Rejection reason:</strong> {selected.rejection_reason}</p>}
+      {archive !== 'archived' && <div className="am-actions modal-actions">{selected.approval_status !== 'approved' && <button className="am-button approve" disabled={busyId === selected.id} onClick={() => setApproval(selected, 'approved')}>{selected.approval_status === 'rejected' ? 'Re-approve Listing' : 'Approve Listing'}</button>}{selected.approval_status !== 'rejected' && <button className="am-button reject" disabled={busyId === selected.id} onClick={() => askReject(selected)}>{selected.approval_status === 'approved' ? 'Take Down Listing' : 'Reject Listing'}</button>}</div>}
     </section></div>}
+
+    {rejectTarget && <div className="sub-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setRejectTarget(null); }}>
+      <section className="sub-modal" role="dialog" aria-modal="true" aria-label="Reject listing">
+        <h2>{rejectTarget.approval_status === 'approved' ? 'Take down listing' : 'Reject listing'}</h2>
+        <p>{rejectTarget.name || rejectTarget.equipment_name}{rejectTarget.approval_status === 'approved' ? '. It will be hidden from farmers. Existing approved or ongoing bookings are not cancelled.' : ''}</p>
+        <form className="sub-form" onSubmit={confirmReject}>
+          {rejectError && <div className="um-message error">{rejectError}</div>}
+          <label>Reason (the owner will see this)<textarea value={rejectReason} maxLength={255} required placeholder="Example: The photo does not match the equipment." onChange={event => setRejectReason(event.target.value)} /></label>
+          <div className="sub-form-actions">
+            <button type="button" className="um-refresh" onClick={() => setRejectTarget(null)} disabled={busyId === rejectTarget.id}>Cancel</button>
+            <button type="submit" className="am-button reject" disabled={busyId === rejectTarget.id}>{busyId === rejectTarget.id ? 'Saving...' : (rejectTarget.approval_status === 'approved' ? 'Take down' : 'Reject')}</button>
+          </div>
+        </form>
+      </section>
+    </div>}
   </div>;
 }

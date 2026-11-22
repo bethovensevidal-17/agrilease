@@ -320,7 +320,7 @@ const getDashboardSummary = async (req, res, next) => {
          WHERE status = 'completed') AS completed_rentals,
 
         (SELECT COUNT(*) FROM subscriptions
-         WHERE status = 'active') AS active_subscriptions,
+         WHERE status = 'active' AND end_date >= NOW()) AS active_subscriptions,
 
         (SELECT COUNT(*) FROM subscriptions
          WHERE status = 'pending') AS pending_subscriptions,

@@ -32,6 +32,13 @@ const REQUIRED_COLUMNS = [
   { table: 'announcements', column: 'archived_at', ddl: 'DATETIME NULL' },
   // Push notification: services/push.js ay nagsusulat sa endpoint_hash
   { table: 'push_subscriptions', column: 'endpoint_hash', ddl: 'CHAR(64) NULL' },
+  // Subscription: paalala bago mag-expire, tala ng admin, at dahilan ng pag-reject ng bayad
+  { table: 'subscriptions', column: 'reminder_7d_sent_at', ddl: 'DATETIME NULL' },
+  { table: 'subscriptions', column: 'reminder_1d_sent_at', ddl: 'DATETIME NULL' },
+  { table: 'subscriptions', column: 'admin_note', ddl: 'VARCHAR(255) NULL' },
+  { table: 'subscription_payments', column: 'rejection_reason', ddl: 'VARCHAR(255) NULL' },
+  // Equipment: dahilan ng pag-reject o pag-take down ng admin
+  { table: 'equipment', column: 'rejection_reason', ddl: 'VARCHAR(255) NULL' },
 ];
 
 // Mga index na kailangan ng code. May optional na `backfill` na tumatakbo bago gawin ang index.

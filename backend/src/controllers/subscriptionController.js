@@ -2,6 +2,9 @@ const db = require('../db');
 const path = require('path');
 const fs = require('fs');
 const { notifyUser, notifyAdmins } = require('../services/notifications');
+const { GRACE_DAYS } = require('../services/subscriptionAccess');
+
+const fmtDate = value => (value ? new Date(value).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '');
 
 const PLAN_CODES = {
   'FREE TRIAL': 'trial',
@@ -75,11 +78,26 @@ async function mySubscription(req, res, next) {
     // Preserve compatibility with the existing Owner frontend.
     const subscription = activeRows[0] || pendingRows[0] || null;
 
+    // Grace period: kung nag-expire na, hanggang kailan pa nakikita ang listings.
+    const [[last]] = await db.execute(
+      `SELECT MAX(end_date) AS last_end
+         FROM subscriptions
+        WHERE owner_id = ? AND status IN ('active', 'expired')`,
+      [req.user.id]
+    );
+    let graceInfo = { days: GRACE_DAYS, in_grace: false, listings_hidden: false, last_end: null, grace_ends_at: null };
+    if (!activeRows[0] && last.last_end && Number(count.equipment_count || 0) > 0) {
+      const graceEnds = new Date(new Date(last.last_end).getTime() + GRACE_DAYS * 86400000);
+      const inGrace = graceEnds.getTime() >= Date.now();
+      graceInfo = { days: GRACE_DAYS, in_grace: inGrace, listings_hidden: !inGrace, last_end: last.last_end, grace_ends_at: graceEnds };
+    }
+
     res.json({
       success: true,
       subscription,
       pending_subscription: pendingRows[0] || null,
-      equipment_count: Number(count.equipment_count || 0)
+      equipment_count: Number(count.equipment_count || 0),
+      grace: graceInfo
     });
   } catch (error) {
     next(error);
@@ -171,12 +189,16 @@ async function verifyPayment(req, res, next) {
   try {
     const paymentId = Number(req.params.id);
     const decision = String(req.body.status || '').toLowerCase();
+    const reason = String(req.body.reason || '').trim().slice(0, 255);
     if (!Number.isInteger(paymentId) || paymentId < 1 || !['verified', 'rejected'].includes(decision)) {
       return res.status(400).json({ error: 'Invalid payment ID or verification status.' });
     }
+    if (decision === 'rejected' && reason.length < 3) {
+      return res.status(400).json({ error: 'Enter a reason for rejecting this payment so the owner knows what to fix.' });
+    }
     await conn.beginTransaction();
     const [rows] = await conn.execute(
-      `SELECT sp.id, sp.subscription_id, sp.payment_status, s.owner_id, s.plan_id, p.duration_days
+      `SELECT sp.id, sp.subscription_id, sp.payment_status, s.status AS subscription_status, s.owner_id, s.plan_id, p.duration_days
          FROM subscription_payments sp
          JOIN subscriptions s ON s.id = sp.subscription_id
          JOIN subscription_plans p ON p.id = s.plan_id
@@ -185,7 +207,14 @@ async function verifyPayment(req, res, next) {
     if (!rows.length) { await conn.rollback(); return res.status(404).json({ error: 'Payment record not found.' }); }
     const payment = rows[0];
     if (payment.payment_status !== 'pending') { await conn.rollback(); return res.status(409).json({ error: 'Payment has already been reviewed.' }); }
-    await conn.execute('UPDATE subscription_payments SET payment_status = ?, verified_by = ?, payment_date = NOW() WHERE id = ?', [decision, req.user.id, paymentId]);
+    if (decision === 'verified' && payment.subscription_status !== 'pending') {
+      await conn.rollback();
+      return res.status(409).json({ error: 'This subscription request is no longer pending (it may have been cancelled). Ask the owner to submit a new request.' });
+    }
+    await conn.execute(
+      'UPDATE subscription_payments SET payment_status = ?, verified_by = ?, payment_date = NOW(), rejection_reason = ? WHERE id = ?',
+      [decision, req.user.id, decision === 'rejected' ? reason : null, paymentId]
+    );
     if (decision === 'verified') {
       // Find the current valid subscription before replacing it.
       const [activeRows] = await conn.execute(
@@ -237,13 +266,22 @@ async function verifyPayment(req, res, next) {
     }
     await conn.commit();
 
+    let activated = null;
+    if (decision === 'verified') {
+      const [[row]] = await db.execute(
+        `SELECT s.start_date, s.end_date, p.plan_name
+           FROM subscriptions s LEFT JOIN subscription_plans p ON p.id = s.plan_id
+          WHERE s.id = ?`, [payment.subscription_id]
+      );
+      activated = row || null;
+    }
     try {
       await notifyUser(
         payment.owner_id,
         `Subscription payment ${decision}`,
         decision === 'verified'
-          ? 'Your subscription payment has been verified. Your subscription is now active.'
-          : 'Your subscription payment has been rejected. Please review your payment details and contact the administrator if needed.',
+          ? `Your payment was verified. Your ${activated?.plan_name || ''} subscription is active until ${fmtDate(activated?.end_date)}.`.replace('  ', ' ')
+          : `Your subscription payment was rejected. Reason: ${reason}. You can submit a new request with the correct details.`,
         '/owner/subscription'
       );
     } catch (notificationError) {
@@ -253,8 +291,10 @@ async function verifyPayment(req, res, next) {
     res.json({
       success: true,
       message: decision === 'verified'
-        ? 'Payment verified and subscription activated.'
-        : 'Payment rejected.'
+        ? `Payment verified. Subscription is active until ${fmtDate(activated?.end_date)}.`
+        : 'Payment rejected. The owner was notified with your reason.',
+      start_date: activated?.start_date || null,
+      end_date: activated?.end_date || null
     });
   } catch (error) {
     try { await conn.rollback(); } catch (_) {}
@@ -287,6 +327,7 @@ async function myPayments(req, res, next) {
           sp.reference_number,
           sp.payment_status,
           sp.payment_date,
+          sp.rejection_reason,
           s.plan_id,
           s.status AS subscription_status,
           p.plan_name,
@@ -364,66 +405,108 @@ function validDateTime(value) {
 }
 
 async function adminCreateSubscription(req, res, next) {
+  const conn = await db.getConnection();
   try {
     const ownerId = Number(req.body.owner_id);
     const planId = Number(req.body.plan_id);
-    const status = String(req.body.status || 'active');
     if (!Number.isInteger(ownerId) || ownerId < 1) return res.status(400).json({ success: false, message: 'Select an owner.' });
     if (!Number.isInteger(planId) || planId < 1) return res.status(400).json({ success: false, message: 'Select a plan.' });
-    if (!['pending', 'active', 'expired', 'cancelled'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
-    const [[owner]] = await db.execute("SELECT id, status FROM users WHERE id = ? AND role = 'owner' LIMIT 1", [ownerId]);
+    const [[owner]] = await conn.execute("SELECT id, status FROM users WHERE id = ? AND role = 'owner' LIMIT 1", [ownerId]);
     if (!owner) return res.status(404).json({ success: false, message: 'Owner not found.' });
-    const [[plan]] = await db.execute('SELECT id, price, duration_days FROM subscription_plans WHERE id = ? LIMIT 1', [planId]);
+    const [[plan]] = await conn.execute('SELECT id, plan_name, price, duration_days FROM subscription_plans WHERE id = ? LIMIT 1', [planId]);
     if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
     const startDate = req.body.start_date && validDateTime(req.body.start_date) ? req.body.start_date : null;
     const type = Number(plan.price) === 0 ? 'trial' : 'paid';
-    if (status === 'active') {
-      await db.execute("UPDATE subscriptions SET status = 'expired' WHERE owner_id = ? AND status = 'active'", [ownerId]);
-    }
-    const [result] = await db.execute(
-      status === 'pending'
-        ? "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, ?, 'pending', NULL, NULL)"
-        : `INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date)
-           VALUES (?, ?, ?, ?, COALESCE(?, NOW()), DATE_ADD(COALESCE(?, NOW()), INTERVAL ? DAY))`,
-      status === 'pending'
-        ? [ownerId, planId, type]
-        : [ownerId, planId, type, status, startDate, startDate, Number(plan.duration_days)]
+    const recordPayment = type === 'paid' && (req.body.record_payment === true || req.body.record_payment === 1 || req.body.record_payment === '1');
+
+    await conn.beginTransaction();
+    // Walang "pending" na ginagawa ng admin: nauuwi iyon sa request na walang bayad na humaharang sa owner.
+    await conn.execute("UPDATE subscriptions SET status = 'expired' WHERE owner_id = ? AND status = 'active'", [ownerId]);
+    const [result] = await conn.execute(
+      `INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date)
+       VALUES (?, ?, ?, 'active', COALESCE(?, NOW()), DATE_ADD(COALESCE(?, NOW()), INTERVAL ? DAY))`,
+      [ownerId, planId, type, startDate, startDate, Number(plan.duration_days)]
     );
-    if (type === 'trial') await db.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [ownerId]).catch(() => {});
-    try { await notifyUser(ownerId, 'Subscription updated', 'An administrator added a subscription to your account.', '/owner/subscription'); } catch (e) { console.error('Subscription notification failed:', e.message); }
-    res.status(201).json({ success: true, message: 'Subscription added.', id: result.insertId });
-  } catch (error) { next(error); }
+    if (recordPayment) {
+      await conn.execute(
+        "INSERT INTO subscription_payments (subscription_id, amount, payment_method, reference_number, payment_status, verified_by, payment_date) VALUES (?, ?, 'cash', 'Recorded by admin', 'verified', ?, NOW())",
+        [result.insertId, plan.price, req.user.id]
+      );
+    }
+    if (type === 'trial') await conn.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [ownerId]).catch(() => {});
+    await conn.commit();
+
+    const [[row]] = await db.execute('SELECT end_date FROM subscriptions WHERE id = ?', [result.insertId]);
+    try { await notifyUser(ownerId, 'Subscription updated', `An administrator activated your ${plan.plan_name} subscription until ${fmtDate(row?.end_date)}.`, '/owner/subscription'); } catch (e) { console.error('Subscription notification failed:', e.message); }
+    res.status(201).json({ success: true, message: `Subscription added. Active until ${fmtDate(row?.end_date)}.`, id: result.insertId });
+  } catch (error) {
+    try { await conn.rollback(); } catch (_) {}
+    next(error);
+  } finally { conn.release(); }
 }
 
+// ADMIN: pag-aayos ng ACTIVE na subscription (palitan ang plan, ilipat ang expiry, o i-cancel).
+// Hindi ito para mag-approve ng pending request. Para doon, gamitin ang Review Payment (verifyPayment),
+// kasi doon kusang kinukuwenta ang start at expiry date.
 async function adminUpdateSubscription(req, res, next) {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id < 1) return res.status(400).json({ success: false, message: 'Invalid subscription ID.' });
-    const [[current]] = await db.execute('SELECT id, owner_id, plan_id FROM subscriptions WHERE id = ? LIMIT 1', [id]);
+    const [[current]] = await db.execute('SELECT id, owner_id, plan_id, status, start_date, end_date FROM subscriptions WHERE id = ? LIMIT 1', [id]);
     if (!current) return res.status(404).json({ success: false, message: 'Subscription not found.' });
-    const status = String(req.body.status || '');
-    if (!['pending', 'active', 'expired', 'cancelled'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid status.' });
+    if (current.status === 'pending') {
+      return res.status(409).json({ success: false, message: 'This is a pending request. Use Review Payment to verify or reject it so the dates are set automatically.' });
+    }
+    if (current.status !== 'active') {
+      return res.status(409).json({ success: false, message: 'Only active subscriptions can be adjusted. To give the owner a new plan, use Add Subscription.' });
+    }
+    const reason = String(req.body.reason || '').trim().slice(0, 255);
+    if (reason.length < 3) return res.status(400).json({ success: false, message: 'Enter a reason for this change (at least 3 characters).' });
+
+    if (String(req.body.status || '') === 'cancelled') {
+      await db.execute("UPDATE subscriptions SET status = 'cancelled', admin_note = ? WHERE id = ?", [reason, id]);
+      try { await notifyUser(current.owner_id, 'Subscription cancelled', `An administrator cancelled your subscription. Reason: ${reason}.`, '/owner/subscription'); } catch (e) { console.error('Subscription notification failed:', e.message); }
+      return res.json({ success: true, message: 'Subscription cancelled.' });
+    }
+
     const planId = req.body.plan_id ? Number(req.body.plan_id) : current.plan_id;
-    if (planId) {
-      const [[plan]] = await db.execute('SELECT id, price FROM subscription_plans WHERE id = ? LIMIT 1', [planId]);
-      if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
+    const [[plan]] = await db.execute('SELECT id, plan_name, price, duration_days FROM subscription_plans WHERE id = ? LIMIT 1', [planId]);
+    if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
+    const planChanged = Number(planId) !== Number(current.plan_id);
+    if (planChanged && Number(plan.price) === 0) {
+      return res.status(400).json({ success: false, message: 'The Free Trial is one-time only and cannot be assigned here.' });
     }
-    const startDate = req.body.start_date ? (validDateTime(req.body.start_date) ? req.body.start_date : false) : null;
-    const endDate = req.body.end_date ? (validDateTime(req.body.end_date) ? req.body.end_date : false) : null;
-    if (startDate === false || endDate === false) return res.status(400).json({ success: false, message: 'Invalid date.' });
-    if (startDate && endDate && startDate > endDate) return res.status(400).json({ success: false, message: 'Start date cannot be later than end date.' });
-    if (status === 'active') {
-      await db.execute("UPDATE subscriptions SET status = 'expired' WHERE owner_id = ? AND status = 'active' AND id <> ?", [current.owner_id, id]);
+
+    let endSql = null;
+    if (req.body.end_date) {
+      if (!validDateTime(req.body.end_date)) return res.status(400).json({ success: false, message: 'Invalid expiry date.' });
+      const requested = new Date(`${req.body.end_date}T23:59:59`);
+      if (requested.getTime() < Date.now()) {
+        return res.status(400).json({ success: false, message: 'The expiry date must be today or later. To end the subscription now, use Cancel subscription.' });
+      }
+      if (current.start_date && requested.getTime() < new Date(current.start_date).getTime()) {
+        return res.status(400).json({ success: false, message: 'The expiry date cannot be earlier than the start date.' });
+      }
+      endSql = `${req.body.end_date} 23:59:59`;
     }
+
+    // Kapag nagpalit ng plan at walang inilagay na expiry, kukunin ang expiry mula sa duration ng bagong plan.
     await db.execute(
-      `UPDATE subscriptions SET plan_id = ?, status = ?,
-         start_date = COALESCE(?, start_date),
-         end_date = COALESCE(?, end_date)
-       WHERE id = ?`,
-      [planId, status, startDate, endDate ? `${endDate} 23:59:59` : null, id]
+      `UPDATE subscriptions
+          SET plan_id = ?,
+              subscription_type = ?,
+              end_date = COALESCE(?, ${planChanged ? 'DATE_ADD(COALESCE(start_date, NOW()), INTERVAL ? DAY)' : 'end_date'}),
+              reminder_7d_sent_at = NULL,
+              reminder_1d_sent_at = NULL,
+              admin_note = ?
+        WHERE id = ?`,
+      planChanged
+        ? [planId, Number(plan.price) === 0 ? 'trial' : 'paid', endSql, Number(plan.duration_days), reason, id]
+        : [planId, Number(plan.price) === 0 ? 'trial' : 'paid', endSql, reason, id]
     );
-    try { await notifyUser(current.owner_id, 'Subscription updated', `Your subscription is now ${status}.`, '/owner/subscription'); } catch (e) { console.error('Subscription notification failed:', e.message); }
-    res.json({ success: true, message: 'Subscription updated.' });
+    const [[after]] = await db.execute('SELECT end_date FROM subscriptions WHERE id = ?', [id]);
+    try { await notifyUser(current.owner_id, 'Subscription updated', `Your subscription is now ${plan.plan_name}, active until ${fmtDate(after?.end_date)}. Reason: ${reason}.`, '/owner/subscription'); } catch (e) { console.error('Subscription notification failed:', e.message); }
+    res.json({ success: true, message: `Subscription updated. Active until ${fmtDate(after?.end_date)}.` });
   } catch (error) { next(error); }
 }
 

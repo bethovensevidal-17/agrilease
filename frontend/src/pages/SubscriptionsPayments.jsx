@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
+import './subscription-review.css';
 
 const PAGE_SIZE = 8;
-const SUB_STATUSES = ['active', 'pending', 'expired', 'cancelled'];
 const EMPTY_PLAN = { id: null, plan_name: '', price: '', duration_days: '', equipment_limit: '', description: '', is_active: true };
-const EMPTY_SUB = { id: null, owner_id: '', plan_id: '', status: 'active', start_date: '', end_date: '' };
+const EMPTY_SUB = { owner_id: '', plan_id: '', start_date: '', record_payment: true };
 
 const dayValue = value => (value ? String(value).slice(0, 10) : '');
 const titleCase = value => String(value || '').replace(/[_-]/g, ' ').replace(/^\w/, c => c.toUpperCase());
@@ -46,6 +46,12 @@ function sortById(a, b) {
 function getSubscriptionCategory(subscription) {
   const status = String(subscription.status || '').toLowerCase();
   const plan = String(subscription.plan_name || '').toLowerCase();
+
+  // Kapag lampas na ang expiry date, expired na kahit active pa ang naka-save na status.
+  if (status === 'active' && subscription.ends_at) {
+    const endsAt = new Date(subscription.ends_at);
+    if (!Number.isNaN(endsAt.getTime()) && endsAt.getTime() < Date.now()) return 'expired';
+  }
 
   if (
     status.includes('trial') ||
@@ -138,6 +144,7 @@ export default function SubscriptionsPayments() {
     paymentsConfigured: false,
   });
   const [owners, setOwners] = useState([]);
+  const recordsRef = useRef(null);
 
   const [tab, setTab] = useState('subscriptions');
   const [page, setPage] = useState(1);
@@ -148,6 +155,12 @@ export default function SubscriptionsPayments() {
   const [notice, setNotice] = useState('');
   const [planForm, setPlanForm] = useState(null);
   const [subForm, setSubForm] = useState(null);
+  const [adjustForm, setAdjustForm] = useState(null);
+  const [review, setReview] = useState(null);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [proofUrl, setProofUrl] = useState('');
+  const [proofState, setProofState] = useState('idle');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -228,16 +241,53 @@ export default function SubscriptionsPayments() {
     } catch (err) { setError(err.message || 'Unable to open payment proof.'); }
   }
 
-  async function reviewPayment(payment, status) {
-    const action = status === 'verified' ? 'verify' : 'reject';
-    if (!await window.agrileaseDialog.confirm(`Are you sure you want to ${action} payment #${payment.id}?`)) return;
+  /* ----- Review Payment: dito kusang nakukuwenta ang start at expiry ----- */
+  function closeReview() {
+    if (proofUrl) URL.revokeObjectURL(proofUrl);
+    setProofUrl(''); setProofState('idle'); setReview(null); setRejecting(false); setRejectReason(''); setFormError('');
+  }
+
+  async function openReview(payment) {
+    setFormError(''); setRejecting(false); setRejectReason(''); setReview(payment);
+    setProofState('loading');
     try {
-      await api(`/admin/subscription-payments/${payment.id}/verify`, { method: 'PATCH', body: { status } });
-      setNotice(`Payment #${payment.id} ${status}.`);
+      const blob = await getAuthenticatedFile(`/admin/subscription-payments/${payment.id}/proof`);
+      setProofUrl(URL.createObjectURL(blob));
+      setProofState('ready');
+    } catch (_) { setProofState('missing'); }
+  }
+
+  // Preview ng petsa na gagamitin ng server kapag ni-verify: tuloy sa expiry ng kasalukuyang plan kung early renewal.
+  const reviewPreview = useMemo(() => {
+    if (!review) return null;
+    const days = Number(review.duration_days);
+    if (!Number.isFinite(days) || days < 1) return null;
+    const now = Date.now();
+    const currentEnd = data.subscriptions
+      .filter(sub => Number(sub.owner_id) === Number(review.owner_id) && String(sub.status).toLowerCase() === 'active' && sub.ends_at)
+      .map(sub => new Date(sub.ends_at).getTime())
+      .filter(time => Number.isFinite(time) && time > now)
+      .sort((a, b) => b - a)[0];
+    const start = Math.max(now, currentEnd || now);
+    return { start: new Date(start), end: new Date(start + days * 86400000), early: Boolean(currentEnd) };
+  }, [review, data.subscriptions]);
+
+  async function submitReview(status) {
+    setFormError('');
+    if (status === 'rejected' && rejectReason.trim().length < 3) { setFormError('Enter a reason for rejecting this payment (at least 3 characters).'); return; }
+    const confirmText = status === 'verified'
+      ? `Verify payment #${review.id} and activate the ${review.plan_name || 'selected'} plan?`
+      : `Reject payment #${review.id}? The owner will see your reason.`;
+    if (!await window.agrileaseDialog.confirm(confirmText)) return;
+    try {
+      setSaving(true);
+      const result = await api(`/admin/subscription-payments/${review.id}/verify`, { method: 'PATCH', body: { status, reason: status === 'rejected' ? rejectReason.trim() : undefined } });
+      setNotice(result.message || `Payment #${review.id} ${status}.`);
+      closeReview();
       await load();
     } catch (err) {
-      setError(err.message || 'Unable to update payment status.');
-    }
+      setFormError(err.message || 'Unable to update payment status.');
+    } finally { setSaving(false); }
   }
 
   /* ----- Plans: add / edit ----- */
@@ -274,27 +324,23 @@ export default function SubscriptionsPayments() {
     } finally { setSaving(false); }
   }
 
-  /* ----- Owner subscriptions: add / edit ----- */
-  function openSubForm(subscription) {
+  /* ----- Owner subscriptions: add (cash/walk-in) at adjust (active lang) ----- */
+  function openSubForm() {
     setFormError('');
-    setSubForm(subscription
-      ? { id: subscription.id, owner_id: String(subscription.owner_id || ''), plan_id: String(subscription.plan_id || ''), status: ['active', 'pending', 'expired', 'cancelled'].includes(subscription.status) ? subscription.status : 'active', start_date: dayValue(subscription.starts_at), end_date: dayValue(subscription.ends_at), owner_name: subscription.owner_name }
-      : { ...EMPTY_SUB });
+    setSubForm({ ...EMPTY_SUB });
   }
 
   async function saveSubscription(event) {
     event.preventDefault();
     setFormError('');
-    const isEdit = Boolean(subForm.id);
-    if (!isEdit && (!subForm.owner_id || !subForm.plan_id)) { setFormError('Choose an owner and a plan.'); return; }
-    if (subForm.start_date && subForm.end_date && subForm.start_date > subForm.end_date) { setFormError('The start date cannot be later than the expiry date.'); return; }
-    if (!await window.agrileaseDialog.confirm(isEdit ? `Save changes to subscription #${subForm.id}?` : 'Add this subscription to the selected owner?', { title: isEdit ? 'Save subscription changes' : 'Add subscription', confirmText: isEdit ? 'Save' : 'Add' })) return;
+    if (!subForm.owner_id || !subForm.plan_id) { setFormError('Choose an owner and a plan.'); return; }
+    const plan = data.plans.find(item => String(item.id) === String(subForm.plan_id));
+    if (!await window.agrileaseDialog.confirm(`Activate the ${plan?.plan_name || 'selected'} plan for this owner?`, { title: 'Add subscription', confirmText: 'Add' })) return;
     try {
       setSaving(true);
-      const body = { owner_id: subForm.owner_id, plan_id: subForm.plan_id, status: subForm.status, start_date: subForm.start_date || undefined, end_date: subForm.end_date || undefined };
-      const result = isEdit
-        ? await api(`/admin/subscriptions/${subForm.id}`, { method: 'PATCH', body })
-        : await api('/admin/subscriptions', { method: 'POST', body });
+      const paid = plan && Number(plan.price) > 0;
+      const body = { owner_id: subForm.owner_id, plan_id: subForm.plan_id, start_date: subForm.start_date || undefined, record_payment: paid && subForm.record_payment ? 1 : 0 };
+      const result = await api('/admin/subscriptions', { method: 'POST', body });
       setNotice(result.message || 'Subscription saved.');
       setSubForm(null);
       await load();
@@ -303,10 +349,76 @@ export default function SubscriptionsPayments() {
     } finally { setSaving(false); }
   }
 
+  function openAdjust(subscription) {
+    setFormError('');
+    setAdjustForm({
+      id: subscription.id,
+      owner_name: subscription.owner_name,
+      plan_id: String(subscription.plan_id || ''),
+      original_plan_id: String(subscription.plan_id || ''),
+      end_date: dayValue(subscription.ends_at),
+      original_end_date: dayValue(subscription.ends_at),
+      reason: '',
+    });
+  }
+
+  async function saveAdjust(event) {
+    event.preventDefault();
+    setFormError('');
+    if (adjustForm.reason.trim().length < 3) { setFormError('Enter a reason for this change (at least 3 characters).'); return; }
+    if (!await window.agrileaseDialog.confirm(`Save changes to subscription #${adjustForm.id}? The owner will be notified.`, { title: 'Adjust subscription', confirmText: 'Save' })) return;
+    try {
+      setSaving(true);
+      const body = { plan_id: adjustForm.plan_id, reason: adjustForm.reason.trim() };
+      if (adjustForm.end_date && adjustForm.end_date !== adjustForm.original_end_date) body.end_date = adjustForm.end_date;
+      const result = await api(`/admin/subscriptions/${adjustForm.id}`, { method: 'PATCH', body });
+      setNotice(result.message || 'Subscription updated.');
+      setAdjustForm(null);
+      await load();
+    } catch (err) {
+      setFormError(err.message || 'Unable to update subscription.');
+    } finally { setSaving(false); }
+  }
+
+  async function cancelSubscription() {
+    setFormError('');
+    if (adjustForm.reason.trim().length < 3) { setFormError('Enter a reason for cancelling (at least 3 characters).'); return; }
+    if (!await window.agrileaseDialog.confirm(`Cancel subscription #${adjustForm.id} now? The owner will lose access to adding listings and their listings will be hidden after the grace period.`, { title: 'Cancel subscription', confirmText: 'Cancel subscription' })) return;
+    try {
+      setSaving(true);
+      const result = await api(`/admin/subscriptions/${adjustForm.id}`, { method: 'PATCH', body: { status: 'cancelled', reason: adjustForm.reason.trim() } });
+      setNotice(result.message || 'Subscription cancelled.');
+      setAdjustForm(null);
+      await load();
+    } catch (err) {
+      setFormError(err.message || 'Unable to cancel subscription.');
+    } finally { setSaving(false); }
+  }
+
+  const pendingPayments = useMemo(
+    () => data.payments.filter(payment => String(payment.status).toLowerCase() === 'pending'),
+    [data.payments]
+  );
+
+  function pendingPaymentFor(subscription) {
+    return pendingPayments.find(payment => Number(payment.subscription_id) === Number(subscription.id));
+  }
+
   return (
     <div className="am-page am-subscriptions-page">
       {error && <div className="um-message error">{error}</div>}
       {notice && <div className="um-message success">{notice}</div>}
+      {pendingPayments.length > 0 && (
+        <div className="sub-banner warn am-pending-banner">
+          <span><strong>{pendingPayments.length} payment{pendingPayments.length > 1 ? 's' : ''} waiting for review</strong>Verify a payment to activate the owner's plan. The start and expiry dates are set automatically.</span>
+          <button type="button" className="am-button sub-primary-btn" onClick={() => {
+            changeTab('payments');
+            setStatusFilter('pending');
+            // Ang Payment Records ay nasa ibaba ng Plans, kaya i-scroll papunta roon.
+            window.setTimeout(() => recordsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+          }}>Review payments</button>
+        </div>
+      )}
 
       {/* SUBSCRIPTION OVERVIEW */}
       <section className="am-subscription-overview">
@@ -366,7 +478,7 @@ export default function SubscriptionsPayments() {
       )}
 
       {/* RECORDS */}
-      <section className="um-panel am-subscription-records">
+      <section className="um-panel am-subscription-records" ref={recordsRef}>
         <div className="am-tabs">
           <button className={tab === 'subscriptions' ? 'active' : ''} onClick={() => changeTab('subscriptions')}>Owner Subscriptions</button>
           <button className={tab === 'payments' ? 'active' : ''} onClick={() => changeTab('payments')}>Payment Records</button>
@@ -379,7 +491,7 @@ export default function SubscriptionsPayments() {
           </div>
           <div className="sub-section-actions">
             <span className="um-total">{rows.length} records</span>
-            {tab === 'subscriptions' && <button type="button" className="am-button sub-primary-btn" onClick={() => openSubForm(null)}>Add Subscription</button>}
+            {tab === 'subscriptions' && <button type="button" className="am-button sub-primary-btn" onClick={openSubForm}>Add Subscription</button>}
           </div>
         </div>
 
@@ -420,7 +532,15 @@ export default function SubscriptionsPayments() {
                         <td>{date(subscription.starts_at)}</td>
                         <td>{date(subscription.ends_at)}</td>
                         <td><StatusBadge status={getSubscriptionCategory(subscription)} /></td>
-                        <td><button type="button" className="am-button neutral" onClick={() => openSubForm(subscription)}>Edit</button></td>
+                        <td>
+                          {String(subscription.status).toLowerCase() === 'pending' ? (
+                            pendingPaymentFor(subscription)
+                              ? <button type="button" className="am-button approve" onClick={() => openReview(pendingPaymentFor(subscription))}>Review Payment</button>
+                              : '—'
+                          ) : String(subscription.status).toLowerCase() === 'active' && getSubscriptionCategory(subscription) !== 'expired' ? (
+                            <button type="button" className="am-button neutral" onClick={() => openAdjust(subscription)}>Adjust</button>
+                          ) : '—'}
+                        </td>
                       </tr>
                     ))
                   ) : (
@@ -432,34 +552,34 @@ export default function SubscriptionsPayments() {
               <>
                 <thead>
                   <tr>
-                    <th>Payment ID</th><th>Owner</th><th>Amount</th><th>Reference</th><th>Status</th><th>Date</th><th>Action</th>
+                    <th>Payment ID</th><th>Owner</th><th>Plan</th><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th><th>Date</th><th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="7" className="um-empty">Loading payment records...</td></tr>
+                    <tr><td colSpan="9" className="um-empty">Loading payment records...</td></tr>
                   ) : shown.length ? (
                     shown.map(payment => (
                       <tr key={payment.id}>
                         <td>#{payment.id}</td>
                         <td>{payment.owner_name || `Owner #${payment.owner_id || '—'}`}</td>
+                        <td>{payment.plan_name || '—'}</td>
                         <td>{money(payment.amount)}</td>
+                        <td>{titleCase(payment.payment_method) || '—'}</td>
                         <td>{payment.reference || '—'}</td>
                         <td><StatusBadge status={payment.status} /></td>
                         <td>{date(payment.created_at)}</td>
                         <td>
                           {String(payment.status).toLowerCase() === 'pending' ? (
                             <div className="am-action-group">
-                              <button type="button" className="am-button neutral" onClick={() => openPaymentProof(payment)}>View Proof</button>
-                              <button type="button" className="am-button approve" onClick={() => reviewPayment(payment, 'verified')}>Verify</button>
-                              <button type="button" className="am-button reject" onClick={() => reviewPayment(payment, 'rejected')}>Reject</button>
+                              <button type="button" className="am-button approve" onClick={() => openReview(payment)}>Review</button>
                             </div>
-                          ) : 'Reviewed'}
+                          ) : (payment.rejection_reason ? <span title={payment.rejection_reason}>Reviewed · {payment.rejection_reason}</span> : 'Reviewed')}
                         </td>
                       </tr>
                     ))
                   ) : (
-                    <tr><td colSpan="7" className="um-empty">{data.paymentsConfigured ? 'No subscription payment records found.' : 'Subscription payment records are not available yet.'}</td></tr>
+                    <tr><td colSpan="9" className="um-empty">{data.paymentsConfigured ? 'No subscription payment records found.' : 'Subscription payment records are not available yet.'}</td></tr>
                   )}
                 </tbody>
               </>
@@ -498,40 +618,108 @@ export default function SubscriptionsPayments() {
         </Modal>
       )}
 
-      {/* ADD / EDIT OWNER SUBSCRIPTION */}
-      {subForm && (
-        <Modal title={subForm.id ? `Edit Subscription #${subForm.id}` : 'Add Subscription'} subtitle={subForm.id ? subForm.owner_name || '' : 'Give a verified owner a subscription plan.'} onClose={() => !saving && setSubForm(null)}>
-          <form className="sub-form" onSubmit={saveSubscription}>
-            {formError && <div className="um-message error">{formError}</div>}
-            {!subForm.id && (
+      {/* ADD SUBSCRIPTION (cash / walk-in) */}
+      {subForm && (() => {
+        const chosen = data.plans.find(plan => String(plan.id) === String(subForm.plan_id));
+        const isPaid = chosen && Number(chosen.price) > 0;
+        return (
+          <Modal title="Add Subscription" subtitle="Use this for walk-in or cash payments. For online payments, verify the owner's request instead." onClose={() => !saving && setSubForm(null)}>
+            <form className="sub-form" onSubmit={saveSubscription}>
+              {formError && <div className="um-message error">{formError}</div>}
               <label>Owner
                 <select value={subForm.owner_id} required onChange={e => setSubForm({ ...subForm, owner_id: e.target.value })}>
                   <option value="">Select an owner</option>
                   {owners.map(owner => <option key={owner.id} value={owner.id}>{owner.full_name} ({owner.email})</option>)}
                 </select>
               </label>
-            )}
+              <label>Plan
+                <select value={subForm.plan_id} required onChange={e => setSubForm({ ...subForm, plan_id: e.target.value })}>
+                  <option value="">Select a plan</option>
+                  {data.plans.filter(plan => Number(plan.is_active) !== 0).map(plan => <option key={plan.id} value={plan.id}>{plan.plan_name} — {Number(plan.price) === 0 ? 'Free' : money(plan.price)} / {plan.duration_days} days</option>)}
+                </select>
+              </label>
+              <label>Start date (optional)<input type="date" value={subForm.start_date} onChange={e => setSubForm({ ...subForm, start_date: e.target.value })} /></label>
+              {isPaid && (
+                <label className="sub-check">
+                  <input type="checkbox" checked={subForm.record_payment} onChange={e => setSubForm({ ...subForm, record_payment: e.target.checked })} />
+                  Record {money(chosen.price)} as paid in cash (appears in Payment Records)
+                </label>
+              )}
+              <p className="am-note">The expiry date is set automatically from the plan duration. Any current active plan of this owner is replaced.</p>
+              <div className="sub-form-actions">
+                <button type="button" className="um-refresh" onClick={() => setSubForm(null)} disabled={saving}>Cancel</button>
+                <button type="submit" className="am-button sub-primary-btn" disabled={saving}>{saving ? 'Saving...' : 'Add subscription'}</button>
+              </div>
+            </form>
+          </Modal>
+        );
+      })()}
+
+      {/* ADJUST ACTIVE SUBSCRIPTION */}
+      {adjustForm && (
+        <Modal title={`Adjust Subscription #${adjustForm.id}`} subtitle={adjustForm.owner_name || ''} onClose={() => !saving && setAdjustForm(null)}>
+          <form className="sub-form" onSubmit={saveAdjust}>
+            {formError && <div className="um-message error">{formError}</div>}
             <label>Plan
-              <select value={subForm.plan_id} required onChange={e => setSubForm({ ...subForm, plan_id: e.target.value })}>
-                <option value="">Select a plan</option>
-                {data.plans.map(plan => <option key={plan.id} value={plan.id}>{plan.plan_name} — {Number(plan.price) === 0 ? 'Free' : money(plan.price)} / {plan.duration_days} days</option>)}
+              <select value={adjustForm.plan_id} required onChange={e => setAdjustForm({ ...adjustForm, plan_id: e.target.value })}>
+                {data.plans.filter(plan => Number(plan.is_active) !== 0 || String(plan.id) === adjustForm.original_plan_id).map(plan => <option key={plan.id} value={plan.id}>{plan.plan_name} — {Number(plan.price) === 0 ? 'Free' : money(plan.price)} / {plan.duration_days} days</option>)}
               </select>
             </label>
-            <label>Status
-              <select value={subForm.status} onChange={e => setSubForm({ ...subForm, status: e.target.value })}>
-                {SUB_STATUSES.map(status => <option key={status} value={status}>{titleCase(status)}</option>)}
-              </select>
-            </label>
-            <div className="sub-form-row">
-              <label>Start date<input type="date" value={subForm.start_date} onChange={e => setSubForm({ ...subForm, start_date: e.target.value })} /></label>
-              <label>Expiry date<input type="date" value={subForm.end_date} min={subForm.start_date || undefined} disabled={!subForm.id} onChange={e => setSubForm({ ...subForm, end_date: e.target.value })} /></label>
-            </div>
-            {!subForm.id && <p className="am-note">The expiry date is set automatically from the plan duration.</p>}
+            <label>Expiry date<input type="date" value={adjustForm.end_date} onChange={e => setAdjustForm({ ...adjustForm, end_date: e.target.value })} /></label>
+            <p className="am-note">If you change the plan and leave the expiry date as is, the expiry is recalculated from the new plan's duration.</p>
+            <label>Reason (the owner will see this)<textarea value={adjustForm.reason} maxLength={255} required placeholder="Example: Extended 7 days because of a payment delay." onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })} /></label>
             <div className="sub-form-actions">
-              <button type="button" className="um-refresh" onClick={() => setSubForm(null)} disabled={saving}>Cancel</button>
-              <button type="submit" className="am-button sub-primary-btn" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+              <button type="button" className="sub-danger-btn" onClick={cancelSubscription} disabled={saving}>Cancel subscription</button>
+              <button type="button" className="um-refresh" onClick={() => setAdjustForm(null)} disabled={saving}>Close</button>
+              <button type="submit" className="am-button sub-primary-btn" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* REVIEW SUBSCRIPTION PAYMENT */}
+      {review && (
+        <Modal title={`Review Payment #${review.id}`} subtitle="Check the proof and reference. Verifying activates the plan with automatic dates." onClose={() => !saving && closeReview()}>
+          {formError && <div className="um-message error">{formError}</div>}
+          <div className="sub-review-grid">
+            <div><small>Owner</small><strong>{review.owner_name || `Owner #${review.owner_id || '—'}`}</strong></div>
+            <div><small>Plan</small><strong>{review.plan_name || '—'}{review.duration_days ? ` · ${review.duration_days} days` : ''}</strong></div>
+            <div><small>Amount paid</small><strong>{money(review.amount)}</strong></div>
+            <div><small>Method</small><strong>{titleCase(review.payment_method) || '—'}</strong></div>
+            <div><small>Reference number</small><strong>{review.reference || '—'}</strong></div>
+            <div><small>Submitted</small><strong>{date(review.created_at)}</strong></div>
+          </div>
+          <div className="sub-proof">
+            {proofState === 'loading' && <span className="sub-proof-empty">Loading proof of payment...</span>}
+            {proofState === 'ready' && <img src={proofUrl} alt="Proof of payment" />}
+            {proofState === 'missing' && <span className="sub-proof-empty">The proof image could not be loaded.</span>}
+          </div>
+          {proofState === 'ready' && <p className="am-note"><button type="button" className="um-refresh" onClick={() => openPaymentProof(review)}>Open full size</button></p>}
+          {reviewPreview && (
+            <div className="sub-review-preview">
+              If verified: starts <strong>{date(reviewPreview.start)}</strong> and expires <strong>{date(reviewPreview.end)}</strong>.
+              {reviewPreview.early && ' The owner still has an active plan, so the new plan continues right after it. No days are lost.'}
+            </div>
+          )}
+          {rejecting && (
+            <label className="sub-form">Reason for rejecting (the owner will see this)
+              <textarea value={rejectReason} maxLength={255} placeholder="Example: The reference number does not match the proof." onChange={e => setRejectReason(e.target.value)} />
+            </label>
+          )}
+          <div className="sub-form-actions">
+            <button type="button" className="um-refresh" onClick={closeReview} disabled={saving}>Close</button>
+            {!rejecting ? (
+              <>
+                <button type="button" className="am-button reject" onClick={() => setRejecting(true)} disabled={saving}>Reject</button>
+                <button type="button" className="am-button approve" onClick={() => submitReview('verified')} disabled={saving}>{saving ? 'Saving...' : 'Verify and activate'}</button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="um-refresh" onClick={() => { setRejecting(false); setFormError(''); }} disabled={saving}>Back</button>
+                <button type="button" className="am-button reject" onClick={() => submitReview('rejected')} disabled={saving}>{saving ? 'Saving...' : 'Confirm rejection'}</button>
+              </>
+            )}
+          </div>
         </Modal>
       )}
     </div>

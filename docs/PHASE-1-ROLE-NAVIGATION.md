@@ -19,7 +19,7 @@
 - Owner bookings: `/owner/bookings`
 - Owner subscription: `/owner/subscription`
 - Owner payment settings: `/owner/payment-settings`
-- Admin modules: `/admin/users`, `/admin/owners`, `/admin/equipment`, `/admin/subscriptions`, `/admin/reports`, `/admin/rentals`, `/admin/booking-payments`, `/admin/content`, `/admin/notifications`, `/admin/profile`
+- Admin modules: `/admin/users`, `/admin/owners`, `/admin/equipment`, `/admin/subscriptions`, `/admin/reports`, `/admin/content`, `/admin/notifications`, `/admin/profile`
 
 ## Notes
 - No database schema changes were made in this phase.

@@ -13,7 +13,6 @@ import AdminDashboard from './pages/AdminDashboard.jsx';
 import OwnerVerification from './pages/OwnerVerification.jsx';
 import UserManagement from './pages/UserManagement.jsx';
 import EquipmentManagement from './pages/EquipmentManagement.jsx';
-import RentalMonitoring from './pages/RentalMonitoring.jsx';
 import SubscriptionsPayments from './pages/SubscriptionsPayments.jsx';
 import Reports from './pages/Reports.jsx';
 import AdminProfile from './pages/AdminProfile.jsx';
@@ -24,7 +23,6 @@ import OwnerAddEquipment from './pages/OwnerAddEquipment.jsx';
 import OwnerEquipmentManagement from './pages/OwnerEquipmentManagement.jsx';
 import OwnerEditEquipment from './pages/OwnerEditEquipment.jsx';
 import OwnerBookings from './pages/OwnerBookings.jsx';
-import AdminBookingPayments from './pages/AdminBookingPayments.jsx';
 import NotificationCenter from './pages/NotificationCenter.jsx';
 import Messages from './pages/Messages.jsx';
 import OwnerSubscription from './pages/OwnerSubscription.jsx';
@@ -181,12 +179,9 @@ export default function App() {
           element={<EquipmentManagement />}
         />
 
-        <Route
-          path="rentals"
-          element={<RentalMonitoring />}
-        />
-
-        <Route path="booking-payments" element={<AdminBookingPayments />} />
+        {/* Inalis na ang admin Rental Monitoring at Booking Payments. Ang mga lumang notification/link ay napupunta sa Reports. */}
+        <Route path="rentals" element={<Navigate to="/admin/reports" replace />} />
+        <Route path="booking-payments" element={<Navigate to="/admin/reports" replace />} />
 
         <Route
           path="subscriptions"

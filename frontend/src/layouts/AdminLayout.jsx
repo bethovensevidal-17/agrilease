@@ -33,8 +33,6 @@ const ADMIN_PAGE_TITLES = {
   '/admin/users': 'User Management',
   '/admin/owners': 'Owner Verification',
   '/admin/equipment': 'Equipment Management',
-  '/admin/rentals': 'Rental Monitoring',
-  '/admin/booking-payments': 'Booking Payments',
   '/admin/subscriptions': 'Subscription Management',
   '/admin/reports': 'Reports',
   '/admin/offline': 'Offline Access',

@@ -1,0 +1,17 @@
+/* Back button sa sidebar ng public browse page. */
+.sidebar .public-back {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.sidebar .public-back:hover,
+.sidebar .public-back:focus-visible { background: rgba(255, 255, 255, 0.14); }

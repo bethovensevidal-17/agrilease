@@ -31,6 +31,8 @@ import FarmerProfile from './pages/FarmerProfile.jsx';
 import AdminContent from './pages/AdminContent.jsx';
 import Transactions from './pages/Transactions.jsx';
 import OfflineSettings from './pages/OfflineSettings.jsx';
+import OwnerProfile from './pages/OwnerProfile.jsx';
+import ActivityLog from './pages/ActivityLog.jsx';
 
 import './admin-modules.css';
 
@@ -120,6 +122,7 @@ export default function App() {
         <Route path="transactions" element={<Transactions role="farmer" />} />
         <Route path="messages" element={<Messages />} />
         <Route path="offline" element={<OfflineSettings />} />
+        <Route path="activity" element={<ActivityLog />} />
         <Route
           path="notifications"
           element={<NotificationCenter title="Farmer Notifications" role="farmer" />}
@@ -145,6 +148,8 @@ export default function App() {
         <Route path="subscription" element={<OwnerSubscription />} />
         <Route path="payment-settings" element={<OwnerPaymentSettings />} />
         <Route path="offline" element={<OfflineSettings />} />
+        <Route path="activity" element={<ActivityLog />} />
+        <Route path="profile" element={<OwnerProfile />} />
         <Route path="messages" element={<Messages />} />
         <Route path="notifications" element={<NotificationCenter title="Owner Notifications" role="owner" />} />
         <Route path="equipment/add" element={<OwnerAddEquipment />} />
@@ -208,6 +213,7 @@ export default function App() {
           element={<AdminContent />}
         />
 
+        <Route path="activity" element={<ActivityLog />} />
         <Route path="offline" element={<OfflineSettings />} />
       </Route>
 

@@ -14,6 +14,7 @@ import './theme-controls.css';
 import './theme-admin.css';
 import './theme-views.css';
 import './equipment-cards.css';
+import './portal-extras.css';
 import { requestSync } from './offline/sync';
 import { resyncPushSubscription } from './utils/push';
 

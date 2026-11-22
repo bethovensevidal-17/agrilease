@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db');
+const { describeRequest, logActivity } = require('../services/activityLog');
 
 // Binabasa ang JWT mula sa header na "Authorization: Bearer <token>".
 // Ang user ay laging galing sa token, hindi sa request body.
@@ -36,15 +37,12 @@ async function requireAuth(req, res, next) {
     return next(error);
   }
 
-  // Log successful authenticated write actions throughout the API.
+  // Log successful authenticated write actions in plain language (shown in each user's Activity Log).
   // Successful logins are logged separately because they have no bearer token yet.
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
     res.once('finish', () => {
       if (res.statusCode >= 200 && res.statusCode < 400) {
-        db.execute(
-          'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
-          [payload.id, `${payload.role} ${req.method} ${req.originalUrl}`.slice(0, 255)]
-        ).catch(error => console.error('Activity log insert failed:', error.message));
+        logActivity(payload.id, describeRequest(req.method, req.originalUrl, req).text);
       }
     });
   }

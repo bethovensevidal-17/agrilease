@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fs = require('fs/promises');
 const { notifyAdmins } = require('../services/notifications');
+const { logActivity } = require('../services/activityLog');
 
 // Remove uploaded files if registration fails or validation rejects them.
 async function removeUploadedFiles(files) {
@@ -162,7 +163,7 @@ async function register(req, res) {
     try {
       await connection.execute(
         'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
-        [userId, `${role} account registered`]
+        [userId, `Registered ${role === 'owner' ? 'an' : 'a'} ${role} account`]
       );
     } catch (logError) {
       console.error('Activity log insert failed:', logError.message);
@@ -296,6 +297,7 @@ async function login(req, res) {
 
     if (!passwordMatch) {
       console.log('Result: Password does not match.');
+      await logActivity(user.id, 'Failed login attempt (wrong password)');
       console.log('================================\n');
 
       return res.status(401).json({
@@ -336,7 +338,7 @@ async function login(req, res) {
     try {
       await db.execute(
         'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
-        [user.id, `${user.role} logged in`]
+        [user.id, 'Logged in']
       );
     } catch (logError) {
       console.error('Activity log insert failed:', logError.message);

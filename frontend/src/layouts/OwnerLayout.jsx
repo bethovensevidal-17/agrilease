@@ -13,6 +13,7 @@ import {
   WifiOff,
   X,
   LogOut,
+  ScrollText,
 } from 'lucide-react';
 
 import { api, getUser, clearAuth } from '../api/client';
@@ -26,6 +27,7 @@ const navigation = [
   { label: 'Subscription Plans', path: '/owner/subscription', icon: CreditCard },
   { label: 'Payment Settings', path: '/owner/payment-settings', icon: Wallet },
   { label: 'Offline Access', path: '/owner/offline', icon: WifiOff },
+  { label: 'Activity Log', path: '/owner/activity', icon: ScrollText },
 ];
 
 const OWNER_PAGE_TITLES = {
@@ -39,6 +41,8 @@ const OWNER_PAGE_TITLES = {
   '/owner/messages': 'Messages',
   '/owner/offline': 'Offline Access',
   '/owner/notifications': 'Notifications',
+  '/owner/profile': 'My Profile',
+  '/owner/activity': 'Activity Log',
 };
 function ownerPageTitle(pathname) {
   const path = pathname.replace(/\/+$/, '') || '/owner';
@@ -137,13 +141,15 @@ export default function OwnerLayout() {
           <div className="owner-account">
             <button className="owner-header-icon portal-header-icon" title="Messages" aria-label="Messages" onClick={() => navigate('/owner/messages')}><MessageCircle size={19}/>{unreadMessages > 0 && <span className="portal-header-count">{unreadMessages > 99 ? '99+' : unreadMessages}</span>}</button>
             <button className="owner-header-icon portal-header-icon" title="Notifications" aria-label="Notifications" onClick={() => navigate('/owner/notifications')}><Bell size={19}/>{unreadNotifications > 0 && <span className="portal-header-count">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}</button>
-            <span className="owner-avatar portal-avatar">
-              {(user?.full_name || 'Owner').charAt(0).toUpperCase()}
-            </span>
-            <span className="owner-user-info">
-              <strong>{user?.full_name || 'Equipment Owner'}</strong>
-              <small>Equipment Owner</small>
-            </span>
+            <button type="button" className="owner-profile-link" onClick={() => navigate('/owner/profile')} title="My Profile" aria-label="My profile">
+              <span className="owner-avatar portal-avatar">
+                {(user?.full_name || 'Owner').charAt(0).toUpperCase()}
+              </span>
+              <span className="owner-user-info">
+                <strong>{user?.full_name || 'Equipment Owner'}</strong>
+                <small>Equipment Owner</small>
+              </span>
+            </button>
           </div>
         </header>
 

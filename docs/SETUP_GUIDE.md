@@ -4,9 +4,13 @@
 Install Git, Node.js 20 LTS, and Laragon (it provides MySQL). Start Laragon and press **Start All**.
 
 ## 2. Create the database
-1. Open phpMyAdmin and select the existing `agrilease_v2_db` database.
-2. This project is configured for the existing V2 schema. Do not import `database/schema.sql` or re-run the Phase 2 / Phase 6 migrations over the already-updated database.
-3. The booking additions (`equipment.quantity`, rental snapshot fields, `booking_payments`) and the 7-day / 2-equipment Free Trial plan have already been applied to the user's local database.
+Full steps are in the root `README.md` ("Quick start"). Summary:
+1. Create an empty database named `agrilease_v2_db` (utf8mb4).
+2. Import `database/agrilease_v2_db.structure.sql`, then the five files in `database/migrations/` in date/name order. Do this **before** the first backend start.
+3. Start the backend once (`npm run dev`). `ensureSchema.js` adds the remaining columns, the `booking_payments` table, and the subscription plans.
+4. Run `npm run seed` in `backend` to create the admin account and the equipment categories.
+
+Already have a working local `agrilease_v2_db`? Do not re-import anything; just start the backend.
 
 ## 3. Create the GitHub repository (one member, once)
 1. GitHub > New repository > `agrilease` (private), add `.gitignore` for Node.
@@ -19,7 +23,7 @@ Install Git, Node.js 20 LTS, and Laragon (it provides MySQL). Start Laragon and 
 agrilease/
   backend/   Node.js API: src/routes, src/controllers, src/middleware (JWT, role guard), src/services, src/realtime.js (WebSocket chat), migrations/
   frontend/  React (Vite): src/pages, src/components, src/api, public/manifest.webmanifest, public/sw.js
-  database/  agrilease_v2_db.structure.sql + migrations/ (schema.sql ay legacy, huwag i-import)
+  database/  agrilease_v2_db.structure.sql + migrations/
   docs/
   prototype/ the working clickable prototype
   assets/    official-qr-placeholder.png

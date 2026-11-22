@@ -43,7 +43,7 @@ Booking endpoints:
 - `GET /api/rentals/:id`
 - `PATCH /api/rentals/:id/cancel` (Farmer; pending only)
 - `GET /api/owner/bookings`, `PATCH /api/owner/bookings/:id/status`, `GET /api/owner/bookings/:id/proof` (Owner)
-- `GET /api/admin/bookings`, `GET /api/admin/payments`, `PATCH /api/admin/payments/:id/verify` (Admin)
+- `PATCH /api/owner/bookings/:id/payment` with `action` = `cash_received`, `verify` or `reject` (Owner confirms cash or reviews GCash/bank/other proof). The old admin booking-payment endpoints were removed.
 
 Archive endpoints (soft delete, hindi binubura ang record):
 - `GET /api/rentals/mine?archived=1` (Farmer; archived na bookings lang. Kapag walang `archived`, active lang ang ibinabalik)

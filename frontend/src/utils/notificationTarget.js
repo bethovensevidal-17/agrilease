@@ -7,7 +7,7 @@ export function getNotificationTarget(item, role) {
     if (text.includes('owner') || text.includes('verification') || text.includes('application')) return '/admin/owners';
     if (text.includes('payment') || text.includes('subscription')) return '/admin/subscriptions';
     if (text.includes('equipment')) return '/admin/equipment';
-    if (text.includes('booking') || text.includes('rental')) return '/admin/rentals';
+    if (text.includes('booking') || text.includes('rental')) return '/admin/reports';
     if (text.includes('user') || text.includes('account') || text.includes('suspend')) return '/admin/users';
     return '/admin';
   }

@@ -152,7 +152,7 @@ async function create(req, res) {
     // Notify equipment owner and administrators after the booking is safely committed.
     try {
       await notifyUser(equipment.owner_id, 'New booking request', `A farmer submitted booking #${insert.insertId}.`, '/owner/bookings');
-      await notifyAdmins('New booking request', `Booking #${insert.insertId} has been submitted and is waiting for owner review.`, '/admin/rentals');
+      await notifyAdmins('New booking request', `Booking #${insert.insertId} has been submitted and is waiting for owner review.`, '/admin/reports');
     } catch (notificationError) { console.error('Booking notification failed:', notificationError); }
     const [created] = await db.query(
       `SELECT r.*, r.quantity AS rental_quantity, e.equipment_name, e.brand_model, p.payment_method, p.reference_number AS payment_reference, p.proof_image AS payment_proof, p.payment_status

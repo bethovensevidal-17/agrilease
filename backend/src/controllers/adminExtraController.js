@@ -30,6 +30,10 @@ async function getRentals(req, res, next) {
       joins.push('LEFT JOIN equipment e ON e.id = rr.equipment_id');
       if (equipmentColumns.has('owner_id')) joins.push('LEFT JOIN users owner ON owner.id = e.owner_id');
     }
+    // Ang payment method/status ay nasa booking_payments (wala sa rental_requests), kaya kailangan ang join na ito.
+    const paymentColumns = await columns('booking_payments');
+    const hasPayments = paymentColumns.has('booking_id') && paymentColumns.has('payment_method') && c.has('id');
+    if (hasPayments) joins.push('LEFT JOIN booking_payments bp ON bp.id = (SELECT MAX(bp2.id) FROM booking_payments bp2 WHERE bp2.booking_id = rr.id)');
     const startField = ['start_at', 'start_date'].find(name => c.has(name));
     const endField = ['end_at', 'end_date'].find(name => c.has(name));
     const where = [];
@@ -57,7 +61,8 @@ async function getRentals(req, res, next) {
       expression('rr', c, ['id'], 'id'),
       expression('rr', c, ['status'], 'status'),
       expression('rr', c, ['total_amount'], 'total_amount'),
-      expression('rr', c, ['payment_method', 'method'], 'payment_method'),
+      hasPayments ? 'bp.payment_method AS payment_method' : expression('rr', c, ['payment_method', 'method'], 'payment_method'),
+      hasPayments && paymentColumns.has('payment_status') ? 'bp.payment_status AS payment_status' : 'NULL AS payment_status',
       expression('rr', c, ['created_at'], 'created_at'),
       startField ? `rr.\`${startField}\` AS start_at` : 'NULL AS start_at',
       endField ? `rr.\`${endField}\` AS end_at` : 'NULL AS end_at',

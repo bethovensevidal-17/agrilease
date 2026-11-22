@@ -3,6 +3,7 @@ import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 import PendingSyncList from '../components/PendingSyncList.jsx';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
+import { paymentState } from '../utils/paymentState.js';
 import '../styles/booking.css';
 
 const money = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
@@ -186,7 +187,7 @@ export default function MyRentals() {
                   <td data-label="Qty">{row.rental_quantity || 1}</td>
                   <td data-label="Payment">
                     <span>{pretty(row.payment_method)}</span>
-                    <small>{pretty(row.payment_status || 'pending')}</small>
+                    <small>{paymentState(row, 'farmer').text}</small>
                     {row.payment_reference && <small>Ref: {row.payment_reference}</small>}
                   </td>
                   <td data-label="Total"><strong>{money.format(Number(row.total_amount || 0))}</strong></td>

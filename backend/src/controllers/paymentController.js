@@ -87,4 +87,40 @@ async function downloadBookingProofForOwner(req, res) {
   }
 }
 
-module.exports = { verifyBookingPayment, listBookingPayments, downloadBookingProof, downloadBookingProofForOwner };
+// PATCH /api/owner/bookings/:id/payment - ang owner ang nagkukumpirma na natanggap na ang CASH.
+// Sa cash, sa owner ibinibigay ang bayad (hindi dumadaan sa admin), kaya ang owner ang may alam kung bayad na.
+// Ang GCash/bank/other ay patuloy na bine-verify ng admin gamit ang proof of payment.
+async function confirmCashReceived(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT p.id AS payment_id, p.payment_method, p.payment_status,
+              r.id AS booking_id, r.status AS booking_status, r.farmer_id, e.owner_id
+       FROM booking_payments p
+       JOIN rental_requests r ON r.id = p.booking_id
+       JOIN equipment e ON e.id = r.equipment_id
+       WHERE p.booking_id = ? ORDER BY p.id DESC LIMIT 1`, [req.params.id]);
+    if (!rows.length || Number(rows[0].owner_id) !== Number(req.user.id)) {
+      return res.status(404).json({ success: false, error: 'Booking payment not found.' });
+    }
+    const record = rows[0];
+    if (record.payment_method !== 'cash') {
+      return res.status(400).json({ success: false, error: 'Only cash payments are confirmed by the owner. Online payments are verified by the administrator.' });
+    }
+    if (!['approved', 'ongoing', 'completed'].includes(record.booking_status)) {
+      return res.status(409).json({ success: false, error: 'Approve the booking first, then confirm the cash you received.' });
+    }
+    const [result] = await db.query(
+      `UPDATE booking_payments SET payment_status = 'verified', verified_by = ?, payment_date = NOW()
+       WHERE id = ? AND payment_method = 'cash' AND payment_status = 'pending'`, [req.user.id, record.payment_id]);
+    if (!result.affectedRows) {
+      return res.status(409).json({ success: false, error: 'This cash payment was already confirmed.' });
+    }
+    try { await notifyUser(record.farmer_id, 'Cash payment received', `The owner confirmed your cash payment for booking #${record.booking_id}.`, '/farmer/transactions'); } catch (notificationError) { console.error('Cash payment notification failed:', notificationError); }
+    res.json({ success: true, message: 'Cash payment marked as received.' });
+  } catch (error) {
+    console.error('Confirm cash payment:', error);
+    res.status(500).json({ success: false, error: 'Unable to confirm the cash payment.' });
+  }
+}
+
+module.exports = { verifyBookingPayment, listBookingPayments, downloadBookingProof, downloadBookingProofForOwner, confirmCashReceived };

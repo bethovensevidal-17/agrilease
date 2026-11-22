@@ -2,6 +2,7 @@ const app = require('./app');
 const db = require('./db');
 const { ensureSchema } = require('./ensureSchema');
 const { attachWebSocket } = require('./realtime');
+const { startSubscriptionJobs } = require('./services/subscriptionJobs');
 
 const port = process.env.PORT || 3000;
 
@@ -20,4 +21,5 @@ process.on('uncaughtException', err => console.error('[uncaughtException]', err)
   // http server ang ginagamit (hindi app.listen) para masalo rin ang WebSocket sa parehong port.
   const server = app.listen(port, () => console.log(`AGRILEASE API running at http://localhost:${port} (WebSocket: /ws)`));
   attachWebSocket(server);
+  startSubscriptionJobs();
 })();

@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const db = require('../db');
 const { calculateRentalTotal } = require('../utils/pricing');
 const { notifyUser, notifyAdmins } = require('../services/notifications');
+const { ownerHasCoverage } = require('../services/subscriptionAccess');
 
 const PAYMENT_METHODS = ['cash', 'gcash', 'bank_transfer', 'other'];
 const BOOKING_STATUSES = ['pending', 'approved', 'ongoing', 'completed', 'rejected', 'cancelled'];
@@ -96,6 +97,10 @@ async function create(req, res) {
     if (Number(equipment.owner_id) === farmerId) { await connection.rollback(); return publicError(res, 400, 'You cannot rent your own equipment.'); }
     if (equipment.approval_status !== 'approved' || equipment.availability_status !== 'available' || Number(equipment.is_archived) === 1) {
       await connection.rollback(); return publicError(res, 409, 'The equipment is unavailable or has not been approved yet.');
+    }
+    if (!await ownerHasCoverage(connection, equipment.owner_id)) {
+      await connection.rollback();
+      return publicError(res, 409, 'This equipment is temporarily unavailable for booking because the owner\'s subscription is inactive.');
     }
     const availableQuantity = Number(equipment.quantity);
 

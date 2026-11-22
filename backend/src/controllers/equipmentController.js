@@ -1,5 +1,6 @@
 
 const db = require('../db');
+const { coverageCondition, checkListingAllowance } = require('../services/subscriptionAccess');
 
 const RATE_TYPES = ['hour', 'day', 'hectare'];
 const CONDITIONS = ['excellent', 'good', 'fair', 'needs_repair'];
@@ -48,7 +49,9 @@ async function listPublic(req, res) {
   const where = [
     "e.approval_status = 'approved'",
     "e.availability_status = 'available'",
-    'e.is_archived = 0'
+    'e.is_archived = 0',
+    // Naka-hide ang listings ng owner na walang active plan (may grace period).
+    coverageCondition('e')
   ];
 
   const params = [];
@@ -123,7 +126,8 @@ async function getOne(req, res) {
        JOIN users u ON u.id = e.owner_id
       WHERE e.id = ?
         AND e.approval_status = 'approved'
-        AND e.is_archived = 0`,
+        AND e.is_archived = 0
+        AND ${coverageCondition('e')}`,
     [req.params.id]
   );
 
@@ -168,33 +172,9 @@ async function create(req, res) {
 
   const b = req.body;
 
-  // Enforce the current, non-expired subscription on the server.
-  const [subscriptions] = await db.execute(
-    `SELECT s.id, s.status, s.end_date, p.equipment_limit
-       FROM subscriptions s
-       JOIN subscription_plans p ON p.id = s.plan_id
-      WHERE s.owner_id = ? AND s.status = 'active' AND s.end_date >= NOW()
-      ORDER BY s.end_date DESC, s.id DESC LIMIT 1`,
-    [req.user.id]
-  );
-  if (!subscriptions.length) {
-    return res.status(403).json({ error: 'You do not have an active subscription. Please choose a subscription plan before adding equipment.' });
-  }
-  const limit = subscriptions[0].equipment_limit;
-  if (limit !== null && limit !== undefined) {
-    const [[count]] = await db.execute(
-      'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
-      [req.user.id]
-    );
-    if (Number(count.total) >= Number(limit)) {
-      return res.status(403).json({
-        error: `You have reached the equipment listing limit of ${limit} for your subscription. Upgrade to list more.`,
-        code: 'SUBSCRIPTION_LIMIT_REACHED',
-        equipment_limit: Number(limit),
-        equipment_count: Number(count.total)
-      });
-    }
-  }
+  // Enforce the current, non-expired subscription and its listing limit on the server.
+  const allowance = await checkListingAllowance(req.user.id);
+  if (!allowance.ok) return res.status(allowance.status).json(allowance.body);
 
   // Save uploaded image path, if provided.
   const imagePath = req.file
@@ -323,6 +303,15 @@ async function archive(req, res) {
 
 // OWNER: Restore equipment
 async function restore(req, res) {
+  // Ang pag-restore ay nagdadagdag ng listing, kaya sakop din ng limit ng plan.
+  const [[archived]] = await db.query(
+    'SELECT id FROM equipment WHERE id = ? AND owner_id = ? AND is_archived = 1',
+    [req.params.id, req.user.id]
+  );
+  if (!archived) return res.status(404).json({ error: 'Not found or not archived.' });
+  const allowance = await checkListingAllowance(req.user.id);
+  if (!allowance.ok) return res.status(allowance.status).json(allowance.body);
+
   const [result] = await db.query(
     `UPDATE equipment
         SET is_archived = 0
@@ -440,6 +429,7 @@ async function getPaymentDetails(req, res) {
          FROM equipment e
          LEFT JOIN provider_profiles pp ON pp.user_id = e.owner_id
         WHERE e.id = ? AND e.approval_status = 'approved' AND e.is_archived = 0
+          AND ${coverageCondition('e')}
         LIMIT 1`,
       [equipmentId]
     );

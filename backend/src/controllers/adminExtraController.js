@@ -110,7 +110,14 @@ async function getSubscriptions(req, res, next) {
       const joins = [];
       if (payCols.has('subscription_id') && subCols.has('id')) joins.push('LEFT JOIN subscriptions s ON s.id = sp.subscription_id');
       if (subCols.has('owner_id') && payCols.has('subscription_id') && subCols.has('id')) joins.push('LEFT JOIN users u ON u.id = s.owner_id');
+      const canPlan = planCols.size && subCols.has('plan_id') && payCols.has('subscription_id') && subCols.has('id');
+      if (canPlan) joins.push('LEFT JOIN subscription_plans pl ON pl.id = s.plan_id');
+      const payPlanName = planCols.has('plan_name') ? 'pl.plan_name' : planCols.has('name') ? 'pl.name' : 'NULL';
       const [rows] = await db.query(`SELECT sp.id,
+        ${canPlan ? payPlanName : 'NULL'} AS plan_name,
+        ${canPlan && planCols.has('duration_days') ? 'pl.duration_days' : 'NULL'} AS duration_days,
+        ${payCols.has('rejection_reason') ? 'sp.rejection_reason' : 'NULL'} AS rejection_reason,
+        ${subCols.has('status') && payCols.has('subscription_id') ? 's.status' : 'NULL'} AS subscription_status,
         ${payCols.has('subscription_id') ? 'sp.subscription_id' : 'NULL'} AS subscription_id,
         ${payCols.has('amount') ? 'sp.amount' : 'NULL'} AS amount,
         ${payCols.has('payment_method') ? 'sp.payment_method' : 'NULL'} AS payment_method,

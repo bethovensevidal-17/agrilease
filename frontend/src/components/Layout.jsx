@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import '../styles/public-browse.css';
 
 // Sidebar na may hamburger button para sa maliit na screen.
 // Idagdag dito ang link ng bagong page sa listahang ito.
@@ -9,6 +10,14 @@ const links = [
 
 export default function Layout() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Bumalik sa nakaraang page; kung walang history (direktang binuksan ang link), pumunta sa landing page.
+  function goBack() {
+    setOpen(false);
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/');
+  }
 
   return (
     <div className="app">
@@ -22,6 +31,7 @@ export default function Layout() {
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="sidebar-brand">AGRILEASE</div>
         <nav>
+          <button type="button" className="public-back" onClick={goBack}>&larr; Back</button>
           {links.map((l) => (
             <NavLink key={l.to} to={l.to} end onClick={() => setOpen(false)}>
               {l.label}

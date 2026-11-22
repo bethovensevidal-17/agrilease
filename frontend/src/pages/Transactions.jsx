@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, getAuthenticatedFile } from '../api/client';
 import Pagination from '../components/admin/Pagination';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
+import { paymentState } from '../utils/paymentState.js';
 
 const peso = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
 const pretty = value => String(value || '—').replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -105,7 +106,7 @@ export default function Transactions({ role = 'farmer' }) {
                   <td>{pretty(row.payment_method)}</td>
                   <td>{row.payment_reference || '—'}</td>
                   <td>{row.payment_proof ? <button type="button" className="um-refresh" onClick={() => openProof(row.id)}>View Proof</button> : '—'}</td>
-                  <td><span className={`am-pill pay-${String(row.payment_status || 'unpaid').toLowerCase()}`}>{pretty(row.payment_status || 'unpaid')}</span></td>
+                  <td><span className={`am-pill pay-${paymentState(row, role).cls}`}>{paymentState(row, role).text}</span></td>
                   <td>{dateText(row.paid_at || row.payment_date || row.created_at)}</td>
                 </tr>
               ))}</tbody>

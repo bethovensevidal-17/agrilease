@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { api } from '../api/client';
 import Pagination from '../components/admin/Pagination';
+import { paymentState } from '../utils/paymentState.js';
 
 const PAGE_SIZE = 8;
 const STATUSES = ['pending', 'approved', 'rejected', 'ongoing', 'completed', 'cancelled'];
@@ -100,7 +101,7 @@ export default function RentalMonitoring() {
                   <td>#{r.id}</td><td>{r.farmer_name || '—'}</td><td>{r.owner_name || '—'}</td>
                   <td>{r.equipment_name || '—'}</td>
                   <td><span className="am-date">{dateTime(r.start_at)}</span><span className="am-subtext">to {dateTime(r.end_at)}</span></td>
-                  <td>{money(r.total_amount)}</td><td>{r.payment_method || '—'}</td>
+                  <td>{money(r.total_amount)}</td><td>{r.payment_method ? <><span style={{ textTransform: 'capitalize' }}>{String(r.payment_method).replace(/_/g, ' ')}</span><span className="am-subtext">{paymentState(r, 'admin').text}</span></> : '—'}</td>
                   <td><span className={`am-pill ${r.status || ''}`}>{r.status || 'Unknown'}</span></td>
                 </tr>)}
             </tbody>

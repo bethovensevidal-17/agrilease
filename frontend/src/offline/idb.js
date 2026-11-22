@@ -137,6 +137,34 @@ export async function countSnapshots(prefix) {
   } finally { db.close(); }
 }
 
+// Lahat ng key ng snapshot na nagsisimula sa prefix (ibinabalik ang bahaging kasunod ng prefix: ang API path).
+export async function listSnapshotPaths(prefix) {
+  const db = await openDb();
+  try {
+    const keys = (await requestResult(db.transaction('snapshots').objectStore('snapshots').getAllKeys())) || [];
+    return keys.map(String).filter(key => key.startsWith(prefix)).map(key => key.slice(prefix.length));
+  } finally { db.close(); }
+}
+
+// Binubura ang mga snapshot ng account na tugma sa predicate(path). Ibinabalik kung ilan ang nabura.
+export async function deleteSnapshotsWhere(prefix, predicate) {
+  const db = await openDb();
+  try {
+    const keys = ((await requestResult(db.transaction('snapshots').objectStore('snapshots').getAllKeys())) || []).map(String);
+    const targets = keys.filter(key => key.startsWith(prefix) && predicate(key.slice(prefix.length)));
+    if (!targets.length) return 0;
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('snapshots', 'readwrite');
+      const store = tx.objectStore('snapshots');
+      targets.forEach(key => store.delete(key));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('Could not remove the saved data.'));
+    });
+    return targets.length;
+  } finally { db.close(); }
+}
+
 export async function saveAuthToken(token) { return settingSet('authToken', token || null); }
 export async function saveOfflineFeatures(features) { return settingSet('features', features); }
 export async function getOfflineFeatures() { return (await settingGet('features')) || []; }

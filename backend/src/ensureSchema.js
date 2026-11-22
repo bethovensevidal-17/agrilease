@@ -25,6 +25,23 @@ const REQUIRED_COLUMNS = [
   { table: 'rental_requests', column: 'rental_rate_snapshot', ddl: 'DECIMAL(10,2) NULL' },
   { table: 'rental_requests', column: 'rate_type_snapshot', ddl: "ENUM('hour','day','hectare') NULL" },
     { table: 'rental_requests', column: 'is_archived_by_farmer', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
+  // Soft delete (archive) ng Homepage Content at Announcements
+  { table: 'homepage_contents', column: 'is_archived', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
+  { table: 'homepage_contents', column: 'archived_at', ddl: 'DATETIME NULL' },
+  { table: 'announcements', column: 'is_archived', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
+  { table: 'announcements', column: 'archived_at', ddl: 'DATETIME NULL' },
+  // Push notification: services/push.js ay nagsusulat sa endpoint_hash
+  { table: 'push_subscriptions', column: 'endpoint_hash', ddl: 'CHAR(64) NULL' },
+];
+
+// Mga index na kailangan ng code. May optional na `backfill` na tumatakbo bago gawin ang index.
+const REQUIRED_INDEXES = [
+  {
+    table: 'push_subscriptions',
+    name: 'push_subscriptions_endpoint_hash_unique',
+    ddl: 'ADD UNIQUE KEY `push_subscriptions_endpoint_hash_unique` (`endpoint_hash`)',
+    backfill: 'UPDATE push_subscriptions SET endpoint_hash = SHA2(endpoint, 256) WHERE endpoint_hash IS NULL',
+  },
 ];
 
 const REQUIRED_TABLES = [
@@ -76,6 +93,26 @@ async function ensureSchema() {
       console.log(`[ensureSchema] Added ${table}.${column}`);
     } catch (error) {
       console.error(`[ensureSchema] Could not add ${table}.${column}:`, error.message);
+    }
+  }
+
+  for (const { table, name, ddl, backfill } of REQUIRED_INDEXES) {
+    try {
+      const [tables] = await db.execute(
+        'SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+        [table]
+      );
+      if (!tables.length) continue;
+      if (backfill) await db.query(backfill);
+      const [found] = await db.execute(
+        'SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ? LIMIT 1',
+        [table, name]
+      );
+      if (found.length) continue;
+      await db.query(`ALTER TABLE \`${table}\` ${ddl}`);
+      console.log(`[ensureSchema] Added index ${table}.${name}`);
+    } catch (error) {
+      console.error(`[ensureSchema] Could not add index ${table}.${name}:`, error.message);
     }
   }
 

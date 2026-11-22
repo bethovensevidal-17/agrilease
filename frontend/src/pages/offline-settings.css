@@ -46,3 +46,23 @@
   .offline-queue-item { grid-template-columns: 1fr; }
   .offline-queue-actions button, .offline-queue-tools button, .offline-save-button { flex: 1 1 100%; }
 }
+
+/* Feature chooser: pumili kung aling feature ang gagana offline */
+.offline-feature-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.offline-feature-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.offline-tool-button { min-height: 40px; padding: 0 14px; border: 1px solid #cfd8cf; border-radius: 9px; background: #fff; color: #1f3a1d; font: inherit; font-weight: 700; cursor: pointer; }
+.offline-tool-button:hover { background: #f1f7ef; }
+.offline-feature-toggle { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; appearance: none; -webkit-appearance: none; }
+.offline-feature-toggle .offline-feature-copy { display: grid; gap: 3px; min-width: 0; }
+.offline-feature-toggle .offline-feature-description { font-size: 12px; line-height: 1.45; color: #5d6d5d; }
+.offline-feature-toggle .offline-feature-meta { font-size: 11px; font-weight: 600; color: #7a897a; }
+.offline-feature-toggle:focus-visible { outline: 3px solid rgba(47, 107, 34, .35); outline-offset: 2px; }
+.offline-feature-grid .offline-feature-card.is-selected { border-color: #5aa571; background: #f3faf4; }
+.offline-feature-grid .offline-feature-card.is-off { border-color: #e1e5e1; background: #f6f7f6; }
+.offline-feature-grid .offline-feature-card.is-off .offline-feature-icon { opacity: .55; filter: grayscale(1); }
+.offline-feature-grid .offline-feature-card.is-off .offline-feature-title { color: #6c786c; }
+.offline-feature-card.is-off .offline-card-state { background: #e7eae7; color: #6c786c; }
+@media (max-width: 640px) {
+  .offline-feature-tools, .offline-tool-button { width: 100%; }
+  .offline-tool-button { flex: 1 1 100%; }
+}

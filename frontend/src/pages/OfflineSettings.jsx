@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Package, RefreshCw } from 'lucide-react';
-import { clearQueueItem, countSnapshots, readQueue, updateQueueItem } from '../offline/idb';
-import { getToken, getUser } from '../api/client';
+import { Bell, ClipboardList, CreditCard, FilePlus, LayoutDashboard, Megaphone, MessageCircle, Package, RefreshCw, UserRound, Users, Wallet } from 'lucide-react';
+import { clearQueueItem, countSnapshots, deleteSnapshotsWhere, listSnapshotPaths, readQueue, updateQueueItem } from '../offline/idb';
+import { api, getToken, getUser } from '../api/client';
+import { API_BASE } from '../api/config';
+import { countSavedByFeature, featureForPath, featuresForRole, readDisabledFeatures, setAllFeaturesEnabled, setFeatureEnabled } from '../offline/features';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
 import { requestSync } from '../offline/sync';
 import { enablePushNotifications } from '../utils/push';
@@ -11,22 +13,24 @@ import './offline-settings.css';
 const ROLE_GUIDANCE = {
   farmer: {
     title: 'Offline Access',
-    intro: 'You can open AgriLease using your previously signed-in session. Data you open while online is saved on this device automatically.',
-    available: ['Previously loaded equipment and public pages', 'Previously synchronized rentals, transactions, and profile information', 'Create a Cash booking request and keep it pending on this device'],
+    intro: 'You can open AgriLease using your previously signed-in session. Choose below which features stay available on this device.',
     limits: ['An offline booking is not official and the equipment is not reserved until the server validates and saves it.', 'GCash at Bank Transfer submissions require internet.', 'The first login is not available while offline.'],
   },
   owner: {
     title: 'Owner Offline Access',
     intro: 'You can view your previously loaded dashboard and records offline. You can also add new equipment: it is saved on this device and sent automatically once you are back online.',
-    available: ['Previously loaded dashboard and equipment information', 'Previously synchronized bookings and transactions', 'Add new equipment (with image) and keep it pending on this device'],
     limits: ['Approving, rejecting, or changing a booking status is not possible offline.', 'Equipment edits, archiving, payment, and subscription changes cannot be saved offline.', 'New equipment saved offline is not listed until the server receives it and the Admin approves it.', 'Open the Add Equipment page at least once while online so the category list is saved.'],
   },
   admin: {
     title: 'Admin Offline Access',
     intro: 'Offline mode is read-only monitoring. Previously loaded dashboards and reports are saved in the current browser account.',
-    available: ['Previously loaded dashboard and analytics', 'Previously synchronized reports and activity information', 'Previously loaded user and equipment lists'],
     limits: ['Approving or rejecting accounts, equipment, payments, or subscriptions is not possible offline.', 'Administrative changes cannot be saved offline.', 'Refresh the reports once you are back online.'],
   },
+};
+
+const FEATURE_ICONS = {
+  package: Package, clipboard: ClipboardList, sync: RefreshCw, message: MessageCircle, bell: Bell, user: UserRound,
+  plus: FilePlus, card: CreditCard, wallet: Wallet, dashboard: LayoutDashboard, users: Users, megaphone: Megaphone,
 };
 
 export default function OfflineSettings() {
@@ -38,18 +42,25 @@ export default function OfflineSettings() {
   const [cachedCount, setCachedCount] = useState(0);
   const [message, setMessage] = useState('');
   const [busyId, setBusyId] = useState(null);
+  const features = useMemo(() => featuresForRole(role), [role]);
+  const ownerKey = `${user?.role || 'user'}:${user?.id ?? user?.email ?? 'unknown'}`;
+  const snapshotPrefix = `${ownerKey}:${API_BASE}`;
+  const [disabled, setDisabled] = useState(() => readDisabledFeatures(ownerKey));
+  const [featureCounts, setFeatureCounts] = useState({});
+  const [savingFeatures, setSavingFeatures] = useState(false);
 
   const refreshStatus = useCallback(async () => {
     try {
       const identity = `${user?.role || 'user'}:${user?.id ?? user?.email ?? 'unknown'}:`;
       const ownerKey = `${user?.role || 'user'}:${user?.id ?? user?.email ?? 'unknown'}`;
-      const [items, snapshots] = await Promise.all([readQueue(), countSnapshots(identity)]);
+      const [items, snapshots, savedPaths] = await Promise.all([readQueue(), countSnapshots(identity), listSnapshotPaths(snapshotPrefix)]);
+      setFeatureCounts(countSavedByFeature(role, savedPaths));
       setQueue(items.filter(item => !item.ownerKey || item.ownerKey === ownerKey));
       setCachedCount(snapshots);
     } catch (error) {
       setMessage(error.message || 'Unable to read offline storage.');
     }
-  }, [user?.role, user?.id, user?.email]);
+  }, [user?.role, user?.id, user?.email, snapshotPrefix, role]);
 
   useEffect(() => {
     refreshStatus();
@@ -105,6 +116,71 @@ export default function OfflineSettings() {
     } finally { setBusyId(null); }
   }
 
+  // I-save ang data ng mga napiling feature habang online para mabasa ito kahit offline.
+  async function savePaths(paths) {
+    let saved = 0;
+    for (const path of paths) {
+      try { await api(path); saved += 1; } catch { /* laktawan kapag may error ang isang path */ }
+    }
+    return saved;
+  }
+
+  async function toggleFeature(feature) {
+    const turnOn = disabled.includes(feature.id);
+    setFeatureEnabled(ownerKey, feature.id, turnOn);
+    setDisabled(readDisabledFeatures(ownerKey));
+    try {
+      if (!turnOn) {
+        if (feature.match) await deleteSnapshotsWhere(snapshotPrefix, path => featureForPath(role, path)?.id === feature.id);
+        setMessage(`${feature.title} is off. Its saved data was removed from this device${feature.queueKind ? ' and it will not accept offline actions' : ''}.`);
+      } else if (feature.prefetch?.length && navigator.onLine) {
+        const saved = await savePaths(feature.prefetch);
+        setMessage(`${feature.title} is on. ${saved} item(s) saved for offline use.`);
+      } else {
+        setMessage(`${feature.title} is on.${feature.match ? ' Open it once while online to save its data.' : ''}`);
+      }
+    } catch (error) { setMessage(error.message || 'Could not update this offline feature.'); }
+    await refreshStatus();
+  }
+
+  async function saveSelectedNow() {
+    if (!navigator.onLine) { setMessage('You are offline. Connect to the internet to save data for offline use.'); return; }
+    setSavingFeatures(true);
+    try {
+      const off = readDisabledFeatures(ownerKey);
+      const paths = features.filter(feature => !off.includes(feature.id)).flatMap(feature => feature.prefetch || []);
+      const saved = await savePaths(paths);
+      setMessage(paths.length ? `${saved} of ${paths.length} item(s) saved on this device for offline use.` : 'No feature with saved data is turned on.');
+      await refreshStatus();
+    } finally { setSavingFeatures(false); }
+  }
+
+  async function setAllFeatures(turnOn) {
+    setAllFeaturesEnabled(ownerKey, role, turnOn);
+    setDisabled(readDisabledFeatures(ownerKey));
+    try {
+      if (!turnOn) {
+        await deleteSnapshotsWhere(snapshotPrefix, path => Boolean(featureForPath(role, path)));
+        setMessage('All offline features are off. Saved feature data was removed from this device.');
+      } else if (navigator.onLine) {
+        await saveSelectedNow();
+        return;
+      } else {
+        setMessage('All offline features are on. Connect to the internet to save their data.');
+      }
+    } catch (error) { setMessage(error.message || 'Could not update the offline features.'); }
+    await refreshStatus();
+  }
+
+  function featureNote(feature, on) {
+    if (!on) return 'Off · not saved on this device';
+    const saved = featureCounts[feature.id] || 0;
+    const parts = [];
+    if (feature.match) parts.push(saved ? `${saved} saved on this device` : 'Nothing saved yet · open it once while online');
+    if (feature.queueKind) parts.push('Syncs automatically when online');
+    return parts.join(' · ');
+  }
+
   async function turnOnPush() {
     try { setMessage(await enablePushNotifications()); }
     catch (error) { setMessage(error.message || 'Could not turn on push notifications.'); }
@@ -143,18 +219,32 @@ export default function OfflineSettings() {
       </section>
 
       <section className="offline-feature-section">
-        <div className="offline-section-heading"><div><h2>Available offline</h2><p>Pages are cached automatically while you are online and using them.</p></div></div>
+        <div className="offline-section-heading offline-feature-heading">
+          <div><h2>Choose what works offline</h2><p>Turn on the features you want to use even without internet. Only turned-on features are saved on this device and synced when you are back online.</p></div>
+          <div className="offline-feature-tools">
+            <button type="button" className="offline-tool-button" onClick={() => setAllFeatures(true)}>Turn all on</button>
+            <button type="button" className="offline-tool-button" onClick={() => setAllFeatures(false)}>Turn all off</button>
+            <button type="button" className="offline-save-button" disabled={!online || savingFeatures} onClick={saveSelectedNow}>{savingFeatures ? 'Saving...' : 'Save selected now'}</button>
+          </div>
+        </div>
         <div className="offline-feature-grid">
-          {guidance.available.map((item, index) => (
-            <article className="offline-feature-card is-selected" key={item}>
-              <span className="offline-feature-icon">{index === 0 ? <Package size={22} strokeWidth={1.8} /> : index === 1 ? <ClipboardList size={22} strokeWidth={1.8} /> : <RefreshCw size={22} strokeWidth={1.8} />}</span>
-              <span className="offline-feature-copy"><span className="offline-feature-title">{item}</span></span>
-              <span className="offline-card-state">Automatic cache</span>
-            </article>
-          ))}
+          {features.map(feature => {
+            const on = !disabled.includes(feature.id);
+            const Icon = FEATURE_ICONS[feature.icon] || Package;
+            return (
+              <button type="button" role="switch" aria-checked={on} key={feature.id} className={`offline-feature-card offline-feature-toggle ${on ? 'is-selected' : 'is-off'}`} onClick={() => toggleFeature(feature)}>
+                <span className="offline-feature-icon"><Icon size={22} strokeWidth={1.8} /></span>
+                <span className="offline-feature-copy">
+                  <span className="offline-feature-title">{feature.title}</span>
+                  <span className="offline-feature-description">{feature.description}</span>
+                  <span className="offline-feature-meta">{featureNote(feature, on)}</span>
+                </span>
+                <span className="offline-card-state">{on ? 'On' : 'Off'}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
-
       
 
       {role === 'farmer' && <section className="offline-howto"><strong>Cash booking synchronization</strong><p>When you submit a Cash booking while offline, it is saved on this device as Pending Sync. It is not official yet and the equipment is not reserved. Once you are back online, the server verifies the schedule, availability, quantity, and your account before it becomes an official booking.</p></section>}

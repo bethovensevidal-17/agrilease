@@ -1,4 +1,5 @@
 import { getSnapshot, refreshQueueTokens, saveAuthToken, saveSnapshot } from '../offline/idb';
+import { shouldCacheApiPath } from '../offline/features';
 import { removePushSubscription, resyncPushSubscription } from '../utils/push';
 import { API_BASE } from './config';
 
@@ -53,7 +54,7 @@ function getSnapshotKey(path) {
 }
 
 function isCacheableGet(path) {
-  return !/\/auth\//i.test(path) && !/\/payments\/\d+\/proof/i.test(path);
+  return !/\/auth\//i.test(path) && !/\/payments\/\d+\/proof/i.test(path) && shouldCacheApiPath(path);
 }
 
 export async function api(path, { method = 'GET', body, formData, headers: extraHeaders } = {}) {

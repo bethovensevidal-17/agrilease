@@ -1,5 +1,6 @@
 import { enqueueRequest, releaseHeldItems, saveApiRoot, saveAuthToken } from './idb';
 import { API_BASE } from '../api/config';
+import { isQueueAllowed } from './features';
 
 export function currentQueueOwner() {
   try {
@@ -48,6 +49,7 @@ export async function requestSync({ release = false } = {}) {
 }
 
 async function queueRequest({ kind, label, method = 'POST', path, body, fields, file, fileField, token, clientRequestId }) {
+  if (!isQueueAllowed(kind)) throw new Error('This offline feature is turned off. Turn it on in Offline Access to use it without internet.');
   if (!token) throw new Error('Your saved session is unavailable. Please sign in again when online.');
   const offline = !navigator.onLine;
   await saveAuthToken(token);

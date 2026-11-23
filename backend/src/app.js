@@ -4,7 +4,17 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
+const configuredOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || configuredOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Origin not allowed by CORS.'));
+  },
+}));
 app.use(express.json({ limit: '2mb' }));
 app.use('/uploads/equipment', express.static(path.join(__dirname, '..', 'uploads', 'equipment')));
 app.use('/uploads/provider-payment', express.static(path.join(__dirname, '..', 'uploads', 'provider-payment')));

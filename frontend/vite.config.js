@@ -22,7 +22,7 @@ export default defineConfig({
   },
   // `npm run preview` ang ginagamit para sa tunnel: tinatakbo nito ang production build (port 4173).
   preview: {
-    port: 4173,
+    port: Number(process.env.PORT) || 4173,
     allowedHosts: tunnelHosts,
     proxy,
   },

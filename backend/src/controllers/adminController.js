@@ -287,6 +287,9 @@ const getDashboardSummary = async (req, res, next) => {
         (SELECT COUNT(*) FROM provider_profiles
          WHERE verification_status = 'pending') AS pending_owners,
 
+        (SELECT COUNT(*) FROM farmer_profiles
+         WHERE verification_status = 'pending') AS pending_farmers,
+
         (SELECT COUNT(*) FROM equipment
          WHERE is_archived = 0) AS total_equipment,
 

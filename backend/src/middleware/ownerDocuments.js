@@ -49,6 +49,7 @@ const ownerDocumentUpload = multer({
 }).fields([
   { name: 'business_permit', maxCount: 1 },
   { name: 'government_id', maxCount: 1 },
+  { name: 'farmer_id', maxCount: 1 },
 ]);
 
 module.exports = {

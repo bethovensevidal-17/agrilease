@@ -8,6 +8,13 @@ const REQUIRED_COLUMNS = [
   { table: 'provider_profiles', column: 'reviewed_at', ddl: 'DATETIME NULL' },
   { table: 'provider_profiles', column: 'trial_used', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
   { table: 'users', column: 'suspension_reason', ddl: 'TEXT NULL' },
+  // Farmer verification (RSBSA / Farmer ID). Existing farmers are backfilled as 'verified' by the column default.
+  { table: 'farmer_profiles', column: 'farmer_id_number', ddl: 'VARCHAR(30) NULL' },
+  { table: 'farmer_profiles', column: 'farmer_id_path', ddl: 'VARCHAR(255) NULL' },
+  { table: 'farmer_profiles', column: 'verification_status', ddl: "ENUM('pending','verified','rejected') NOT NULL DEFAULT 'verified'" },
+  { table: 'farmer_profiles', column: 'rejection_reason', ddl: 'TEXT NULL' },
+  { table: 'farmer_profiles', column: 'reviewed_by', ddl: 'INT NULL' },
+  { table: 'farmer_profiles', column: 'reviewed_at', ddl: 'DATETIME NULL' },
   { table: 'notifications', column: 'action_url', ddl: 'VARCHAR(500) NULL' },
   { table: 'notifications', column: 'is_archived', ddl: 'TINYINT(1) NOT NULL DEFAULT 0' },
   // Payment Settings ng owner (ownerPaymentSettingsController)
@@ -43,6 +50,11 @@ const REQUIRED_COLUMNS = [
 
 // Mga index na kailangan ng code. May optional na `backfill` na tumatakbo bago gawin ang index.
 const REQUIRED_INDEXES = [
+  {
+    table: 'farmer_profiles',
+    name: 'farmer_profiles_farmer_id_number_unique',
+    ddl: 'ADD UNIQUE KEY `farmer_profiles_farmer_id_number_unique` (`farmer_id_number`)',
+  },
   {
     table: 'push_subscriptions',
     name: 'push_subscriptions_endpoint_hash_unique',

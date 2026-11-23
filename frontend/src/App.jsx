@@ -11,6 +11,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import OwnerVerification from './pages/OwnerVerification.jsx';
+import FarmerVerification from './pages/FarmerVerification.jsx';
 import UserManagement from './pages/UserManagement.jsx';
 import EquipmentManagement from './pages/EquipmentManagement.jsx';
 import SubscriptionsPayments from './pages/SubscriptionsPayments.jsx';
@@ -177,6 +178,11 @@ export default function App() {
         <Route
           path="owners"
           element={<OwnerVerification />}
+        />
+
+        <Route
+          path="farmers"
+          element={<FarmerVerification />}
         />
 
         <Route

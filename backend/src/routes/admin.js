@@ -16,6 +16,12 @@ const {
   updateUserStatus
 } = require('../controllers/adminController');
 
+const {
+  getFarmers,
+  verifyFarmer,
+  viewFarmerDocument
+} = require('../controllers/farmerVerificationController');
+
 // All admin routes require authentication and admin role.
 router.use(requireAuth, requireRole('admin'));
 
@@ -27,6 +33,11 @@ router.get('/analytics/monthly', getMonthlyAnalytics);
 router.get('/owners', getOwners);
 router.patch('/owners/:id/verify', verifyOwner);
 router.get('/owners/:id/documents/:type', viewOwnerDocument);
+
+// Farmer verification (RSBSA / Farmer ID)
+router.get('/farmers', getFarmers);
+router.patch('/farmers/:id/verify', verifyFarmer);
+router.get('/farmers/:id/documents/farmer_id', viewFarmerDocument);
 
 // User Management
 router.get('/users', getUsers);

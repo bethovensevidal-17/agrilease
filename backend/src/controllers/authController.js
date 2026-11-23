@@ -34,6 +34,7 @@ async function register(req, res) {
     government_id
   } = req.files || {};
 
+  const farmerIdFile = (req.files || {}).farmer_id?.[0];
   const permitFile = business_permit?.[0];
   const governmentIdFile = government_id?.[0];
 
@@ -48,6 +49,11 @@ async function register(req, res) {
       barangay,
       business_name
     } = req.body || {};
+
+    // RSBSA / Farmer ID number: uppercase, no spaces.
+    const farmerIdNumber = typeof req.body?.farmer_id_number === 'string'
+      ? req.body.farmer_id_number.replace(/\s+/g, '').toUpperCase()
+      : '';
 
     // Basic validation
     if (!full_name || !email || !password || !role) {
@@ -87,6 +93,27 @@ async function register(req, res) {
       });
     }
 
+    // Farmer must submit a valid-looking RSBSA / Farmer ID number and a photo/scan of the ID.
+    if (role === 'farmer') {
+      if (!farmerIdNumber || !farmerIdFile) {
+        await removeUploadedFiles(req.files);
+
+        return res.status(400).json({
+          success: false,
+          message: 'Farmers must provide their RSBSA / Farmer ID number and upload a photo or scan of the ID.'
+        });
+      }
+
+      if (!/^[0-9A-Z-]{8,25}$/.test(farmerIdNumber)) {
+        await removeUploadedFiles(req.files);
+
+        return res.status(400).json({
+          success: false,
+          message: 'Enter a valid RSBSA / Farmer ID number (8 to 25 characters; letters, numbers, and dashes only).'
+        });
+      }
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
 
     connection = await db.getConnection();
@@ -105,13 +132,29 @@ async function register(req, res) {
       });
     }
 
+    if (role === 'farmer') {
+      const [sameId] = await connection.execute(
+        'SELECT user_id FROM farmer_profiles WHERE farmer_id_number = ? LIMIT 1',
+        [farmerIdNumber]
+      );
+
+      if (sameId.length > 0) {
+        await removeUploadedFiles(req.files);
+
+        return res.status(409).json({
+          success: false,
+          message: 'This RSBSA / Farmer ID number is already registered to another account.'
+        });
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
     await connection.beginTransaction();
     transactionStarted = true;
 
-    // Farmer is active; owner waits for verification.
-    const userStatus = role === 'farmer' ? 'active' : 'pending';
+    // Farmers and owners both wait for admin verification of their documents.
+    const userStatus = 'pending';
 
     const [userResult] = await connection.execute(
       `INSERT INTO users
@@ -132,9 +175,9 @@ async function register(req, res) {
     if (role === 'farmer') {
       await connection.execute(
         `INSERT INTO farmer_profiles
-         (user_id, address, barangay)
-         VALUES (?, ?, ?)`,
-        [userId, address || null, barangay || null]
+         (user_id, address, barangay, farmer_id_number, farmer_id_path, verification_status)
+         VALUES (?, ?, ?, ?, ?, 'pending')`,
+        [userId, address || null, barangay || null, farmerIdNumber, farmerIdFile.filename]
       );
     }
 
@@ -186,11 +229,23 @@ async function register(req, res) {
       }
     }
 
+    if (role === 'farmer') {
+      try {
+        await notifyAdmins(
+          'New farmer registration',
+          `${full_name.trim()} submitted a farmer registration (RSBSA / Farmer ID ${farmerIdNumber}) and is awaiting verification.`,
+          '/admin/farmers'
+        );
+      } catch (notificationError) {
+        console.error('Admin farmer-registration notification failed:', notificationError.message);
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: role === 'owner'
         ? 'Registration successful. Your account is awaiting verification.'
-        : 'Farmer registration successful.',
+        : 'Registration successful. Your Farmer ID is awaiting verification by the administrator.',
       user: {
         id: userId,
         full_name: full_name.trim(),
@@ -210,6 +265,13 @@ async function register(req, res) {
     }
 
     await removeUploadedFiles(req.files);
+
+    if (error && error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        success: false,
+        message: 'This email or RSBSA / Farmer ID number is already registered.'
+      });
+    }
 
     console.error('Register error:', error);
 
@@ -310,8 +372,21 @@ async function login(req, res) {
       console.log('Result: Account is not active.');
       console.log('================================\n');
 
+      let rejectionReason = null;
+      if (user.status === 'rejected') {
+        try {
+          const table = user.role === 'farmer' ? 'farmer_profiles' : 'provider_profiles';
+          const [reasonRows] = await db.execute(`SELECT rejection_reason FROM ${table} WHERE user_id = ? LIMIT 1`, [user.id]);
+          rejectionReason = reasonRows[0]?.rejection_reason || null;
+        } catch (reasonError) {
+          console.error('Rejection reason lookup failed:', reasonError.message);
+        }
+      }
+
       const messages = {
-        pending: 'Your account is still pending approval.',
+        pending: user.role === 'farmer'
+          ? 'Your Farmer ID is still being verified by the administrator.'
+          : 'Your account is still pending approval.',
         suspended: 'Your account has been suspended. Please contact the administrator for the reason.',
         rejected: 'Your account registration was rejected.'
       };
@@ -320,7 +395,9 @@ async function login(req, res) {
         success: false,
         message: user.status === 'suspended' && user.suspension_reason
           ? user.suspension_reason
-          : (messages[user.status] || 'Your account is not active.')
+          : user.status === 'rejected' && rejectionReason
+            ? `${messages.rejected} Reason: ${rejectionReason}`
+            : (messages[user.status] || 'Your account is not active.')
       });
     }
 

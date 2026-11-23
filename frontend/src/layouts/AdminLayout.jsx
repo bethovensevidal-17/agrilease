@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   ScrollText,
+  BadgeCheck,
 } from 'lucide-react';
 
 import { api, getUser, clearAuth } from '../api/client';
@@ -23,6 +24,7 @@ const navigation = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
   { label: 'User Management', path: '/admin/users', icon: Users },
   { label: 'Owner Verification', path: '/admin/owners', icon: ClipboardCheck },
+  { label: 'Farmer Verification', path: '/admin/farmers', icon: BadgeCheck },
   { label: 'Equipment Management', path: '/admin/equipment', icon: Tractor },
   { label: 'Subscription Management', path: '/admin/subscriptions', icon: CreditCard },
   { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
@@ -34,6 +36,7 @@ const ADMIN_PAGE_TITLES = {
   '/admin': 'Dashboard',
   '/admin/users': 'User Management',
   '/admin/owners': 'Owner Verification',
+  '/admin/farmers': 'Farmer Verification',
   '/admin/equipment': 'Equipment Management',
   '/admin/subscriptions': 'Subscription Management',
   '/admin/reports': 'Reports',

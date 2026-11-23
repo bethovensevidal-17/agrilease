@@ -54,8 +54,10 @@ export default function Register() {
     role: 'farmer',
     address: '',
     barangay: '',
+    farmer_id_number: '',
   });
 
+  const [farmerIdFile, setFarmerIdFile] = useState(null);
   const [businessPermit, setBusinessPermit] = useState(null);
   const [governmentId, setGovernmentId] = useState(null);
 
@@ -87,6 +89,10 @@ export default function Register() {
       setBusinessPermit(null);
       setGovernmentId(null);
     }
+
+    if (name === 'role' && value === 'owner') {
+      setFarmerIdFile(null);
+    }
   }
 
   async function handleRegister(e) {
@@ -102,6 +108,30 @@ export default function Register() {
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match.');
       return;
+    }
+
+    if (form.role === 'farmer') {
+      const farmerIdNumber = form.farmer_id_number.replace(/\s+/g, '').toUpperCase();
+
+      if (!/^[0-9A-Z-]{8,25}$/.test(farmerIdNumber)) {
+        setError('Enter a valid RSBSA / Farmer ID number (8 to 25 characters; letters, numbers, and dashes only).');
+        return;
+      }
+
+      if (!farmerIdFile) {
+        setError('Please upload a photo or scan of your RSBSA / Farmer ID.');
+        return;
+      }
+
+      if (!['application/pdf', 'image/jpeg', 'image/png'].includes(farmerIdFile.type)) {
+        setError('Only PDF, JPG, and PNG files are allowed.');
+        return;
+      }
+
+      if (farmerIdFile.size > 5 * 1024 * 1024) {
+        setError('The Farmer ID file must not exceed 5MB.');
+        return;
+      }
     }
 
     if (form.role === 'owner') {
@@ -148,6 +178,8 @@ export default function Register() {
       if (form.role === 'farmer') {
         data.append('address', form.address);
         data.append('barangay', form.barangay);
+        data.append('farmer_id_number', form.farmer_id_number);
+        data.append('farmer_id', farmerIdFile);
       } else {
         data.append('business_permit', businessPermit);
         data.append('government_id', governmentId);
@@ -164,7 +196,7 @@ export default function Register() {
         );
       } else {
         setSuccess(
-          'Registration successful! You can now log in to your account.'
+          'Registration submitted! Your Farmer ID is pending administrator verification. You can log in once it is approved.'
         );
       }
 
@@ -290,6 +322,41 @@ export default function Register() {
                 autoComplete="street-address"
                 required
               />
+            </div>
+          )}
+
+          {form.role === 'farmer' && (
+            <div className="auth-grid auth-grid--documents">
+              <div className="auth-field">
+                <label htmlFor="register-farmer-id-number">RSBSA / Farmer ID Number</label>
+                <input
+                  id="register-farmer-id-number"
+                  name="farmer_id_number"
+                  value={form.farmer_id_number}
+                  onChange={handleChange}
+                  placeholder="e.g. 17-52-08-012-000123"
+                  autoComplete="off"
+                  maxLength={30}
+                  required
+                />
+                <small className="field-hint">
+                  Your registered RSBSA number. It must match the ID you upload.
+                </small>
+              </div>
+
+              <div className="auth-field">
+                <label htmlFor="farmer-id-file">Upload RSBSA / Farmer ID</label>
+                <input
+                  id="farmer-id-file"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setFarmerIdFile(e.target.files[0] || null)}
+                  required
+                />
+                <small className="field-hint">
+                  Clear photo or scan. PDF, JPG, or PNG. Maximum 5MB.
+                </small>
+              </div>
             </div>
           )}
 

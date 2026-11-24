@@ -57,7 +57,7 @@ Halimbawa: `feat: add late fee computation`
 
 ## Mga Panuntunan
 
-- Huwag mag-push direkta sa `main`.
+- Huwag mag-push direkta sa `main`, kahit admin o may bypass permission. Laging gumawa ng branch at magbukas ng Pull Request papuntang `main`.
 - Huwag i-commit ang `.env`, passwords, database credentials, o ang `private_uploads/`.
 - Mag-`git pull` sa `main` bago gumawa ng bagong branch.
 - Bago mag-push, patakbuhin ang `npm test` sa `backend`.

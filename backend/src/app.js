@@ -16,8 +16,8 @@ app.use(cors({
   },
 }));
 app.use(express.json({ limit: '2mb' }));
-app.use('/uploads/equipment', express.static(path.join(__dirname, '..', 'uploads', 'equipment')));
-app.use('/uploads/provider-payment', express.static(path.join(__dirname, '..', 'uploads', 'provider-payment')));
+app.use('/uploads/equipment', express.static(process.env.EQUIPMENT_UPLOAD_DIR ? path.resolve(process.env.EQUIPMENT_UPLOAD_DIR) : path.join(__dirname, '..', 'uploads', 'equipment')));
+app.use('/uploads/provider-payment', express.static(process.env.PROVIDER_QR_DIR ? path.resolve(process.env.PROVIDER_QR_DIR) : path.join(__dirname, '..', 'uploads', 'provider-payment')));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'agrilease-api' }));
 

@@ -2,7 +2,9 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 
-const dir = path.join(__dirname, '..', '..', 'uploads', 'equipment');
+const dir = process.env.EQUIPMENT_UPLOAD_DIR
+  ? path.resolve(process.env.EQUIPMENT_UPLOAD_DIR)
+  : path.join(__dirname, '..', '..', 'uploads', 'equipment');
 fs.mkdirSync(dir, { recursive: true });
 
 const allowed = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };

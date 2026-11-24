@@ -15,8 +15,12 @@ async function downloadBookingProof(req, res) {
       (req.user.role === 'farmer' && Number(record.farmer_id) === Number(req.user.id)) ||
       (req.user.role === 'owner' && Number(record.owner_id) === Number(req.user.id));
     if (!allowed) return res.status(403).json({ success: false, error: 'You cannot access this payment proof.' });
-    const filePath = path.resolve(__dirname, '..', '..', 'uploads', record.proof_image);
-    if (!filePath.startsWith(path.resolve(__dirname, '..', '..', 'uploads', 'payment-proofs') + path.sep) || !fs.existsSync(filePath)) {
+    const proofRoot = process.env.PAYMENT_PROOF_DIR
+      ? path.resolve(process.env.PAYMENT_PROOF_DIR)
+      : path.resolve(__dirname, '..', '..', 'uploads', 'payment-proofs');
+    const uploadsRoot = path.dirname(proofRoot);
+    const filePath = path.resolve(uploadsRoot, record.proof_image);
+    if (!filePath.startsWith(proofRoot + path.sep) || !fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, error: 'Payment proof file is unavailable.' });
     }
     return res.sendFile(filePath);
@@ -39,10 +43,12 @@ async function downloadBookingProofForOwner(req, res) {
     if (!rows.length || !rows[0].proof_image) return res.status(404).json({ success: false, error: 'Payment proof not found.' });
     const record = rows[0];
     if (Number(record.owner_id) !== Number(req.user.id)) return res.status(403).json({ success: false, error: 'You cannot access this payment proof.' });
-    const uploadsRoot = path.resolve(__dirname, '..', '..', 'uploads');
-    const proofRoot = path.join(uploadsRoot, 'payment-proofs') + path.sep;
+    const proofRoot = process.env.PAYMENT_PROOF_DIR
+      ? path.resolve(process.env.PAYMENT_PROOF_DIR)
+      : path.resolve(__dirname, '..', '..', 'uploads', 'payment-proofs');
+    const uploadsRoot = path.dirname(proofRoot);
     const filePath = path.resolve(uploadsRoot, record.proof_image);
-    if (!filePath.startsWith(proofRoot) || !fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Payment proof file is unavailable.' });
+    if (!filePath.startsWith(proofRoot + path.sep) || !fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Payment proof file is unavailable.' });
     return res.sendFile(filePath);
   } catch (error) {
     console.error('Download owner booking proof:', error);

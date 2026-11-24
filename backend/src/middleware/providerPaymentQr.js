@@ -2,7 +2,9 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 
-const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'provider-payment');
+const uploadDir = process.env.PROVIDER_QR_DIR
+  ? path.resolve(process.env.PROVIDER_QR_DIR)
+  : path.join(__dirname, '..', '..', 'uploads', 'provider-payment');
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const extensions = {

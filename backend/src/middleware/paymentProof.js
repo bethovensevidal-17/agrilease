@@ -3,7 +3,9 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const multer = require('multer');
 
-const dir = path.join(__dirname, '..', '..', 'uploads', 'payment-proofs');
+const dir = process.env.PAYMENT_PROOF_DIR
+  ? path.resolve(process.env.PAYMENT_PROOF_DIR)
+  : path.join(__dirname, '..', '..', 'uploads', 'payment-proofs');
 
 fs.mkdirSync(dir, { recursive: true });
 

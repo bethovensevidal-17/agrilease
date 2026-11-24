@@ -38,7 +38,7 @@ async function mySubscription(req, res, next) {
     // Get the current active subscription first.
     const [activeRows] = await db.execute(
       `SELECT s.id, s.owner_id, s.plan_id, s.subscription_type,
-              s.status, s.start_date, s.end_date,
+              s.status, s.start_date, s.end_date, s.baseline_count,
               p.plan_name, p.price, p.duration_days,
               p.equipment_limit
          FROM subscriptions s
@@ -54,7 +54,7 @@ async function mySubscription(req, res, next) {
     // Get the latest pending request separately.
     const [pendingRows] = await db.execute(
       `SELECT s.id, s.owner_id, s.plan_id, s.subscription_type,
-              s.status, s.start_date, s.end_date,
+              s.status, s.start_date, s.end_date, s.baseline_count,
               p.plan_name, p.price, p.duration_days,
               p.equipment_limit
          FROM subscriptions s
@@ -92,11 +92,15 @@ async function mySubscription(req, res, next) {
       graceInfo = { days: GRACE_DAYS, in_grace: inGrace, listings_hidden: !inGrace, last_end: last.last_end, grace_ends_at: graceEnds };
     }
 
+    const baseline = Number(activeRows[0]?.baseline_count || 0);
+    const equipmentUsed = Math.max(0, Number(count.equipment_count || 0) - baseline);
+
     res.json({
       success: true,
       subscription,
       pending_subscription: pendingRows[0] || null,
       equipment_count: Number(count.equipment_count || 0),
+      equipment_used: equipmentUsed,
       grace: graceInfo
     });
   } catch (error) {
@@ -138,9 +142,13 @@ async function requestPlan(req, res, next) {
       const trialDays = Number(plan.duration_days) || 7;
       const [active] = await conn.execute("SELECT id FROM subscriptions WHERE owner_id = ? AND status = 'active' AND end_date >= NOW() LIMIT 1", [req.user.id]);
       if (active.length) { await conn.rollback(); return res.status(409).json({ error: 'You already have an active subscription.' }); }
+      const [[trialBaseline]] = await conn.execute(
+        'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
+        [req.user.id]
+      );
       await conn.execute(
-        "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))",
-        [req.user.id, planId, trialDays]
+        "INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date, baseline_count) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), ?)",
+        [req.user.id, planId, trialDays, Number(trialBaseline.total || 0)]
       );
       await conn.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [req.user.id]);
       await conn.commit();
@@ -241,7 +249,12 @@ async function verifyPayment(req, res, next) {
         [payment.owner_id]
       );
 
-      // Activate the verified plan.
+      const [[paymentBaseline]] = await conn.execute(
+        'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
+        [payment.owner_id]
+      );
+
+      // Activate the verified plan with a fresh listing quota.
       await conn.execute(
         `UPDATE subscriptions
             SET status = 'active',
@@ -249,12 +262,14 @@ async function verifyPayment(req, res, next) {
                 end_date = DATE_ADD(
                   GREATEST(NOW(), COALESCE(?, NOW())),
                   INTERVAL ? DAY
-                )
+                ),
+                baseline_count = ?
           WHERE id = ?`,
         [
           activeEndDate,
           activeEndDate,
           Number(payment.duration_days),
+          Number(paymentBaseline.total || 0),
           payment.subscription_id
         ]
       );
@@ -425,10 +440,14 @@ async function adminCreateSubscription(req, res, next) {
     await conn.beginTransaction();
     // Walang "pending" na ginagawa ng admin: nauuwi iyon sa request na walang bayad na humaharang sa owner.
     await conn.execute("UPDATE subscriptions SET status = 'expired' WHERE owner_id = ? AND status = 'active'", [ownerId]);
+    const [[adminBaseline]] = await conn.execute(
+      'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
+      [ownerId]
+    );
     const [result] = await conn.execute(
-      `INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date)
-       VALUES (?, ?, ?, 'active', COALESCE(?, NOW()), DATE_ADD(COALESCE(?, NOW()), INTERVAL ? DAY))`,
-      [ownerId, planId, type, startDate, startDate, Number(plan.duration_days)]
+      `INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date, baseline_count)
+       VALUES (?, ?, ?, 'active', COALESCE(?, NOW()), DATE_ADD(COALESCE(?, NOW()), INTERVAL ? DAY), ?)`,
+      [ownerId, planId, type, startDate, startDate, Number(plan.duration_days), Number(adminBaseline.total || 0)]
     );
     if (recordPayment) {
       await conn.execute(
@@ -493,18 +512,23 @@ async function adminUpdateSubscription(req, res, next) {
       endSql = `${req.body.end_date} 23:59:59`;
     }
 
-    // Kapag nagpalit ng plan at walang inilagay na expiry, kukunin ang expiry mula sa duration ng bagong plan.
+    // Kapag nagpalit ng plan, magsisimula ang bagong quota mula sa kasalukuyang bilang ng listings.
+    const [[adjustBaseline]] = await db.execute(
+      'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
+      [current.owner_id]
+    );
     await db.execute(
       `UPDATE subscriptions
           SET plan_id = ?,
               subscription_type = ?,
               end_date = COALESCE(?, ${planChanged ? 'DATE_ADD(COALESCE(start_date, NOW()), INTERVAL ? DAY)' : 'end_date'}),
+              ${planChanged ? 'baseline_count = ?,' : ''}
               reminder_7d_sent_at = NULL,
               reminder_1d_sent_at = NULL,
               admin_note = ?
         WHERE id = ?`,
       planChanged
-        ? [planId, Number(plan.price) === 0 ? 'trial' : 'paid', endSql, Number(plan.duration_days), reason, id]
+        ? [planId, Number(plan.price) === 0 ? 'trial' : 'paid', endSql, Number(plan.duration_days), Number(adjustBaseline.total || 0), reason, id]
         : [planId, Number(plan.price) === 0 ? 'trial' : 'paid', endSql, reason, id]
     );
     const [[after]] = await db.execute('SELECT end_date FROM subscriptions WHERE id = ?', [id]);

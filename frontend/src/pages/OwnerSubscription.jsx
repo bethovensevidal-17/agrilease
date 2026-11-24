@@ -33,7 +33,7 @@ export default function OwnerSubscription() {
 
       setPlans(planResult.data || []);
       setCurrent(mine.subscription || null);
-      setEquipmentCount(Number(mine.equipment_count || 0));
+      setEquipmentCount(Number(mine.equipment_used ?? mine.equipment_count ?? 0));
       setPending(mine.pending_subscription || null);
       setGrace(mine.grace || null);
       setPayments(paymentResult.data || []);

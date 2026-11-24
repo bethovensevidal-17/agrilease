@@ -150,9 +150,13 @@ const verifyOwner = async (req, res, next) => {
       if (!Number(profile?.trial_used || 0) && !activeSub.length) {
         const [trialPlan] = await connection.execute(`SELECT id, duration_days FROM subscription_plans WHERE price = 0 AND is_active = 1 ORDER BY duration_days ASC LIMIT 1`);
         const days = Number(trialPlan[0]?.duration_days || 7);
+        const [[trialBaseline]] = await connection.execute(
+          'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
+          [ownerId]
+        );
         await connection.execute(
-          `INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))`,
-          [ownerId, trialPlan[0]?.id || null, days]
+          `INSERT INTO subscriptions (owner_id, plan_id, subscription_type, status, start_date, end_date, baseline_count) VALUES (?, ?, 'trial', 'active', NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), ?)`,
+          [ownerId, trialPlan[0]?.id || null, days, Number(trialBaseline.total || 0)]
         );
         if (profileSet.has('trial_used')) await connection.execute('UPDATE provider_profiles SET trial_used = 1 WHERE user_id = ?', [ownerId]);
       }

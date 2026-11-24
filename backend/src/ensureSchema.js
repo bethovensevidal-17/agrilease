@@ -43,6 +43,8 @@ const REQUIRED_COLUMNS = [
   { table: 'subscriptions', column: 'reminder_7d_sent_at', ddl: 'DATETIME NULL' },
   { table: 'subscriptions', column: 'reminder_1d_sent_at', ddl: 'DATETIME NULL' },
   { table: 'subscriptions', column: 'admin_note', ddl: 'VARCHAR(255) NULL' },
+  // Fresh equipment quota per plan: baseline = non-archived listings when the plan became active.
+  { table: 'subscriptions', column: 'baseline_count', ddl: 'INT NOT NULL DEFAULT 0' },
   { table: 'subscription_payments', column: 'rejection_reason', ddl: 'VARCHAR(255) NULL' },
   // Equipment: dahilan ng pag-reject o pag-take down ng admin
   { table: 'equipment', column: 'rejection_reason', ddl: 'VARCHAR(255) NULL' },

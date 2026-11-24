@@ -29,7 +29,7 @@ async function ownerHasCoverage(executor, ownerId) {
 // Pang-create at pang-restore ng equipment. Ang bagong listing ay nangangailangan ng ACTIVE na plan (walang grace).
 async function checkListingAllowance(ownerId, { extra = 1 } = {}) {
   const [subs] = await db.execute(
-    `SELECT s.id, p.equipment_limit
+    `SELECT s.id, s.baseline_count, p.equipment_limit
        FROM subscriptions s
        JOIN subscription_plans p ON p.id = s.plan_id
       WHERE s.owner_id = ? AND s.status = 'active' AND s.end_date >= NOW()
@@ -45,7 +45,9 @@ async function checkListingAllowance(ownerId, { extra = 1 } = {}) {
     'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
     [ownerId]
   );
-  if (Number(count.total) + extra > Number(limit)) {
+  const baseline = Number(subs[0].baseline_count || 0);
+  const used = Math.max(0, Number(count.total) - baseline);
+  if (used + extra > Number(limit)) {
     return {
       ok: false,
       status: 403,
@@ -53,7 +55,8 @@ async function checkListingAllowance(ownerId, { extra = 1 } = {}) {
         error: `You have reached the equipment listing limit of ${limit} for your subscription. Upgrade to list more.`,
         code: 'SUBSCRIPTION_LIMIT_REACHED',
         equipment_limit: Number(limit),
-        equipment_count: Number(count.total)
+        equipment_count: Number(count.total),
+        equipment_used: used
       }
     };
   }

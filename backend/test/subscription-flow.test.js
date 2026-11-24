@@ -76,6 +76,20 @@ test('listing allowance: blocks when at plan limit, allows unlimited and below l
   assert.equal(none.status, 403);
 });
 
+test('listing allowance starts a fresh quota from the subscription baseline', async () => {
+  responder = sql => sql.includes('FROM subscriptions')
+    ? [[{ id: 1, equipment_limit: 3, baseline_count: 2 }]]
+    : [[{ total: 2 }]];
+  assert.equal((await checkListingAllowance(9)).ok, true);
+
+  responder = sql => sql.includes('FROM subscriptions')
+    ? [[{ id: 1, equipment_limit: 3, baseline_count: 2 }]]
+    : [[{ total: 5 }]];
+  const full = await checkListingAllowance(9);
+  assert.equal(full.ok, false);
+  assert.equal(full.body.equipment_used, 3);
+});
+
 test('browse coverage condition includes a grace period and ignores cancelled plans', () => {
   const sql = coverageCondition('e');
   assert.match(sql, /status IN \('active', 'expired'\)/);

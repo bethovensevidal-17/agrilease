@@ -332,6 +332,20 @@ async function archive(req, res) {
     });
   }
 
+  // Ang na-archive na listing ay hindi na bahagi ng quota. Kung mas mababa na ang
+  // bilang kaysa sa baseline, ibaba rin ang baseline para maging 0 ang used at
+  // makabilang ang mga bagong listing pagkatapos mag-add ulit.
+  const [[count]] = await db.query(
+    'SELECT COUNT(*) AS total FROM equipment WHERE owner_id = ? AND is_archived = 0',
+    [req.user.id]
+  );
+  await db.query(
+    `UPDATE subscriptions
+        SET baseline_count = LEAST(baseline_count, ?)
+      WHERE owner_id = ? AND status = 'active' AND end_date >= NOW()`,
+    [Number(count.total || 0), req.user.id]
+  );
+
   res.json({ success: true, message: 'Equipment archived.' });
 }
 

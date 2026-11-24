@@ -2,6 +2,10 @@ const path = require('path');
 const fs = require('fs/promises');
 const db = require('../db');
 
+const qrDir = process.env.PROVIDER_QR_DIR
+  ? path.resolve(process.env.PROVIDER_QR_DIR)
+  : path.join(__dirname, '..', '..', 'uploads', 'provider-payment');
+
 const fields = [
   'gcash_number',
   'gcash_account_name',
@@ -65,7 +69,7 @@ async function updatePaymentSettings(req, res) {
       [req.user.id]
     );
     if (!profiles.length) {
-      if (newQrPath) await fs.unlink(path.join(__dirname, '..', '..', 'uploads', 'provider-payment', newQrPath)).catch(() => {});
+      if (newQrPath) await fs.unlink(path.join(qrDir, newQrPath)).catch(() => {});
       return res.status(404).json({ success: false, error: 'Owner profile not found.' });
     }
 
@@ -91,8 +95,8 @@ async function updatePaymentSettings(req, res) {
     );
 
     if (newQrPath && oldQrPath && oldQrPath !== newQrPath) {
-      const oldFile = path.resolve(__dirname, '..', '..', 'uploads', 'provider-payment', path.basename(oldQrPath));
-      const root = path.resolve(__dirname, '..', '..', 'uploads', 'provider-payment') + path.sep;
+      const oldFile = path.resolve(qrDir, path.basename(oldQrPath));
+      const root = qrDir + path.sep;
       if (oldFile.startsWith(root)) await fs.unlink(oldFile).catch(() => {});
     }
 
@@ -103,7 +107,7 @@ async function updatePaymentSettings(req, res) {
     });
   } catch (error) {
     if (newQrPath) {
-      await fs.unlink(path.join(__dirname, '..', '..', 'uploads', 'provider-payment', newQrPath)).catch(() => {});
+      await fs.unlink(path.join(qrDir, newQrPath)).catch(() => {});
     }
     if (error.message && /must be text|too long/.test(error.message)) {
       return res.status(400).json({ success: false, error: error.message });

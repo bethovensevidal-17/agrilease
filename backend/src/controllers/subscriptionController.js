@@ -310,7 +310,10 @@ async function getPaymentProof(req, res, next) {
     const [rows] = await db.execute('SELECT proof_image FROM subscription_payments WHERE id = ? LIMIT 1', [paymentId]);
     if (!rows.length || !rows[0].proof_image) return res.status(404).json({ error: 'Payment proof not found.' });
     const filename = path.basename(rows[0].proof_image);
-    const filePath = path.join(__dirname, '..', '..', 'uploads', 'payment-proofs', filename);
+    const proofDir = process.env.PAYMENT_PROOF_DIR
+      ? path.resolve(process.env.PAYMENT_PROOF_DIR)
+      : path.join(__dirname, '..', '..', 'uploads', 'payment-proofs');
+    const filePath = path.join(proofDir, filename);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Payment proof file is missing from the server.' });
     return res.sendFile(filePath);
   } catch (error) { next(error); }

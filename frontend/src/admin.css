@@ -1220,6 +1220,16 @@
   cursor: not-allowed;
 }
 
+.owner-document-empty {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .owner-document-preview {
   margin-top: 15px;
   min-height: 100px;

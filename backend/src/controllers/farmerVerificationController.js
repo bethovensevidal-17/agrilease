@@ -14,7 +14,7 @@ const getFarmers = async (req, res, next) => {
     }
 
     let sql = `SELECT u.id, u.full_name, u.email, u.phone, u.status AS account_status, u.created_at,
-        f.address, f.barangay, f.farmer_id_number, f.verification_status, f.rejection_reason, f.reviewed_at
+        f.address, f.barangay, f.farmer_id_number, f.farmer_id_path, f.verification_status, f.rejection_reason, f.reviewed_at
       FROM users u
       LEFT JOIN farmer_profiles f ON f.user_id = u.id
       WHERE u.role = 'farmer'`;
@@ -31,7 +31,27 @@ const getFarmers = async (req, res, next) => {
 
     const [farmers] = await db.execute(sql, params);
 
-    return res.json({ success: true, total: farmers.length, data: farmers });
+    const resolvedUploadRoot = path.resolve(uploadDirectory);
+
+    // Senyas sa admin UI kung may aktuwal na file na mabubuksan. Ang mga legacy
+    // account ay 'verified' pero walang farmer_id_path kaya walang maipapakitang dokumento.
+    const data = farmers.map(farmer => {
+      let has_document = false;
+
+      if (typeof farmer.farmer_id_path === 'string' && farmer.farmer_id_path) {
+        try {
+          const resolvedPath = path.resolve(uploadDirectory, path.basename(farmer.farmer_id_path));
+          has_document = resolvedPath.startsWith(resolvedUploadRoot) && fs.existsSync(resolvedPath);
+        } catch (_) {
+          has_document = false;
+        }
+      }
+
+      const { farmer_id_path, ...rest } = farmer;
+      return { ...rest, has_document };
+    });
+
+    return res.json({ success: true, total: data.length, data });
   } catch (error) {
     next(error);
   }

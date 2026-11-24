@@ -121,7 +121,7 @@ export default function OwnerAddEquipment() {
       return;
     }
 
-    if (!await window.agrileaseDialog.confirm('Submit this equipment listing for admin approval?', { title: 'Add equipment', confirmText: 'Submit' })) return;
+    if (!await window.agrileaseDialog.confirm('Submit this equipment listing? It will be visible to farmers right away.', { title: 'Add equipment', confirmText: 'Submit' })) return;
     const requestId = newRequestId();
 
     function resetForm() {
@@ -135,7 +135,7 @@ export default function OwnerAddEquipment() {
     async function saveOnDevice() {
       await queueOfflineEquipment({ ...form }, image, getToken(), requestId);
       setSuccess(
-        'Saved on this device as PENDING SYNC. It has not been sent to the server yet. Once you are back online it is saved automatically and goes to Admin approval.'
+        'Saved on this device as PENDING SYNC. It has not been sent to the server yet. Once you are back online it is saved automatically and listed right away.'
       );
       resetForm();
     }
@@ -175,7 +175,7 @@ export default function OwnerAddEquipment() {
       }
 
       setSuccess(
-        'Equipment submitted successfully! It is now waiting for Admin approval.'
+        'Equipment added successfully! It is now visible to farmers.'
       );
 
       resetForm();
@@ -395,11 +395,10 @@ export default function OwnerAddEquipment() {
           </div>
 
           <div className="owner-form-note">
-            <strong>Admin Approval Required</strong>
+            <strong>Verified Owner</strong>
             <p>
-              Your equipment will be submitted with Pending status.
-              It will only appear in the Farmer equipment listings
-              after Admin approval.
+              Your equipment is listed right away because your owner account
+              is verified. An Admin can still take it down if needed.
             </p>
           </div>
 

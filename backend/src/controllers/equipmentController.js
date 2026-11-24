@@ -200,7 +200,7 @@ async function create(req, res) {
         approval_status,
         is_archived
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0)`,
     [
       req.user.id,
       Number(b.category_id),
@@ -217,10 +217,21 @@ async function create(req, res) {
     ]
   );
 
+  // Verified owners are auto-approved, so admins only need to be informed and can take the listing down if needed.
+  try {
+    await notifyAdmins(
+      'New equipment listed',
+      `"${String(b.name).trim()}" was added by a verified owner and is now visible to farmers. You can take it down from Equipment Management if needed.`,
+      '/admin/equipment'
+    );
+  } catch (error) {
+    console.error('New equipment notification failed:', error.message);
+  }
+
   res.status(201).json({
     success: true,
     id: result.insertId,
-    approval_status: 'pending'
+    approval_status: 'approved'
   });
 }
 

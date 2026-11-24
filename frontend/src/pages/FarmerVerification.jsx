@@ -472,18 +472,28 @@ export default function FarmerVerification() {
                           <strong>{document.label}</strong>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => openDocument(document.type)}
-                          disabled={documentLoading[document.type]}
-                        >
-                          {documentLoading[document.type]
-                            ? 'Loading...'
-                            : file
-                              ? 'Reload Document'
-                              : 'View Document'}
-                        </button>
+                        {selectedFarmer.has_document && (
+                          <button
+                            type="button"
+                            onClick={() => openDocument(document.type)}
+                            disabled={documentLoading[document.type]}
+                          >
+                            {documentLoading[document.type]
+                              ? 'Loading...'
+                              : file
+                                ? 'Reload Document'
+                                : 'View Document'}
+                          </button>
+                        )}
                       </div>
+
+                      {!selectedFarmer.has_document && (
+                        <p className="owner-document-empty">
+                          No RSBSA / Farmer ID document is on file for this
+                          account. This is usually a legacy account created
+                          before document uploads were required.
+                        </p>
+                      )}
 
                       {documentErrors[document.type] && (
                         <p className="admin-error">

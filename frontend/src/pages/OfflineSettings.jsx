@@ -249,7 +249,7 @@ export default function OfflineSettings() {
 
       {role === 'farmer' && <section className="offline-howto"><strong>Cash booking synchronization</strong><p>When you submit a Cash booking while offline, it is saved on this device as Pending Sync. It is not official yet and the equipment is not reserved. Once you are back online, the server verifies the schedule, availability, quantity, and your account before it becomes an official booking.</p></section>}
 
-      {role === 'owner' && <section className="offline-howto"><strong>Equipment synchronization</strong><p>When you add equipment while offline, it is saved on this device (with its image) as Pending Sync. It is not listed on the server yet. Once you are back online it is sent automatically; if accepted, it goes to Admin approval.</p></section>}
+      {role === 'owner' && <section className="offline-howto"><strong>Equipment synchronization</strong><p>When you add equipment while offline, it is saved on this device (with its image) as Pending Sync. It is not listed on the server yet. Once you are back online it is sent automatically and listed right away.</p></section>}
 
       <section className="offline-howto offline-queue-section">
         <div className="offline-queue-heading"><div><strong>Synchronization queue</strong><p>{pending.length} pending · {failed.length} needs review</p></div><div className="offline-queue-tools"><button type="button" className="offline-save-button" onClick={turnOnPush}>Turn on push notifications</button></div></div>
